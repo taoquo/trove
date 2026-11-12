@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // TestTheStatusBadgeSurvivesALanguageChange is the regression test for how the sync status was

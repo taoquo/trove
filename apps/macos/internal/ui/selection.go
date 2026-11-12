@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo"
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/settings"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/suggestions"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/settings"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/suggestions"
 )
 
 // sortKeys maps each order to its message key.

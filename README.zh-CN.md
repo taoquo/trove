@@ -1,4 +1,4 @@
-# X Bookmark Manager
+# trove
 
 [English README](./README.md)
 
@@ -12,7 +12,7 @@ X 站内快速打标
 
 ![X 站内快速打标](./assets/readme/inline-tagging.png)
 
-X Bookmark Manager 是一个面向重度 X 用户的 Chrome 扩展，目标不是再造一个收藏夹，而是把 X 上越存越多的书签变成一个可同步、可整理、可回看的本地工作区。
+trove 是一个面向重度 X 用户的 Chrome 扩展，目标不是再造一个收藏夹，而是把 X 上越存越多的书签变成一个可同步、可整理、可回看的本地工作区。
 
 ## 为什么要用它
 

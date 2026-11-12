@@ -5,7 +5,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
 )
 
 // TestTheClearKeyButtonAppearsOnlyWithAStoredKey covers the second half of the API-key row.

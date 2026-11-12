@@ -933,7 +933,7 @@ ${POPOVER_STYLE}
 function getPopoverCopy(locale: Locale) {
   if (locale === "en") {
     return {
-      eyebrow: "X Bookmark Manager",
+      eyebrow: "trove",
       headline: "Manage tags for this tweet",
       subcopy: "Use tags to keep your X bookmarks organized without leaving the timeline.",
       dialogLabel: "Bookmark tags",
@@ -954,7 +954,7 @@ function getPopoverCopy(locale: Locale) {
   }
 
   return {
-    eyebrow: "X Bookmark Manager",
+    eyebrow: "trove",
     headline: "管理这条推文的标签",
     subcopy: "使用标签整理你的 X 书签，无需离开时间线。",
     dialogLabel: "书签标签",

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/autotag"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/autotag"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
 )
 
 // The auto-tagging progress bar, from src/ui/components.tsx and the stylesheet.

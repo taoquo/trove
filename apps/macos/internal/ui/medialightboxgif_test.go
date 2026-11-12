@@ -3,8 +3,8 @@ package ui
 import (
 	"testing"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
 )
 
 // TestAGifOffersPlayInThePreview closes the oldest open Inbox item: a GIF never moved.

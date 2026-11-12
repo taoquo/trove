@@ -10,17 +10,17 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"github.com/egoist/mygo"
-	engine "github.com/taoquo/x-master/apps/macos/internal/autotag"
-	"github.com/taoquo/x-master/apps/macos/internal/credentials"
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/importexport"
-	"github.com/taoquo/x-master/apps/macos/internal/media"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/settings"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/suggestions"
-	syncer "github.com/taoquo/x-master/apps/macos/internal/usecase/syncer"
-	tagging "github.com/taoquo/x-master/apps/macos/internal/usecase/tagging"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/workspace"
+	engine "github.com/taoquo/trove/apps/macos/internal/autotag"
+	"github.com/taoquo/trove/apps/macos/internal/credentials"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/importexport"
+	"github.com/taoquo/trove/apps/macos/internal/media"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/settings"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/suggestions"
+	syncer "github.com/taoquo/trove/apps/macos/internal/usecase/syncer"
+	tagging "github.com/taoquo/trove/apps/macos/internal/usecase/tagging"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/workspace"
 )
 
 // State is everything the workspace view draws from.

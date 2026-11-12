@@ -24,7 +24,7 @@ export function BrandLogo({
   return (
     <img
       src={getAssetUrl("assets/branding/logo-128.png")}
-      alt="X Bookmark Manager"
+      alt="trove"
       width={size}
       height={size}
       data-testid={testId}

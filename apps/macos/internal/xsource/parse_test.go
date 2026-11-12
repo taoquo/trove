@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // decode parses a fixture the way the client does, with json.Number, so ids are

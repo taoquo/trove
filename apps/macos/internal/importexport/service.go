@@ -9,9 +9,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/bundle"
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/ports"
+	"github.com/taoquo/trove/apps/macos/internal/bundle"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/ports"
 )
 
 // ErrValidation reports a bundle that failed a check. The wrapped error names the

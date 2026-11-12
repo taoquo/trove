@@ -5,7 +5,7 @@
 #
 # Why a script and not a list in a document
 #
-# Round 309 added XBM_DATA_DIR so the two empty baselines could be taken against a database with no
+# Round 309 added TROVE_DATA_DIR so the two empty baselines could be taken against a database with no
 # bookmarks in it, and captured them. Round 348 then changed a string the sidebar shows in that
 # state, and round 351 found empty-dark still reading "No tags yet" -- because nothing connects
 # "a string changed" to "a baseline is now stale". The same thing had already happened once: round
@@ -24,9 +24,10 @@
 set -u
 cd "$(dirname "$0")/.."
 
-APP="build/darwin-arm64/X Bookmark Manager.app"
-BIN="$APP/Contents/MacOS/X Bookmark Manager"
-NAME="X Bookmark Manager"
+APP="build/darwin-arm64/trove.app"
+BIN="$APP/Contents/MacOS/trove"
+NAME="trove"
+PATTERN="MacOS/$NAME"
 OUT="../../docs/screenshots/baseline"
 WIDTH=1180
 
@@ -37,7 +38,7 @@ fi
 
 # A leftover instance would be captured instead of this build. Refuse rather than kill it, for the
 # reason tools/panes.sh gives: that is the failure round 237's smoke test lied about.
-before=$(pgrep -f "$NAME" | tr '\n' ' ')
+before=$(pgrep -f "$PATTERN" | tr '\n' ' ')
 if [ -n "$before" ]; then
   echo "  FAIL a process named '$NAME' was already running (pids: $before)"
   echo "       quit it and run again: this would capture the old build"
@@ -57,17 +58,17 @@ capture() {
     local dir="/tmp/xbm-baseline-$name"
     rm -rf "$dir"
     if [ -n "$state" ]; then
-      XBM_DATA_DIR="$dir" XBM_HEADLESS=1 XBM_CAPTURE="$png" XBM_CAPTURE_STATE="$state" \
-        XBM_CAPTURE_DELAY=5s XBM_CAPTURE_WIDTH="$WIDTH" "$BIN" >/dev/null 2>&1
+      TROVE_DATA_DIR="$dir" TROVE_HEADLESS=1 TROVE_CAPTURE="$png" TROVE_CAPTURE_STATE="$state" \
+        TROVE_CAPTURE_DELAY=5s TROVE_CAPTURE_WIDTH="$WIDTH" "$BIN" >/dev/null 2>&1
     else
-      XBM_DATA_DIR="$dir" XBM_HEADLESS=1 XBM_CAPTURE="$png" \
-        XBM_CAPTURE_DELAY=5s XBM_CAPTURE_WIDTH="$WIDTH" "$BIN" >/dev/null 2>&1
+      TROVE_DATA_DIR="$dir" TROVE_HEADLESS=1 TROVE_CAPTURE="$png" \
+        TROVE_CAPTURE_DELAY=5s TROVE_CAPTURE_WIDTH="$WIDTH" "$BIN" >/dev/null 2>&1
     fi
   else
-    XBM_HEADLESS=1 XBM_CAPTURE="$png" XBM_CAPTURE_STATE="$state" \
-      XBM_CAPTURE_DELAY=5s XBM_CAPTURE_WIDTH="$WIDTH" "$BIN" >/dev/null 2>&1
+    TROVE_HEADLESS=1 TROVE_CAPTURE="$png" TROVE_CAPTURE_STATE="$state" \
+      TROVE_CAPTURE_DELAY=5s TROVE_CAPTURE_WIDTH="$WIDTH" "$BIN" >/dev/null 2>&1
   fi
-  pkill -f "$NAME" >/dev/null 2>&1
+  pkill -f "$PATTERN" >/dev/null 2>&1
   sleep 1
 
   if [ ! -s "$png" ]; then

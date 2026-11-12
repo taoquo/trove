@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	engine "github.com/taoquo/x-master/apps/macos/internal/autotag"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/llm"
+	engine "github.com/taoquo/trove/apps/macos/internal/autotag"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/llm"
 )
 
 // T renders a message in the current locale.

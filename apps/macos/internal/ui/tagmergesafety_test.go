@@ -6,8 +6,8 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/storage/sqlite"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/storage/sqlite"
 )
 
 // TestMergeNeedsATargetTheReaderChose pins the merge target to a choice.

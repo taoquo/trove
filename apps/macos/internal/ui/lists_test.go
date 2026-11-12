@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/idgen"
-	"github.com/taoquo/x-master/apps/macos/internal/ports"
-	"github.com/taoquo/x-master/apps/macos/internal/storage/sqlite"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/syncer"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/workspace"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/idgen"
+	"github.com/taoquo/trove/apps/macos/internal/ports"
+	"github.com/taoquo/trove/apps/macos/internal/storage/sqlite"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/syncer"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/workspace"
 )
 
 // newListShell is the ordinary test shell: it is already built with the workspace

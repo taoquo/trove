@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/credentials"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/xsource"
+	"github.com/taoquo/trove/apps/macos/internal/credentials"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/xsource"
 )
 
 // Getting an X session, from the two places it can come from.

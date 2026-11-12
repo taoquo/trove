@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/llm"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/llm"
 )
 
 // Defaults, matching the extension.

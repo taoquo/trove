@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
 )
 
 // TestAFailedRefreshKeepsTheRowsAndSaysSo pins the half of the error channel the empty

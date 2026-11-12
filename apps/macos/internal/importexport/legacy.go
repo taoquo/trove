@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/taoquo/x-master/apps/macos/internal/bundle"
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/bundle"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // Legacy flat-JSON backups.

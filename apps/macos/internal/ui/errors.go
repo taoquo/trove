@@ -2,12 +2,12 @@ package ui
 
 import (
 	"fmt"
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/autotag"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/llm"
+	"github.com/taoquo/trove/apps/macos/internal/autotag"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/llm"
 )
 
 // The interface's vocabulary for a provider failure.

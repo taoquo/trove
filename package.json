@@ -1,8 +1,8 @@
 {
-  "name": "x-bookmark-manager",
+  "name": "trove",
   "private": true,
   "version": "0.2.12",
-  "displayName": "X Bookmark Manager",
+  "displayName": "trove",
   "type": "module",
   "scripts": {
     "build": "node ./scripts/build.mjs",

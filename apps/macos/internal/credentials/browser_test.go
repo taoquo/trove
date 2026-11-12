@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/taoquo/x-master/apps/macos/internal/xsource"
+	"github.com/taoquo/trove/apps/macos/internal/xsource"
 )
 
 // TestPermissionDenialIsToldApartFromNoCookies covers the two failures that both look like

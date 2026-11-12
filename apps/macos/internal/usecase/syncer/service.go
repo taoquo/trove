@@ -17,9 +17,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/ports"
-	"github.com/taoquo/x-master/apps/macos/internal/xsource"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/ports"
+	"github.com/taoquo/trove/apps/macos/internal/xsource"
 )
 
 // Setting keys owned by this package.

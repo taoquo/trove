@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/netproxy"
-	"github.com/taoquo/x-master/apps/macos/internal/ports"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/netproxy"
+	"github.com/taoquo/trove/apps/macos/internal/ports"
 )
 
 // xHost is the only host credentials may be sent to. The endpoint is not

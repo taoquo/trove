@@ -8,7 +8,7 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
 )
 
 // TestClickingExportAsksForAPathOffTheWindowThread covers the button that did nothing.

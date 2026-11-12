@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // roundTripFunc lets a test answer a request without a network, while leaving the

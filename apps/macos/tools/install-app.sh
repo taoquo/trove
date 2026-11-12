@@ -14,8 +14,8 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 
 DEST="/Applications"
-NAME="X Bookmark Manager"
-BUNDLE_ID="com.taoquo.xmaster"
+NAME="trove"
+BUNDLE_ID="com.taoquo.trove"
 BUILT="build/darwin-arm64/$NAME.app"
 INSTALLED="$DEST/$NAME.app"
 
@@ -91,7 +91,7 @@ xattr -dr com.apple.quarantine "$INSTALLED" 2>/dev/null || true
 # grant (which the browser-cookie import needs) would be invalidated by every install. Signed with
 # the certificate, the requirement is `identifier ... and certificate root = H"..."`, which is the
 # same for every rebuild, so one grant keeps working.
-IDENTITY="X Bookmark Manager Dev"
+IDENTITY="trove Dev"
 if security find-identity -v -p codesigning 2>/dev/null | grep -qF "$IDENTITY"; then
   echo "• signing as '$IDENTITY'"
   if ! codesign --force --deep --sign "$IDENTITY" "$INSTALLED" >/dev/null 2>&1; then

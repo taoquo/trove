@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // Vocabulary review, ported from src/lib/autotag/vocabularyReview.ts.

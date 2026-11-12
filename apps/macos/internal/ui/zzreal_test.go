@@ -9,11 +9,11 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/taoquo/x-master/apps/macos/internal/idgen"
-	"github.com/taoquo/x-master/apps/macos/internal/media"
-	"github.com/taoquo/x-master/apps/macos/internal/ports"
-	"github.com/taoquo/x-master/apps/macos/internal/storage/sqlite"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/workspace"
+	"github.com/taoquo/trove/apps/macos/internal/idgen"
+	"github.com/taoquo/trove/apps/macos/internal/media"
+	"github.com/taoquo/trove/apps/macos/internal/ports"
+	"github.com/taoquo/trove/apps/macos/internal/storage/sqlite"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/workspace"
 )
 
 type failingTransport struct{}
@@ -24,11 +24,11 @@ func (failingTransport) RoundTrip(*http.Request) (*http.Response, error) {
 
 // TestRealLibraryPicturesStayDrawable measures the flicker report against the user's own
 // database and media cache. It is a diagnostic, not a CI test: it skips without
-// XBM_REAL_DB.
+// TROVE_REAL_DB.
 func TestRealLibraryPicturesStayDrawable(t *testing.T) {
-	dbPath := os.Getenv("XBM_REAL_DB")
+	dbPath := os.Getenv("TROVE_REAL_DB")
 	if dbPath == "" {
-		t.Skip("set XBM_REAL_DB to a copy of x-master.db and XBM_REAL_MEDIA to its media-cache")
+		t.Skip("set TROVE_REAL_DB to a copy of trove.db and TROVE_REAL_MEDIA to its media-cache")
 	}
 
 	db, err := sqlite.Open(dbPath)
@@ -52,7 +52,7 @@ func TestRealLibraryPicturesStayDrawable(t *testing.T) {
 	shell.state.RightSidebarWidth = WidthInspectorDef
 
 	fetcher := media.NewFetcherWithClient(&http.Client{Transport: failingTransport{}})
-	fetcher.UseDiskCache(media.NewDiskCache(os.Getenv("XBM_REAL_MEDIA"), media.DefaultDiskBudget))
+	fetcher.UseDiskCache(media.NewDiskCache(os.Getenv("TROVE_REAL_MEDIA"), media.DefaultDiskBudget))
 	shell.UseMediaFetcher(fetcher)
 
 	shell.Reload(context.Background())

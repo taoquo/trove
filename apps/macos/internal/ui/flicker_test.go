@@ -15,9 +15,9 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/media"
-	"github.com/taoquo/x-master/apps/macos/internal/storage/sqlite"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/media"
+	"github.com/taoquo/trove/apps/macos/internal/storage/sqlite"
 )
 
 // pictureGallery serves one small PNG at any path and counts the requests per path.

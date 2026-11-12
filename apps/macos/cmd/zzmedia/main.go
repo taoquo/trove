@@ -10,7 +10,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/taoquo/x-master/apps/macos/internal/media"
+	"github.com/taoquo/trove/apps/macos/internal/media"
 )
 
 func main() {

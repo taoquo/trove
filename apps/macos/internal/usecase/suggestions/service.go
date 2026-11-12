@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/ports"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/ports"
 )
 
 // ErrNotFound reports a suggestion that does not exist.

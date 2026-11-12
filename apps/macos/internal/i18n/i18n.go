@@ -667,7 +667,7 @@ const (
 // raw key.
 var catalogs = map[Locale]map[Key]string{
 	EN: {
-		AppName: "X Bookmark Manager",
+		AppName: "trove",
 
 		MenuFile: "File", MenuEdit: "Edit", MenuView: "View", MenuWindow: "Window",
 		MenuExport: "Export…", MenuImport: "Import…",
@@ -1129,7 +1129,7 @@ var catalogs = map[Locale]map[Key]string{
 	},
 
 	ZHCN: {
-		AppName: "X 书签管理器",
+		AppName: "trove",
 
 		MenuFile: "文件", MenuEdit: "编辑", MenuView: "显示", MenuWindow: "窗口",
 		MenuExport: "导出…", MenuImport: "导入…",

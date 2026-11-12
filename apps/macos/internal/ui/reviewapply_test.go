@@ -6,9 +6,9 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	engine "github.com/taoquo/x-master/apps/macos/internal/autotag"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/storage/sqlite"
+	engine "github.com/taoquo/trove/apps/macos/internal/autotag"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/storage/sqlite"
 )
 
 // reviewShell is a shell with a library and the review panel open on the given plans.

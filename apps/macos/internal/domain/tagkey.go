@@ -1,4 +1,4 @@
-// Package domain holds x-master's pure domain logic. It imports no database,
+// Package domain holds trove's pure domain logic. It imports no database,
 // network, filesystem or UI package, so it stays testable on its own.
 package domain
 

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	engine "github.com/taoquo/x-master/apps/macos/internal/autotag"
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/suggestions"
-	"github.com/taoquo/x-master/apps/macos/internal/xsource"
+	engine "github.com/taoquo/trove/apps/macos/internal/autotag"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/suggestions"
+	"github.com/taoquo/trove/apps/macos/internal/xsource"
 )
 
 // The screenshot harness lives here rather than beside the panels it opens.
@@ -59,7 +59,7 @@ func (s *Shell) ApplyCaptureExportPrompt() {
 //
 // The states worth photographing are the ones behind an interaction, and the capture fires
 // once on the first frames, so this is the only way to see them without a person at the
-// screen. The caller gates it on XBM_CAPTURE; this method is deliberately inert for any
+// screen. The caller gates it on TROVE_CAPTURE; this method is deliberately inert for any
 // name it does not know, so a typo photographs the normal window instead of failing.
 func (s *Shell) ApplyCaptureState(state string) bool {
 	// Screenshots get default preferences, not whatever the last screenshot saved.
@@ -82,7 +82,7 @@ func (s *Shell) ApplyCaptureState(state string) bool {
 	case "workspace":
 		// The normal window, which is what the source render calls this state. It is a named
 		// case rather than a fallthrough so the name is *known*: an unknown state makes
-		// capture.go return before it applies XBM_CAPTURE_LOCALE, and a "workspace" capture came
+		// capture.go return before it applies TROVE_CAPTURE_LOCALE, and a "workspace" capture came
 		// out with a Chinese page whose footer chip still said "EN" because state.Locale had
 		// been reset to "" and the language was never applied.
 	case "detail":

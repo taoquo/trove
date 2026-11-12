@@ -10,11 +10,11 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/taoquo/x-master/apps/macos/internal/idgen"
-	"github.com/taoquo/x-master/apps/macos/internal/ports"
-	"github.com/taoquo/x-master/apps/macos/internal/storage/sqlite"
-	tagging "github.com/taoquo/x-master/apps/macos/internal/usecase/tagging"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/workspace"
+	"github.com/taoquo/trove/apps/macos/internal/idgen"
+	"github.com/taoquo/trove/apps/macos/internal/ports"
+	"github.com/taoquo/trove/apps/macos/internal/storage/sqlite"
+	tagging "github.com/taoquo/trove/apps/macos/internal/usecase/tagging"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/workspace"
 )
 
 // A busy action, and a switch that fails to save (shell-contract.md S52).

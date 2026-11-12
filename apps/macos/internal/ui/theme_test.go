@@ -3,7 +3,7 @@ package ui
 import (
 	"testing"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // TestStatusValuesMatchTheDomainVocabulary keeps the interface's status words and the

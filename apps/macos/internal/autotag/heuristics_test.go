@@ -3,8 +3,8 @@ package autotag
 import (
 	"testing"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/xsource"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/xsource"
 )
 
 // TestHashtagsReachTheHeuristicFromTheWire closes the loop between the sync parser

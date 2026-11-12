@@ -1,6 +1,6 @@
 {
-  "name": "X Bookmark Manager",
-  "identifier": "com.taoquo.xmaster",
+  "name": "trove",
+  "identifier": "com.taoquo.trove",
   "version": "0.3.0",
   "out": "build",
   "macos": {

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // TestDeleteAllClearsRowsAndReportsTheCount covers the store's "reset local data" half.

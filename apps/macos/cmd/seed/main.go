@@ -17,12 +17,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/media"
-	"github.com/taoquo/x-master/apps/macos/internal/storage/sqlite"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/media"
+	"github.com/taoquo/trove/apps/macos/internal/storage/sqlite"
 )
 
-const databaseFile = "x-master.db"
+const databaseFile = "trove.db"
 
 type mediaFixture struct {
 	Type    string `json:"type"`
@@ -97,7 +97,7 @@ type fixture struct {
 
 func main() {
 	fixturePath := flag.String("fixture", "../../tools/parity/fixture.json", "fixture JSON")
-	dataDir := flag.String("data-dir", "", "directory that will hold x-master.db")
+	dataDir := flag.String("data-dir", "", "directory that will hold trove.db")
 	mediaBase := flag.String("media-base", "http://127.0.0.1:8799", "prefix for fixture media paths")
 	warmMedia := flag.Bool("warm-media", false, "fetch the fixture's pictures into the cache the app reads")
 	flag.Parse()

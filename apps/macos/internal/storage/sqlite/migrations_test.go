@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 func openTestDB(t *testing.T) *DB {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "x-master.db")
+	path := filepath.Join(t.TempDir(), "trove.db")
 	db, err := Open(path)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
@@ -55,7 +55,7 @@ func TestMigrateFromEmptyCreatesSchema(t *testing.T) {
 }
 
 func TestMigrateIsIdempotent(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "x-master.db")
+	path := filepath.Join(t.TempDir(), "trove.db")
 
 	for attempt := 1; attempt <= 3; attempt++ {
 		db, err := Open(path)
@@ -75,7 +75,7 @@ func TestMigrateIsIdempotent(t *testing.T) {
 }
 
 func TestRefusesNewerSchema(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "x-master.db")
+	path := filepath.Join(t.TempDir(), "trove.db")
 
 	db, err := Open(path)
 	if err != nil {
@@ -321,7 +321,7 @@ func TestOpenRestrictsPermissions(t *testing.T) {
 		t.Fatalf("MkdirAll: %v", err)
 	}
 
-	path := filepath.Join(dir, "x-master.db")
+	path := filepath.Join(dir, "trove.db")
 	db, err := Open(path)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
@@ -385,7 +385,7 @@ func TestCheckDetectsForeignKeyViolations(t *testing.T) {
 
 func TestCloseCheckpointsWAL(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "x-master.db")
+	path := filepath.Join(dir, "trove.db")
 
 	db, err := Open(path)
 	if err != nil {

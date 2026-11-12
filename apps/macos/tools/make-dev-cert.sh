@@ -5,7 +5,7 @@
 # and macOS guards those directories with TCC. A grant is recorded against the app's designated
 # requirement, and an ad-hoc signature's requirement is `cdhash H"..."` -- the hash of the binary --
 # so every rebuild would invalidate a Full Disk Access grant and the user would re-grant after each
-# build. A certificate moves the requirement to `identifier "com.taoquo.xmaster" and certificate
+# build. A certificate moves the requirement to `identifier "com.taoquo.trove" and certificate
 # root = H"..."`, which no rebuild changes.
 #
 # The certificate is self-signed and local: it identifies this machine's builds to this machine's
@@ -17,7 +17,7 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
-IDENTITY="X Bookmark Manager Dev"
+IDENTITY="trove Dev"
 KEYCHAIN="$HOME/Library/Keychains/login.keychain-db"
 
 if security find-identity -v -p codesigning 2>/dev/null | grep -qF "$IDENTITY"; then

@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui"
-	engine "github.com/taoquo/x-master/apps/macos/internal/autotag"
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/workspace"
+	engine "github.com/taoquo/trove/apps/macos/internal/autotag"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/workspace"
 )
 
 // selectSidebar changes the scope and reloads.

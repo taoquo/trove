@@ -191,7 +191,7 @@ function PopupScreen() {
                 <div className="min-w-0">
                   <div className="workspace-overline">{copy.inventory}</div>
                   <h1 className="popup-brand-title mt-2 text-ink">
-                    X Bookmark Manager
+                    trove
                   </h1>
                   <p className="popup-brand-copy mt-2.5 max-w-[22ch]">
                     {copy.appDescription}

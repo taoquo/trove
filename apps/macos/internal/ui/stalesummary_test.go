@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/credentials"
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/credentials"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
 )
 
 // TestAStaleSummaryDoesNotOverwriteThisSession is the third defect behind the "X login

@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/egoist/mygo"
-	"github.com/taoquo/x-master/apps/macos/internal/bundle"
-	"github.com/taoquo/x-master/apps/macos/internal/credentials"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/importexport"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/workspace"
+	"github.com/taoquo/trove/apps/macos/internal/bundle"
+	"github.com/taoquo/trove/apps/macos/internal/credentials"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/importexport"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/workspace"
 )
 
 // BundleRequest is a file the user chose and what to do with it.
@@ -35,7 +35,7 @@ func (s *Shell) UseCredentials(store *credentials.Store) { s.credentials = store
 
 // BundleFilter is the file dialog's filter for a bundle.
 func BundleFilter() mygo.FileFilter {
-	return mygo.FileFilter{Name: "x-master bundle", Extensions: []string{"xmbundle"}}
+	return mygo.FileFilter{Name: "trove bundle", Extensions: []string{"xmbundle"}}
 }
 
 // ExportBundle writes a bundle to a file the user chooses.
@@ -64,7 +64,7 @@ func (s *Shell) ExportBundle(ctx context.Context) error {
 	options := mygo.SaveDialogOptions{
 		Parent:      s.window,
 		Title:       s.t().T(i18n.BundleExportTitle),
-		DefaultPath: "x-master.xmbundle",
+		DefaultPath: "trove.xmbundle",
 		Filters:     []mygo.FileFilter{BundleFilter()},
 	}
 	s.beginBundleWork(i18n.BundleChoosingWhere)

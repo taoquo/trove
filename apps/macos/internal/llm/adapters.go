@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/taoquo/x-master/apps/macos/internal/netproxy"
+	"github.com/taoquo/trove/apps/macos/internal/netproxy"
 )
 
 // This file holds the four request shapes. They are registered in

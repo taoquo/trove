@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/llm"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/llm"
 )
 
 // fakeAdapter answers from a script and records the requests it saw.

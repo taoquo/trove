@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/ports"
-	"github.com/taoquo/x-master/apps/macos/internal/storage/sqlite"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/tagging"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/ports"
+	"github.com/taoquo/trove/apps/macos/internal/storage/sqlite"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/tagging"
 )
 
 // newInboxShell builds a shell with a tagging service, which is what carries the

@@ -3,7 +3,7 @@ package ui
 import (
 	"github.com/egoist/mygo/ui"
 
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
 )
 
 // One chip, drawn in the two places a condition has to be visible.

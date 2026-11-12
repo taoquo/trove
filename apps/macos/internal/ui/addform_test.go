@@ -6,7 +6,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/taoquo/x-master/apps/macos/internal/storage/sqlite"
+	"github.com/taoquo/trove/apps/macos/internal/storage/sqlite"
 )
 
 // TestTheAddFormNamesItsFieldsAndAddsOnEnter covers the one form this build adds to the

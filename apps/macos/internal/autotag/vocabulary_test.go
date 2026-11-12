@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // Equivalence against the real vocabulary review in TypeScript.

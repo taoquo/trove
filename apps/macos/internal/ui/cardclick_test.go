@@ -6,7 +6,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
 )
 
 // TestTheCardAnswersEveryClick walks a result card the way a pointer meets it: the

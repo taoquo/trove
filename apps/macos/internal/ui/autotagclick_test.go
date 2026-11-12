@@ -13,10 +13,10 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	engine "github.com/taoquo/x-master/apps/macos/internal/autotag"
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/tagging"
+	engine "github.com/taoquo/trove/apps/macos/internal/autotag"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/tagging"
 )
 
 // TestTheAutoTagPageAnswersEveryClick walks the page's own controls: the way in from the

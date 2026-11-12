@@ -25,6 +25,9 @@ import (
 )
 
 // Format identifies a bundle, so a wrong file is rejected before anything else.
+//
+// The identifier keeps its old spelling on purpose: it is written into every bundle
+// already on disk, and renaming it would make this build refuse files it wrote itself.
 const Format = "x-master-bundle"
 
 // FormatVersion is the version this build writes and the highest it reads.

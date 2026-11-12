@@ -1,4 +1,4 @@
-module github.com/taoquo/x-master/apps/macos
+module github.com/taoquo/trove/apps/macos
 
 go 1.27.2
 

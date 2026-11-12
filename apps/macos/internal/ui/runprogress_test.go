@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/autotag"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/autotag"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
 )
 
 // TestIndeterminateWhileWaitingOrStalled is the source's rule: a bar frozen at a number

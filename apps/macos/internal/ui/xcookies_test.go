@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/taoquo/x-master/apps/macos/internal/credentials"
-	"github.com/taoquo/x-master/apps/macos/internal/credentials/keychain"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/credentials"
+	"github.com/taoquo/trove/apps/macos/internal/credentials/keychain"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
 )
 
 // memKeychain is the Keychain interface over a map, so the round trip can be tested without

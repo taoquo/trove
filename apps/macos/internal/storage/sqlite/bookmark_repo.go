@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/ports"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/ports"
 )
 
 // BookmarkRepository stores bookmarks in SQLite.

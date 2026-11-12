@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-Two implementations of the same product — X Bookmark Manager, a local-first manager for X/Twitter bookmarks — live here:
+Two implementations of the same product — trove, a local-first manager for X/Twitter bookmarks — live here:
 
 - **Chrome MV3 extension** (`src/`, `tests/`, repo root): React 19 + TypeScript, IndexedDB, esbuild. This is the **reference implementation**: its UI, copy, storage formats, sync protocol and auto-tag behaviour are the source of truth that the native app replicates.
 - **Native macOS app** (`apps/macos/`): Go, rendering its own UI with [MyGo](https://github.com/egoist/mygo) — no webview, no HTML, no JavaScript. It has its own SQLite database and imports the extension's backup format.
@@ -56,7 +56,7 @@ gofmt -l .                        # must print nothing
 go vet ./...
 go tool mygo vet .                # MyGo-specific lifetime/goroutine checks
 CGO_ENABLED=0 go build -o /dev/null .
-go tool mygo build -skip-dmg      # -> build/darwin-arm64/X Bookmark Manager.app
+go tool mygo build -skip-dmg      # -> build/darwin-arm64/trove.app
 ```
 
 The full quality gate runs every step even when one fails and is the canonical pre-commit check. It needs the exported toolchain environment in the same shell, so run it from the repo root through bash:
@@ -67,7 +67,7 @@ bash -c 'source .toolchain/env.sh && bash apps/macos/tools/gate.sh'
 
 It runs the source checkers, gofmt/vet/build, `go test` and `go test -race`, `mygo build`, a launch/single-instance/quit smoke test (`tools/smoke.sh`), and two pixel checks on a live capture (`tools/panes.sh`, `tools/geometry.sh`). The pixel checks read captures under `docs/screenshots`, which are local-only.
 
-Other capture tooling: `tools/baselines.sh` and `tools/criteria.sh` regenerate screenshots from the built app. The app understands `XBM_CAPTURE`, `XBM_CAPTURE_STATE`, `XBM_CAPTURE_WIDTH`, `XBM_CAPTURE_HEIGHT`, `XBM_CAPTURE_DELAY`, `XBM_CAPTURE_LOCALE`, `XBM_DATA_DIR`, `XBM_HEADLESS` and `XBM_SMOKE`.
+Other capture tooling: `tools/baselines.sh` and `tools/criteria.sh` regenerate screenshots from the built app. The app understands `TROVE_CAPTURE`, `TROVE_CAPTURE_STATE`, `TROVE_CAPTURE_WIDTH`, `TROVE_CAPTURE_HEIGHT`, `TROVE_CAPTURE_DELAY`, `TROVE_CAPTURE_LOCALE`, `TROVE_DATA_DIR`, `TROVE_HEADLESS` and `TROVE_SMOKE`.
 
 ## Architecture: Chrome extension
 

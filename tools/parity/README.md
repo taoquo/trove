@@ -32,7 +32,7 @@ bash tools/parity/render.sh workspace detail   # 指定状态
 
 ## 改基准数据
 
-只改 `fixture.json`。两侧必须用**同一份**：原生侧（待做）通过 `XBM_SEED` 读同一个文件，
+只改 `fixture.json`。两侧必须用**同一份**：原生侧（待做）通过 `TROVE_SEED` 读同一个文件，
 否则对照又变成"两张不同的图比谁好看"。
 
 ## 已知边界

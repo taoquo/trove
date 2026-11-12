@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // P6 of docs/filter-interaction-plan.md: the sidebar's numbers come from the same filter

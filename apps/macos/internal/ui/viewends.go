@@ -4,7 +4,7 @@ import (
 	"math"
 
 	"github.com/egoist/mygo/ui"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
 )
 
 // The scroll-ends capsule: `scrollends.js`, `.view-ends` (app.css:2255-2266).

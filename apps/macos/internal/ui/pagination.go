@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/egoist/mygo/ui"
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // Reading the next part of a result list.

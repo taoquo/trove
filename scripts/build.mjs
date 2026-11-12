@@ -15,7 +15,7 @@ async function readPackageMetadata() {
   const packageJson = JSON.parse(await readFile(path.join(appDir, "package.json"), "utf8"))
 
   return {
-    name: packageJson.displayName ?? packageJson.name ?? "X Bookmark Manager",
+    name: packageJson.displayName ?? packageJson.name ?? "trove",
     version: packageJson.version ?? "0.0.1"
   }
 }

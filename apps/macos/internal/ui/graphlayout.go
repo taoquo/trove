@@ -3,7 +3,7 @@ package ui
 import (
 	"math"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // The relation graph's placement, which the source's ring cannot give it.

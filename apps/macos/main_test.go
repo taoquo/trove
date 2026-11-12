@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/egoist/mygo/ui"
-	"github.com/taoquo/x-master/apps/macos/internal/idgen"
-	"github.com/taoquo/x-master/apps/macos/internal/ports"
-	"github.com/taoquo/x-master/apps/macos/internal/storage/sqlite"
-	appui "github.com/taoquo/x-master/apps/macos/internal/ui"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/workspace"
+	"github.com/taoquo/trove/apps/macos/internal/idgen"
+	"github.com/taoquo/trove/apps/macos/internal/ports"
+	"github.com/taoquo/trove/apps/macos/internal/storage/sqlite"
+	appui "github.com/taoquo/trove/apps/macos/internal/ui"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/workspace"
 )
 
 // TestCompositionRootRendersWithoutAWindow runs the same wiring start() builds,

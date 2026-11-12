@@ -19,8 +19,8 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 source ../../.toolchain/env.sh >/dev/null 2>&1
 
-APP="build/darwin-arm64/X Bookmark Manager.app"
-BIN="$APP/Contents/MacOS/X Bookmark Manager"
+APP="build/darwin-arm64/trove.app"
+BIN="$APP/Contents/MacOS/trove"
 OUT=../../docs/screenshots/criteria
 UPDATE=0
 [ "${1:-}" = "--update" ] && UPDATE=1
@@ -30,7 +30,7 @@ if [ ! -x "$BIN" ]; then
 fi
 mkdir -p "$OUT"
 
-if pgrep -f "X Bookmark Manager" >/dev/null 2>&1; then
+if pgrep -f "MacOS/trove" >/dev/null 2>&1; then
   echo "  FAIL a build is already running; quit it first (the capture needs a single instance)"
   exit 1
 fi
@@ -47,7 +47,7 @@ for row in "${CASES[@]}"; do
   target="$OUT/$name.png"
   tmp=$(mktemp -t criteria-XXXXXX).png
 
-  XBM_HEADLESS=1 XBM_CAPTURE="$tmp" XBM_CAPTURE_STATE="$state" XBM_CAPTURE_DELAY=6s XBM_CAPTURE_WIDTH="$width" \
+  TROVE_HEADLESS=1 TROVE_CAPTURE="$tmp" TROVE_CAPTURE_STATE="$state" TROVE_CAPTURE_DELAY=6s TROVE_CAPTURE_WIDTH="$width" \
     "$BIN" >/dev/null 2>&1
   if [ ! -s "$tmp" ]; then
     echo "  FAIL $name -- no picture was written"; fail=$((fail + 1)); rm -f "$tmp"; continue

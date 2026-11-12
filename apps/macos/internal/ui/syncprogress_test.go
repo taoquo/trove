@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/xsource"
+	"github.com/taoquo/trove/apps/macos/internal/xsource"
 )
 
 // TestTheProgressLineNamesPagesAndItems covers the sentence under the sync button.

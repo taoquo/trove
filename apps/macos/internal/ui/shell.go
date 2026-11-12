@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/egoist/mygo/ui"
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
 )
 
 // currentViewSnapshot is the filter state a saved view captures.
@@ -199,7 +199,7 @@ func (s *Shell) View(c *ui.Context) {
 	// the settings modal at the same width renders fine. So the entrance value is not the cause,
 	// and this stays only because it is the right thing to do on a path that never animates --
 	// not because it helped.
-	if os.Getenv("XBM_CAPTURE") != "" {
+	if os.Getenv("TROVE_CAPTURE") != "" {
 		reduceMotion = true
 	}
 	reviewEntrance := EntranceProgress(root, "entrance-review",

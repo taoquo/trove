@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // ErrCancelled reports that the caller cancelled the operation. It is not a

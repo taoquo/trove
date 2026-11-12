@@ -38,7 +38,7 @@ test("mountPopup renders english popup copy and the default light theme", async 
 
   await settle()
 
-  assert.match(dom.window.document.body.textContent ?? "", /X Bookmark Manager/)
+  assert.match(dom.window.document.body.textContent ?? "", /trove/)
   assert.match(dom.window.document.body.textContent ?? "", /Workspace entry/)
   assert.match(dom.window.document.body.textContent ?? "", /Local inventory/)
   assert.ok(dom.window.document.body.querySelector('[data-testid="popup-overview-panel"]'))

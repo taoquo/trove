@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // ErrNotPending reports an operation on a suggestion that already has an answer.

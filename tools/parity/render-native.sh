@@ -14,18 +14,18 @@
 # the source render, and the same locale -- and getting one wrong produces a
 # picture that looks plausible and compares against nothing. The fixture's
 # preferences already carry zh-CN, but ApplyCaptureState resets the locale for
-# screenshots, so XBM_CAPTURE_LOCALE is what actually keeps the footer and the
+# screenshots, so TROVE_CAPTURE_LOCALE is what actually keeps the footer and the
 # strings in the language the source render used.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 REPO="$PWD"
 APPS="apps/macos"
-WIDTH=${XBM_PARITY_WIDTH:-1297}
-HEIGHT=${XBM_PARITY_HEIGHT:-808}
-DATA_DIR=${XBM_PARITY_DATA_DIR:-/tmp/xbm-parity-native}
-MEDIA_PORT=${XBM_PARITY_MEDIA_PORT:-8799}
-BIN="$APPS/build/darwin-arm64/X Bookmark Manager.app/Contents/MacOS/X Bookmark Manager"
+WIDTH=${TROVE_PARITY_WIDTH:-1297}
+HEIGHT=${TROVE_PARITY_HEIGHT:-808}
+DATA_DIR=${TROVE_PARITY_DATA_DIR:-/tmp/xbm-parity-native}
+MEDIA_PORT=${TROVE_PARITY_MEDIA_PORT:-8799}
+BIN="$APPS/build/darwin-arm64/trove.app/Contents/MacOS/trove"
 
 STATES=("$@")
 if [ ${#STATES[@]} -eq 0 ]; then
@@ -40,8 +40,8 @@ fi
 
 # LaunchServices would hand a capture to an already running copy of the app, so the
 # picture would be of the old build. Refuse rather than kill, as tools/smoke.sh does.
-if pgrep -f "X Bookmark Manager" >/dev/null 2>&1; then
-  echo "FAIL an instance called 'X Bookmark Manager' is already running"
+if pgrep -f "MacOS/trove" >/dev/null 2>&1; then
+  echo "FAIL an instance called 'trove' is already running"
   echo "     quit it: this would capture that build, not the one just built"
   exit 1
 fi
@@ -80,14 +80,14 @@ for state in "${STATES[@]}"; do
 
   echo "dumping $state at ${WIDTH}x${HEIGHT}"
   bash -c "source .toolchain/env.sh && cd '$APPS' && \
-    XBM_PARITY_DB='$DATA_DIR' XBM_PARITY_OUT='$json' XBM_PARITY_WIDTH='$WIDTH' \
-    XBM_CAPTURE_STATE='$state' XBM_CAPTURE_LOCALE='zh-CN' XBM_CAPTURE_APPEARANCE='$appearance' \
+    TROVE_PARITY_DB='$DATA_DIR' TROVE_PARITY_OUT='$json' TROVE_PARITY_WIDTH='$WIDTH' \
+    TROVE_CAPTURE_STATE='$state' TROVE_CAPTURE_LOCALE='zh-CN' TROVE_CAPTURE_APPEARANCE='$appearance' \
     go test -run TestDumpParityGeometry . -count=1" >/dev/null
 
   echo "capturing $state"
-  XBM_DATA_DIR="$DATA_DIR" XBM_HEADLESS=1 XBM_CAPTURE="$png" \
-    XBM_CAPTURE_STATE="$state" XBM_CAPTURE_LOCALE=zh-CN XBM_CAPTURE_APPEARANCE="$appearance" \
-    XBM_CAPTURE_WIDTH="$WIDTH" XBM_CAPTURE_HEIGHT="$HEIGHT" XBM_CAPTURE_DELAY=4s \
+  TROVE_DATA_DIR="$DATA_DIR" TROVE_HEADLESS=1 TROVE_CAPTURE="$png" \
+    TROVE_CAPTURE_STATE="$state" TROVE_CAPTURE_LOCALE=zh-CN TROVE_CAPTURE_APPEARANCE="$appearance" \
+    TROVE_CAPTURE_WIDTH="$WIDTH" TROVE_CAPTURE_HEIGHT="$HEIGHT" TROVE_CAPTURE_DELAY=4s \
     "$BIN" >/tmp/xbm-parity-capture.log 2>&1
 
   if [ ! -s "$json" ] || [ ! -s "$png" ]; then

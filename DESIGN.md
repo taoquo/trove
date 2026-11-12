@@ -1,4 +1,4 @@
-# x-master Extension UI / 设计说明
+# trove Extension UI / 设计说明
 
 本文档描述的是当前扩展已实现界面的真实设计语言，不是外部参考稿，也不是未来愿景稿。目标是让后续改动基于现状演进，避免继续把视觉判断建立在不相关的 inspiration 上。
 

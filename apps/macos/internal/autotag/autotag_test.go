@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/llm"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/llm"
 )
 
 var base = time.Date(2026, 10, 12, 12, 0, 0, 0, time.UTC)

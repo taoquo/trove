@@ -1,4 +1,4 @@
-// Command macos is x-master's desktop app: a local-first X bookmark manager whose
+// Command macos is trove's desktop app: a local-first X bookmark manager whose
 // interface MyGo draws itself. No webview, no HTML, no JavaScript.
 //
 // The layers below this file are independent of it:
@@ -29,27 +29,27 @@ import (
 	"encoding/json"
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
-	engine "github.com/taoquo/x-master/apps/macos/internal/autotag"
-	"github.com/taoquo/x-master/apps/macos/internal/credentials"
+	engine "github.com/taoquo/trove/apps/macos/internal/autotag"
+	"github.com/taoquo/trove/apps/macos/internal/credentials"
 
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/idgen"
-	"github.com/taoquo/x-master/apps/macos/internal/importexport"
-	"github.com/taoquo/x-master/apps/macos/internal/llm"
-	"github.com/taoquo/x-master/apps/macos/internal/media"
-	"github.com/taoquo/x-master/apps/macos/internal/ports"
-	"github.com/taoquo/x-master/apps/macos/internal/storage/sqlite"
-	appui "github.com/taoquo/x-master/apps/macos/internal/ui"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/settings"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/suggestions"
-	syncer "github.com/taoquo/x-master/apps/macos/internal/usecase/syncer"
-	tagging "github.com/taoquo/x-master/apps/macos/internal/usecase/tagging"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/workspace"
-	"github.com/taoquo/x-master/apps/macos/internal/xsource"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/idgen"
+	"github.com/taoquo/trove/apps/macos/internal/importexport"
+	"github.com/taoquo/trove/apps/macos/internal/llm"
+	"github.com/taoquo/trove/apps/macos/internal/media"
+	"github.com/taoquo/trove/apps/macos/internal/ports"
+	"github.com/taoquo/trove/apps/macos/internal/storage/sqlite"
+	appui "github.com/taoquo/trove/apps/macos/internal/ui"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/settings"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/suggestions"
+	syncer "github.com/taoquo/trove/apps/macos/internal/usecase/syncer"
+	tagging "github.com/taoquo/trove/apps/macos/internal/usecase/tagging"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/workspace"
+	"github.com/taoquo/trove/apps/macos/internal/xsource"
 )
 
 // databaseFile is the SQLite file inside the per-user data directory.
-const databaseFile = "x-master.db"
+const databaseFile = "trove.db"
 
 // mediaCacheDir is where fetched pictures live, under the app's data directory.
 const mediaCacheDir = "media-cache"
@@ -81,15 +81,15 @@ func start() error {
 	if err != nil {
 		return err
 	}
-	// XBM_DATA_DIR points the app at another data directory, and exists because the empty-state
+	// TROVE_DATA_DIR points the app at another data directory, and exists because the empty-state
 	// baseline needs a database with no bookmarks in it. Round 308 could retake six of the eight
 	// spec 12.3 baselines and not the two empty ones: they need zero rows, the seeded database has
 	// eight, and the only way to get zero was to move the user's database aside -- which a capture
 	// has no business doing.
 	//
-	// The same shape as XBM_CAPTURE_HEIGHT, and for the same reason: a screenshot sometimes needs
+	// The same shape as TROVE_CAPTURE_HEIGHT, and for the same reason: a screenshot sometimes needs
 	// an input the running app cannot be asked for.
-	if dir := os.Getenv("XBM_DATA_DIR"); dir != "" {
+	if dir := os.Getenv("TROVE_DATA_DIR"); dir != "" {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return err
 		}
@@ -116,7 +116,7 @@ func start() error {
 	}
 
 	clock := ports.SystemClock{}
-	ids := idgen.New("xm")
+	ids := idgen.New("trove")
 	ctx := context.Background()
 	credentialStore := credentials.NewWithKeychain()
 
@@ -280,16 +280,16 @@ func start() error {
 	//
 	// Round 476: the capture path used to open a window and photograph it, which took focus on the
 	// machine doing the capturing -- and tools/baselines.sh does eight of them in a row. ui.Render
-	// draws the same view without a window, so the app never appears. XBM_HEADLESS asks for it;
+	// draws the same view without a window, so the app never appears. TROVE_HEADLESS asks for it;
 	// without it the window path below is unchanged.
-	if path := os.Getenv("XBM_CAPTURE"); path != "" && os.Getenv("XBM_HEADLESS") != "" {
+	if path := os.Getenv("TROVE_CAPTURE"); path != "" && os.Getenv("TROVE_HEADLESS") != "" {
 		shell.Reload(ctx)
 		applyCaptureState(shell)
 		headlessCapture(shell, path)
 	}
 
 	window := mygo.NewWindow(mygo.WindowOptions{
-		Title:  "X Bookmark Manager",
+		Title:  "trove",
 		Width:  windowWidthFromEnv(),
 		Height: windowHeightFromEnv(),
 		// From the spec's DefaultMetrics, which is the only authority for these two: the
@@ -325,7 +325,7 @@ func start() error {
 		// every gate run put a window in front of whoever was using the machine. Hidden still
 		// creates the window and runs NSApplication, the menu bar and the sync runner, so all four
 		// assertions mean what they meant, and nothing appears.
-		Hidden:  os.Getenv("XBM_SMOKE") != "",
+		Hidden:  os.Getenv("TROVE_SMOKE") != "",
 		Content: ui.View(shell.View),
 	})
 	shell.Attach(window)
@@ -341,7 +341,7 @@ func start() error {
 	// A run the app interrupted is continued when the user's settings still ask for it,
 	// as the extension does at startup. It is gated like every other automatic network
 	// path: a capture and the smoke run are deterministic fixtures.
-	if healed && os.Getenv("XBM_CAPTURE") == "" && os.Getenv("XBM_SMOKE") == "" {
+	if healed && os.Getenv("TROVE_CAPTURE") == "" && os.Getenv("TROVE_SMOKE") == "" {
 		if shell.ResumeInterruptedAutoTag(ctx) {
 			log.Print("continuing the auto-tag run the previous session interrupted")
 		}
@@ -350,7 +350,7 @@ func start() error {
 	// "Sync when the app opens" was stored, shown and read by nothing. Capture
 	// and the smoke run must not touch the network: both are deterministic
 	// fixtures, and a sync would rewrite the database under them.
-	if shell.State().SyncOnLaunch && os.Getenv("XBM_CAPTURE") == "" && os.Getenv("XBM_SMOKE") == "" {
+	if shell.State().SyncOnLaunch && os.Getenv("TROVE_CAPTURE") == "" && os.Getenv("TROVE_SMOKE") == "" {
 		shell.StartSync(ctx)
 	}
 
@@ -551,11 +551,11 @@ func buildMenu(shell *appui.Shell) *mygo.Menu {
 //
 // The three-column behaviour depends on the width -- spec 9.3 puts the boundary at 1400 -- and a
 // screenshot that cannot vary it can only ever check one side of that boundary. tools/panes.sh
-// sets XBM_CAPTURE_WIDTH so the same build can be photographed wide and narrow.
+// sets TROVE_CAPTURE_WIDTH so the same build can be photographed wide and narrow.
 // windowStateKey is the key the window's place is saved under, or empty when a screenshot asked
 // for a width and the saved place would overrule it.
 func windowStateKey() string {
-	if os.Getenv("XBM_CAPTURE_WIDTH") != "" {
+	if os.Getenv("TROVE_CAPTURE_WIDTH") != "" {
 		return ""
 	}
 	return "workspace"
@@ -570,7 +570,7 @@ func windowStateKey() string {
 // grow. Raising the window by 40 points should therefore make the line appear, and that is what
 // this is here to check.
 func windowHeightFromEnv() int {
-	if value := os.Getenv("XBM_CAPTURE_HEIGHT"); value != "" {
+	if value := os.Getenv("TROVE_CAPTURE_HEIGHT"); value != "" {
 		if height, err := strconv.Atoi(value); err == nil && height > 0 {
 			return height
 		}
@@ -580,7 +580,7 @@ func windowHeightFromEnv() int {
 
 func windowWidthFromEnv() int {
 	const fallback = 1180
-	raw := os.Getenv("XBM_CAPTURE_WIDTH")
+	raw := os.Getenv("TROVE_CAPTURE_WIDTH")
 	if raw == "" {
 		return fallback
 	}

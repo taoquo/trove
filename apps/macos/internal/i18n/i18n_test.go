@@ -46,8 +46,10 @@ func TestChineseAndEnglishDiffer(t *testing.T) {
 	zh := New(ZHCN, ZHCN)
 	en := New(EN, EN)
 
-	// If these matched, one catalog would be a copy of the other.
-	for _, key := range []Key{AppName, SidebarAllBookmarks, EmptyLibrary, ActionDelete} {
+	// If these matched, one catalog would be a copy of the other. AppName is not
+	// sampled: "trove" is the product's name in its own lower case, and names do not
+	// translate.
+	for _, key := range []Key{ActionCancel, SidebarAllBookmarks, EmptyLibrary, ActionDelete} {
 		if zh.T(key) == en.T(key) {
 			t.Errorf("key %q is identical in both locales (%q)", key, zh.T(key))
 		}
@@ -169,9 +171,10 @@ func TestAssertCompleteNamesTheMissingKey(t *testing.T) {
 // A value that is legitimately the same in both languages is a proper noun or a symbol,
 // and those are listed here rather than inferred.
 func TestNoEnglishIsLeftInTheChineseCatalogue(t *testing.T) {
-	// Every value that is legitimately the same in both tables, with its reason. Two is
-	// the whole list: a proper noun and a symbol.
+	// Every value that is legitimately the same in both tables, with its reason: a brand
+	// name, a proper noun, a symbol, and one string that is typed rather than read.
 	allowed := map[Key]bool{
+		AppName:         true, // "trove" -- the product's name, lowercase in every language
 		SettingsAPIKey:  true, // "API key" -- the source's zh table holds "API Key" too
 		CreateTagSymbol: true, // "+" is a symbol, not a word
 		// The paste example is literally the two cookie names and the separators

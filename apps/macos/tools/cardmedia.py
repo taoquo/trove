@@ -34,9 +34,9 @@ import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-APP = ROOT / "build/darwin-arm64/X Bookmark Manager.app"
-BIN = APP / "Contents/MacOS/X Bookmark Manager"
-DEMO_DB = Path.home() / "Library/Application Support/X Bookmark Manager/x-master.db"
+APP = ROOT / "build/darwin-arm64/trove.app"
+BIN = APP / "Contents/MacOS/trove"
+DEMO_DB = Path.home() / "Library/Application Support/trove/trove.db"
 DATA = Path("/tmp/xbm-cardmedia-db")
 OUT = ROOT.parent.parent / "docs/screenshots/criteria/card-media-1180.png"
 WIDTH = 1180
@@ -78,7 +78,7 @@ def build_db():
         print(f"cannot run: {DEMO_DB} is missing (launch the app once)", file=sys.stderr)
         return None
     DATA.mkdir(parents=True, exist_ok=True)
-    db_path = DATA / "x-master.db"
+    db_path = DATA / "trove.db"
     shutil.copy2(DEMO_DB, db_path)
 
     cache = DATA / "media-cache"
@@ -111,10 +111,10 @@ def capture():
     OUT.parent.mkdir(parents=True, exist_ok=True)
     if OUT.exists():
         OUT.unlink()
-    env = dict(os.environ, XBM_DATA_DIR=str(DATA), XBM_CAPTURE=str(OUT), XBM_HEADLESS="1",
-               XBM_CAPTURE_DELAY=DELAY, XBM_CAPTURE_WIDTH=str(WIDTH))
+    env = dict(os.environ, TROVE_DATA_DIR=str(DATA), TROVE_CAPTURE=str(OUT), TROVE_HEADLESS="1",
+               TROVE_CAPTURE_DELAY=DELAY, TROVE_CAPTURE_WIDTH=str(WIDTH))
     subprocess.run([str(BIN)], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    subprocess.run(["pkill", "-f", "X Bookmark Manager"], stdout=subprocess.DEVNULL,
+    subprocess.run(["pkill", "-f", "MacOS/trove"], stdout=subprocess.DEVNULL,
                    stderr=subprocess.DEVNULL)
     if not OUT.exists() or OUT.stat().st_size == 0:
         print(f"  FAIL {OUT} was not written", file=sys.stderr)
@@ -130,7 +130,7 @@ def main(argv):
     if build_db() is None:
         return 2
     if args.open:
-        subprocess.run([str(BIN)], env=dict(os.environ, XBM_DATA_DIR=str(DATA)))
+        subprocess.run([str(BIN)], env=dict(os.environ, TROVE_DATA_DIR=str(DATA)))
         return 0
     return capture()
 

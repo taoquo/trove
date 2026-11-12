@@ -16,8 +16,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/taoquo/x-master/apps/macos/internal/credentials/keychain"
-	"github.com/taoquo/x-master/apps/macos/internal/xsource"
+	"github.com/taoquo/trove/apps/macos/internal/credentials/keychain"
+	"github.com/taoquo/trove/apps/macos/internal/xsource"
 )
 
 // Keychain is the subset of the keychain store this package uses. It is an
@@ -37,6 +37,11 @@ type Keychain interface {
 const legacyLLMKeyAccount = "llm.legacy"
 
 // Service is the keychain service name for this app.
+//
+// It keeps the pre-rename identifier on purpose: the service name is the key the user's
+// stored X cookies and model key are filed under, and changing it would make them
+// invisible to the app with no way to find them again. The bundle identifier and the
+// visible name have moved to trove; this one is data, not branding.
 const Service = "com.taoquo.xmaster"
 
 // ErrNoCredential reports that nothing is stored for an account.

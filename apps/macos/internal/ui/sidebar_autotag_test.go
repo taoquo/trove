@@ -8,7 +8,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	engine "github.com/taoquo/x-master/apps/macos/internal/autotag"
+	engine "github.com/taoquo/trove/apps/macos/internal/autotag"
 )
 
 // TestSidebarShowsTheRunProgress covers the block the reference picture puts between the title and

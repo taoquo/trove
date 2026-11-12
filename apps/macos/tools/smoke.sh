@@ -4,7 +4,7 @@
 #
 # The assertion it replaces was run by hand and read:
 #
-#     open "$APP"; sleep 6; pgrep -f "X Bookmark Manager" && echo alive
+#     open "$APP"; sleep 6; pgrep -f "MacOS/trove" && echo alive
 #
 # That passes whenever *a* process of that name is alive -- including one left over from an
 # earlier run. Round 237 spent a round chasing a fix that had worked, because `open` on a
@@ -27,9 +27,12 @@
 set -u
 cd "$(dirname "$0")/.."
 
-APP="build/darwin-arm64/X Bookmark Manager.app"
-BIN="$APP/Contents/MacOS/X Bookmark Manager"
-NAME="X Bookmark Manager"
+APP="build/darwin-arm64/trove.app"
+BIN="$APP/Contents/MacOS/trove"
+NAME="trove"
+# Match the executable, not the word: "trove" also appears in this checkout's own
+# path, and pgrep -f would then find the shell running this script.
+PATTERN="MacOS/$NAME"
 LOG=$(mktemp)
 
 pass=0
@@ -46,7 +49,7 @@ fi
 
 # 1. Nothing of that name is running. A leftover would make every later assertion meaningless,
 #    so it is reported rather than killed: whatever it is, this script did not start it.
-before=$(pgrep -f "$NAME" | tr '\n' ' ')
+before=$(pgrep -f "$PATTERN" | tr '\n' ' ')
 if [ -n "$before" ]; then
   note FAIL "a process named '$NAME' was already running (pids: $before)"
   echo "       this is the condition that made the old launch check pass while testing an old binary"
@@ -57,11 +60,11 @@ note ok "no '$NAME' process before the launch"
 
 # 2. Launch the binary itself, so the pid is this build's.
 #
-# XBM_SMOKE asks for the window to be created but not shown. The three things below all still hold:
+# TROVE_SMOKE asks for the window to be created but not shown. The three things below all still hold:
 # the process exists, it is single-instance, and quitting runs the quit path. What stops happening
 # is the window appearing in front of whoever is using the machine -- which it did on every gate
 # run until round 482.
-XBM_SMOKE=1 "$BIN" >"$LOG" 2>&1 &
+TROVE_SMOKE=1 "$BIN" >"$LOG" 2>&1 &
 started=$!
 sleep 7
 
@@ -74,7 +77,7 @@ fi
 
 # 3. Exactly one. The menu bar and the sync runner are single-instance by design, and a second
 #    copy of the binary is the simplest way to see whether that is enforced or assumed.
-count=$(pgrep -f "$NAME" | wc -l | tr -d ' ')
+count=$(pgrep -f "$PATTERN" | wc -l | tr -d ' ')
 if [ "$count" = "1" ]; then
   note ok "exactly one process"
 else

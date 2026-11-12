@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // ErrSchemaTooNew is returned when the file was written by a newer build.

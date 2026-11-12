@@ -44,7 +44,7 @@
 - [ ] 同类已 grep；只有一个时，在证据里写为什么
 - [ ] `gate.sh` 全绿，且跑在要提交的那棵树上；跑完再改代码必须重跑
 - [ ] 碰 X / LLM / Keychain 的切片真跑一次；没跑就写 `not tried` 和原因
-- [ ] visual：固定环境捕获（`XBM_*`）+ 人审
+- [ ] visual：固定环境捕获（`TROVE_*`）+ 人审
 - [ ] commit body 带证据块
 - [ ] `board.md` 已更新；`done` 必须有证据
 - [ ] slice 车道写复盘三问；fix 车道可跳过
@@ -74,7 +74,7 @@ Not tried: <没跑什么、为什么> / none
 ## 5. 红线
 
 - **密钥、cookie 不进截图、日志、commit。** Keychain 只查存在性，不读值、不打印。
-- **不用 `open` 启动应用。** 直接跑 `build/darwin-arm64/X Bookmark Manager.app/Contents/MacOS/X Bookmark Manager`；
+- **不用 `open` 启动应用。** 直接跑 `build/darwin-arm64/trove.app/Contents/MacOS/trove`；
   有实例在跑时 gate 会拒绝。
 - **不 push。** 提交即可，远端由用户决定。
 - **不改生成物**（`build/`、`build/chrome-mv3`）。

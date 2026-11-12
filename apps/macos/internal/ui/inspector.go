@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/egoist/mygo/ui"
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/workspace"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/workspace"
 )
 
 // detailOverlay draws the detail, which the source renders as a modal rather than as a column.
@@ -24,7 +24,7 @@ func (s *Shell) detailOverlay(c *ui.Context, theme *ui.Theme, rail RailTokens, e
 	// scroll region never becomes scrollable -- the source says max-height with the content
 	// scrolling, and in CSS that works because a max-height box is given its content's height
 	// capped at the maximum. The change was made on that reasoning and it did two things: the
-	// overlay stopped appearing at all (the capture with XBM_CAPTURE_STATE=detail came back as
+	// overlay stopped appearing at all (the capture with TROVE_CAPTURE_STATE=detail came back as
 	// the bare grid), and scrolling still did not work. So it is undone. What replaced it is the
 	// note on TestTheInspectorOwnsAScrollRegion, which records what was tried.
 	width := float32(DetailCardMaxWidth)

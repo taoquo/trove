@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
-	engine "github.com/taoquo/x-master/apps/macos/internal/autotag"
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	syncer "github.com/taoquo/x-master/apps/macos/internal/usecase/syncer"
-	tagging "github.com/taoquo/x-master/apps/macos/internal/usecase/tagging"
-	"github.com/taoquo/x-master/apps/macos/internal/xsource"
+	engine "github.com/taoquo/trove/apps/macos/internal/autotag"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	syncer "github.com/taoquo/trove/apps/macos/internal/usecase/syncer"
+	tagging "github.com/taoquo/trove/apps/macos/internal/usecase/tagging"
+	"github.com/taoquo/trove/apps/macos/internal/xsource"
 )
 
 // UseSyncer attaches the sync service.

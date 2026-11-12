@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	engine "github.com/taoquo/x-master/apps/macos/internal/autotag"
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/ports"
-	"github.com/taoquo/x-master/apps/macos/internal/storage/sqlite"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/tagging"
+	engine "github.com/taoquo/trove/apps/macos/internal/autotag"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/ports"
+	"github.com/taoquo/trove/apps/macos/internal/storage/sqlite"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/tagging"
 )
 
 func autoTagRepos(db *sqlite.DB) ports.Repositories {

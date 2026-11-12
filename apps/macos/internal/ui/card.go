@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/egoist/mygo/ui"
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/workspace"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/workspace"
 )
 
 func (s *Shell) bookmarkCard(c *ui.Context, theme *ui.Theme, rail RailTokens, index int, halfWidth bool) {

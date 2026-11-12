@@ -6,13 +6,13 @@ import (
 	"testing"
 
 	"github.com/egoist/mygo/ui"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
 )
 
 // TestTheSettingsPanelDrawsItsSections is the content half of verifying a surface a screenshot
 // cannot reach.
 //
-// Round 221 confirmed what round 197 found for the detail overlay: XBM_CAPTURE_STATE=settings
+// Round 221 confirmed what round 197 found for the detail overlay: TROVE_CAPTURE_STATE=settings
 // produces a picture byte-identical to the plain window, because a panel's visibility comes
 // from EntranceProgress and root.Animate does not advance on the capture path. So the panel's
 // appearance cannot be photographed -- and its contents can still be read, which is what

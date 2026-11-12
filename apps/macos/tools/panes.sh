@@ -23,9 +23,10 @@
 set -u
 cd "$(dirname "$0")/.."
 
-APP="build/darwin-arm64/X Bookmark Manager.app"
-BIN="$APP/Contents/MacOS/X Bookmark Manager"
-NAME="X Bookmark Manager"
+APP="build/darwin-arm64/trove.app"
+BIN="$APP/Contents/MacOS/trove"
+NAME="trove"
+PATTERN="MacOS/$NAME"
 
 if [ ! -x "$BIN" ]; then
   echo "  FAIL no binary at $BIN -- run: go tool mygo build -skip-dmg"
@@ -34,7 +35,7 @@ fi
 
 # A leftover instance would be captured instead of this build, which is the failure mode that
 # made round 237's smoke test lie. Refuse rather than kill it.
-before=$(pgrep -f "$NAME" | tr '\n' ' ')
+before=$(pgrep -f "$PATTERN" | tr '\n' ' ')
 if [ -n "$before" ]; then
   echo "  FAIL a process named '$NAME' was already running (pids: $before)"
   echo "       quit it and run again: this would capture the old build"
@@ -59,23 +60,23 @@ trap 'rm -f "$narrow_png" "$wide_png" "$alone_png"' EXIT
 # never got and the sidebar came out 234 instead of 280. Round 480 removed the three-column layout,
 # and with it that difference: the same three checks now pass on ui.Render's frames, so nothing in
 # the gate opens a window any more.
-XBM_HEADLESS=1 XBM_CAPTURE="$narrow_png" XBM_CAPTURE_STATE=detail XBM_CAPTURE_DELAY=5s \
-  XBM_CAPTURE_WIDTH=1180 "$BIN" >/dev/null 2>&1
-# No XBM_CAPTURE_STATE=detail: round 480 made the detail an overlay at every width, and an
+TROVE_HEADLESS=1 TROVE_CAPTURE="$narrow_png" TROVE_CAPTURE_STATE=detail TROVE_CAPTURE_DELAY=5s \
+  TROVE_CAPTURE_WIDTH=1180 "$BIN" >/dev/null 2>&1
+# No TROVE_CAPTURE_STATE=detail: round 480 made the detail an overlay at every width, and an
 # overlay's backdrop dims the whole window -- which put the sidebar's separator below this check's
 # contrast threshold in bands 1 and 2 and made the check fail on a boundary that was there. What
 # this capture is for is the workspace's own two panes.
-XBM_HEADLESS=1 XBM_CAPTURE="$wide_png" XBM_CAPTURE_DELAY=5s \
-  XBM_CAPTURE_WIDTH=1500 "$BIN" >/dev/null 2>&1
+TROVE_HEADLESS=1 TROVE_CAPTURE="$wide_png" TROVE_CAPTURE_DELAY=5s \
+  TROVE_CAPTURE_WIDTH=1500 "$BIN" >/dev/null 2>&1
 # The narrow window with no detail at all. This is what the check for "the list keeps its width"
 # needs: with the detail open at 1180 the overlay covers the list, so its extent cannot be read
 # from that picture. Without it the list is unoccluded and its right edge is measurable.
-XBM_HEADLESS=1 XBM_CAPTURE="$alone_png" XBM_CAPTURE_DELAY=5s \
-  XBM_CAPTURE_WIDTH=1180 "$BIN" >/dev/null 2>&1
+TROVE_HEADLESS=1 TROVE_CAPTURE="$alone_png" TROVE_CAPTURE_DELAY=5s \
+  TROVE_CAPTURE_WIDTH=1180 "$BIN" >/dev/null 2>&1
 # The wide window WITH the detail, to assert there is no third pane in it.
 overlay_png=$(mktemp -t xbm-panes-overlay).png
-XBM_HEADLESS=1 XBM_CAPTURE="$overlay_png" XBM_CAPTURE_STATE=detail XBM_CAPTURE_DELAY=5s \
-  XBM_CAPTURE_WIDTH=1500 "$BIN" >/dev/null 2>&1
+TROVE_HEADLESS=1 TROVE_CAPTURE="$overlay_png" TROVE_CAPTURE_STATE=detail TROVE_CAPTURE_DELAY=5s \
+  TROVE_CAPTURE_WIDTH=1500 "$BIN" >/dev/null 2>&1
 
 if [ ! -s "$narrow_png" ] || [ ! -s "$wide_png" ]; then
   echo "  FAIL a capture wrote nothing (narrow $(wc -c <"$narrow_png" 2>/dev/null || echo 0) bytes,"

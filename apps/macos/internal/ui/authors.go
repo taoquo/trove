@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // toggleAuthorFilter adds or removes an author from the narrowing set.

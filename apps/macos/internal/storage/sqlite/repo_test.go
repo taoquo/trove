@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 var clockBase = time.Date(2026, 10, 12, 12, 0, 0, 0, time.UTC)

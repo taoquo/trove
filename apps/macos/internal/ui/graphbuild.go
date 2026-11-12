@@ -3,7 +3,7 @@ package ui
 import (
 	"context"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
 )
 
 // RebuildGraph recomputes the relation graph from the current library.

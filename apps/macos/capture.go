@@ -12,28 +12,28 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
-	appui "github.com/taoquo/x-master/apps/macos/internal/ui"
+	appui "github.com/taoquo/trove/apps/macos/internal/ui"
 )
 
-// captureState is the panel XBM_CAPTURE_STATE asks for before the picture is taken.
+// captureState is the panel TROVE_CAPTURE_STATE asks for before the picture is taken.
 //
 // It exists because the states worth photographing are the ones behind an interaction: the
 // detail overlay, the settings panel, the tag library. The capture fires once, on the first
 // frames, so without this there is no way to see them without a person at the screen.
 //
-// It is inert unless XBM_CAPTURE is set, and it is read here rather than in the shell so
+// It is inert unless TROVE_CAPTURE is set, and it is read here rather than in the shell so
 // the only reader of these variables stays in this file.
 func captureState() string {
-	if os.Getenv("XBM_CAPTURE") == "" {
+	if os.Getenv("TROVE_CAPTURE") == "" {
 		return ""
 	}
-	return os.Getenv("XBM_CAPTURE_STATE")
+	return os.Getenv("TROVE_CAPTURE_STATE")
 }
 
 // settleAfterState is how long the redraw a capture state asked for is given.
 const settleAfterState = 900 * time.Millisecond
 
-// captureForReview writes a PNG of the window and quits, when XBM_CAPTURE names a file.
+// captureForReview writes a PNG of the window and quits, when TROVE_CAPTURE names a file.
 //
 // This exists because comparing the replication against the source needs pictures. The
 // extension's options page can be photographed with headless Chrome; this is the other
@@ -42,9 +42,9 @@ const settleAfterState = 900 * time.Millisecond
 //
 // It is inert unless the variable is set, so the app's normal start is unchanged.
 //
-//	XBM_CAPTURE=/tmp/go.png XBM_CAPTURE_DELAY=3s ./X\ Bookmark\ Manager.app/Contents/MacOS/x-bookmark-manager
+//	TROVE_CAPTURE=/tmp/go.png TROVE_CAPTURE_DELAY=3s ./X\ Bookmark\ Manager.app/Contents/MacOS/x-bookmark-manager
 func captureForReview(window *mygo.Window, shell *appui.Shell) {
-	path := os.Getenv("XBM_CAPTURE")
+	path := os.Getenv("TROVE_CAPTURE")
 	if path == "" {
 		return
 	}
@@ -52,10 +52,10 @@ func captureForReview(window *mygo.Window, shell *appui.Shell) {
 	// The first frames are the entrance animation, and the data load finishes after them.
 	// Waiting past both is what makes the picture comparable to the source's.
 	delay := 3 * time.Second
-	if raw := os.Getenv("XBM_CAPTURE_DELAY"); raw != "" {
+	if raw := os.Getenv("TROVE_CAPTURE_DELAY"); raw != "" {
 		parsed, err := time.ParseDuration(raw)
 		if err != nil {
-			log.Printf("XBM_CAPTURE_DELAY %q is not a duration; using %s", raw, delay)
+			log.Printf("TROVE_CAPTURE_DELAY %q is not a duration; using %s", raw, delay)
 		} else {
 			delay = parsed
 		}
@@ -111,7 +111,7 @@ func captureForReview(window *mygo.Window, shell *appui.Shell) {
 	}()
 }
 
-// applyCaptureState opens the panel XBM_CAPTURE_STATE names.
+// applyCaptureState opens the panel TROVE_CAPTURE_STATE names.
 //
 // Called by start() after the first read has landed and before the window's content is built
 // for the first time, which is the only moment at which this can take effect: on the capture
@@ -123,7 +123,7 @@ func applyCaptureState(shell *appui.Shell) bool {
 	applied := false
 	if state := captureState(); state != "" {
 		if !shell.ApplyCaptureState(state) {
-			log.Printf("XBM_CAPTURE_STATE %q is not a known state", state)
+			log.Printf("TROVE_CAPTURE_STATE %q is not a known state", state)
 			return false
 		}
 		applied = true
@@ -134,13 +134,13 @@ func applyCaptureState(shell *appui.Shell) bool {
 	// it exists to keep one capture from inheriting the last one's preferences. Independent of the
 	// state, because most of the eight baselines name no state at all and the Chinese layout is
 	// exactly what those need to show.
-	if locale := os.Getenv("XBM_CAPTURE_LOCALE"); locale != "" {
+	if locale := os.Getenv("TROVE_CAPTURE_LOCALE"); locale != "" {
 		shell.ApplyCaptureLocale(locale)
 		applied = true
 	}
 	// The appearance, pinned for the same reason: the reset above leaves it "system", which is
 	// the machine's own theme, and the parity renditions of the extension are light.
-	if appearance := os.Getenv("XBM_CAPTURE_APPEARANCE"); appearance != "" {
+	if appearance := os.Getenv("TROVE_CAPTURE_APPEARANCE"); appearance != "" {
 		shell.ApplyCaptureAppearance(appearance)
 		applied = true
 	}
@@ -173,13 +173,13 @@ func applyCaptureState(shell *appui.Shell) bool {
 // covered by their own capture states and by ui.Tester in the tests.
 func headlessCapture(shell *appui.Shell, path string) {
 	width := 1400
-	if raw := os.Getenv("XBM_CAPTURE_WIDTH"); raw != "" {
+	if raw := os.Getenv("TROVE_CAPTURE_WIDTH"); raw != "" {
 		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
 			width = n
 		}
 	}
 	height := 760
-	if raw := os.Getenv("XBM_CAPTURE_HEIGHT"); raw != "" {
+	if raw := os.Getenv("TROVE_CAPTURE_HEIGHT"); raw != "" {
 		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
 			height = n
 		}

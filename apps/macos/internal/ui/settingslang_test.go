@@ -5,7 +5,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
 )
 
 // TestTheSidebarLanguageChipRelabelsTheSettingsPage pins the two ways into the language.
@@ -16,7 +16,7 @@ import (
 // not, so switching the language from the footer while Settings was open left the theme
 // row reading "Light" inside an otherwise Chinese page, and the language row still
 // claiming "English" was the current choice. Round 23 found this by walking every screen
-// in both languages; the capture path cannot show it, because XBM_CAPTURE_APPEARANCE
+// in both languages; the capture path cannot show it, because TROVE_CAPTURE_APPEARANCE
 // re-derives the labels after the language is applied.
 func TestTheSidebarLanguageChipRelabelsTheSettingsPage(t *testing.T) {
 	shell, _ := newShell(t)

@@ -24,7 +24,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/taoquo/x-master/apps/macos/internal/netproxy"
+	"github.com/taoquo/trove/apps/macos/internal/netproxy"
 )
 
 // The fetcher's limits.

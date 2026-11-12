@@ -3,10 +3,10 @@ package ui
 import (
 	"context"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/netproxy"
-	"github.com/taoquo/x-master/apps/macos/internal/xsource"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/netproxy"
+	"github.com/taoquo/trove/apps/macos/internal/xsource"
 )
 
 // XProbe is one real bookmarks request, made to answer "do these cookies work

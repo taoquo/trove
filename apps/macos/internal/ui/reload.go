@@ -4,10 +4,10 @@ import (
 	"context"
 	"slices"
 
-	"github.com/taoquo/x-master/apps/macos/internal/domain"
-	"github.com/taoquo/x-master/apps/macos/internal/i18n"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/suggestions"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/workspace"
+	"github.com/taoquo/trove/apps/macos/internal/domain"
+	"github.com/taoquo/trove/apps/macos/internal/i18n"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/suggestions"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/workspace"
 )
 
 // A workspace refresh is one read of everything the page draws: the result page, the

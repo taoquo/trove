@@ -23,7 +23,7 @@ import (
 
 	"github.com/steipete/sweetcookie"
 
-	"github.com/taoquo/x-master/apps/macos/internal/xsource"
+	"github.com/taoquo/trove/apps/macos/internal/xsource"
 )
 
 // Browser read failures.

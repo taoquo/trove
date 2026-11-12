@@ -7,7 +7,7 @@ package main
 // same fixture database, at the same size. tools/parity/compare.py then reports
 // the distance between the two instead of asking a person to eyeball two pictures.
 //
-// It is inert unless XBM_PARITY_DB and XBM_PARITY_OUT are set, because it needs
+// It is inert unless TROVE_PARITY_DB and TROVE_PARITY_OUT are set, because it needs
 // a database seeded by cmd/seed and it writes a file -- neither belongs in a
 // normal go test run.
 
@@ -21,14 +21,14 @@ import (
 	"time"
 
 	"github.com/egoist/mygo/ui"
-	"github.com/taoquo/x-master/apps/macos/internal/idgen"
-	"github.com/taoquo/x-master/apps/macos/internal/media"
-	"github.com/taoquo/x-master/apps/macos/internal/ports"
-	"github.com/taoquo/x-master/apps/macos/internal/storage/sqlite"
-	appui "github.com/taoquo/x-master/apps/macos/internal/ui"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/settings"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/suggestions"
-	"github.com/taoquo/x-master/apps/macos/internal/usecase/workspace"
+	"github.com/taoquo/trove/apps/macos/internal/idgen"
+	"github.com/taoquo/trove/apps/macos/internal/media"
+	"github.com/taoquo/trove/apps/macos/internal/ports"
+	"github.com/taoquo/trove/apps/macos/internal/storage/sqlite"
+	appui "github.com/taoquo/trove/apps/macos/internal/ui"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/settings"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/suggestions"
+	"github.com/taoquo/trove/apps/macos/internal/usecase/workspace"
 )
 
 type parityText struct {
@@ -40,10 +40,10 @@ type parityText struct {
 }
 
 func TestDumpParityGeometry(t *testing.T) {
-	dbPath := os.Getenv("XBM_PARITY_DB")
-	outPath := os.Getenv("XBM_PARITY_OUT")
+	dbPath := os.Getenv("TROVE_PARITY_DB")
+	outPath := os.Getenv("TROVE_PARITY_OUT")
 	if dbPath == "" || outPath == "" {
-		t.Skip("set XBM_PARITY_DB and XBM_PARITY_OUT to dump the parity geometry")
+		t.Skip("set TROVE_PARITY_DB and TROVE_PARITY_OUT to dump the parity geometry")
 	}
 
 	db, err := sqlite.Open(filepath.Join(dbPath, databaseFile))
@@ -81,7 +81,7 @@ func TestDumpParityGeometry(t *testing.T) {
 	}
 
 	width, height := 1297, 808
-	if raw := os.Getenv("XBM_PARITY_WIDTH"); raw != "" {
+	if raw := os.Getenv("TROVE_PARITY_WIDTH"); raw != "" {
 		if parsed, err := strconv.Atoi(raw); err == nil {
 			width = parsed
 		}
@@ -113,13 +113,13 @@ func TestDumpParityGeometry(t *testing.T) {
 	// ApplyCaptureState resets the locale as its first act, so the language has to be applied
 	// after it, exactly as capture.go does -- otherwise the dump draws a Chinese page whose
 	// footer chip says "EN" because state.Locale was cleared while the translator was not.
-	if state := os.Getenv("XBM_CAPTURE_STATE"); state != "" {
+	if state := os.Getenv("TROVE_CAPTURE_STATE"); state != "" {
 		shell.ApplyCaptureState(state)
 	}
-	if locale := os.Getenv("XBM_CAPTURE_LOCALE"); locale != "" {
+	if locale := os.Getenv("TROVE_CAPTURE_LOCALE"); locale != "" {
 		shell.ApplyCaptureLocale(locale)
 	}
-	if appearance := os.Getenv("XBM_CAPTURE_APPEARANCE"); appearance != "" {
+	if appearance := os.Getenv("TROVE_CAPTURE_APPEARANCE"); appearance != "" {
 		shell.ApplyCaptureAppearance(appearance)
 	}
 	// Rebuild with the state in place. Several frames, because opening the detail starts the

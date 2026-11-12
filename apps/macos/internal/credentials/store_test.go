@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/taoquo/x-master/apps/macos/internal/credentials/keychain"
-	"github.com/taoquo/x-master/apps/macos/internal/xsource"
+	"github.com/taoquo/trove/apps/macos/internal/credentials/keychain"
+	"github.com/taoquo/trove/apps/macos/internal/xsource"
 )
 
 // fakeKeychain is an in-memory keychain.
