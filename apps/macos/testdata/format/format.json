@@ -1,0 +1,790 @@
+{
+  "generatedFrom": "src/options/utils.ts",
+  "compact": [
+    {
+      "locale": "en",
+      "value": 0,
+      "expected": "0"
+    },
+    {
+      "locale": "en",
+      "value": 1,
+      "expected": "1"
+    },
+    {
+      "locale": "en",
+      "value": 2,
+      "expected": "2"
+    },
+    {
+      "locale": "en",
+      "value": 9,
+      "expected": "9"
+    },
+    {
+      "locale": "en",
+      "value": 10,
+      "expected": "10"
+    },
+    {
+      "locale": "en",
+      "value": 99,
+      "expected": "99"
+    },
+    {
+      "locale": "en",
+      "value": 100,
+      "expected": "100"
+    },
+    {
+      "locale": "en",
+      "value": 999,
+      "expected": "999"
+    },
+    {
+      "locale": "en",
+      "value": 1000,
+      "expected": "1K"
+    },
+    {
+      "locale": "en",
+      "value": 1001,
+      "expected": "1K"
+    },
+    {
+      "locale": "en",
+      "value": 1234,
+      "expected": "1.2K"
+    },
+    {
+      "locale": "en",
+      "value": 9999,
+      "expected": "10K"
+    },
+    {
+      "locale": "en",
+      "value": 10000,
+      "expected": "10K"
+    },
+    {
+      "locale": "en",
+      "value": 12345,
+      "expected": "12.3K"
+    },
+    {
+      "locale": "en",
+      "value": 99999,
+      "expected": "100K"
+    },
+    {
+      "locale": "en",
+      "value": 100000,
+      "expected": "100K"
+    },
+    {
+      "locale": "en",
+      "value": 123456,
+      "expected": "123.5K"
+    },
+    {
+      "locale": "en",
+      "value": 999999,
+      "expected": "1M"
+    },
+    {
+      "locale": "en",
+      "value": 1000000,
+      "expected": "1M"
+    },
+    {
+      "locale": "en",
+      "value": 1234567,
+      "expected": "1.2M"
+    },
+    {
+      "locale": "en",
+      "value": 9999999,
+      "expected": "10M"
+    },
+    {
+      "locale": "en",
+      "value": 12345678,
+      "expected": "12.3M"
+    },
+    {
+      "locale": "en",
+      "value": 999999999,
+      "expected": "1B"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 0,
+      "expected": "0"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 1,
+      "expected": "1"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 2,
+      "expected": "2"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 9,
+      "expected": "9"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 10,
+      "expected": "10"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 99,
+      "expected": "99"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 100,
+      "expected": "100"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 999,
+      "expected": "999"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 1000,
+      "expected": "1000"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 1001,
+      "expected": "1001"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 1234,
+      "expected": "1234"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 9999,
+      "expected": "9999"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 10000,
+      "expected": "1万"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 12345,
+      "expected": "1.2万"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 99999,
+      "expected": "10万"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 100000,
+      "expected": "10万"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 123456,
+      "expected": "12.3万"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 999999,
+      "expected": "100万"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 1000000,
+      "expected": "100万"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 1234567,
+      "expected": "123.5万"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 9999999,
+      "expected": "1000万"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 12345678,
+      "expected": "1234.6万"
+    },
+    {
+      "locale": "zh-CN",
+      "value": 999999999,
+      "expected": "10亿"
+    }
+  ],
+  "truncated": [
+    {
+      "length": 0,
+      "expectedLength": 0,
+      "expectedTail": ""
+    },
+    {
+      "length": 1,
+      "expectedLength": 1,
+      "expectedTail": "a"
+    },
+    {
+      "length": 118,
+      "expectedLength": 118,
+      "expectedTail": "xxxx"
+    },
+    {
+      "length": 119,
+      "expectedLength": 119,
+      "expectedTail": "xxxx"
+    },
+    {
+      "length": 120,
+      "expectedLength": 120,
+      "expectedTail": "xxxx"
+    },
+    {
+      "length": 121,
+      "expectedLength": 122,
+      "expectedTail": "x..."
+    },
+    {
+      "length": 200,
+      "expectedLength": 122,
+      "expectedTail": "x..."
+    }
+  ],
+  "tagCases": [
+    {
+      "viewMode": "grid",
+      "count": 0,
+      "expected": []
+    },
+    {
+      "viewMode": "grid",
+      "count": 1,
+      "expected": [
+        "t0"
+      ]
+    },
+    {
+      "viewMode": "grid",
+      "count": 2,
+      "expected": [
+        "t0",
+        "t1"
+      ]
+    },
+    {
+      "viewMode": "grid",
+      "count": 3,
+      "expected": [
+        "t0",
+        "t1",
+        "t2"
+      ]
+    },
+    {
+      "viewMode": "grid",
+      "count": 5,
+      "expected": [
+        "t0",
+        "t1",
+        "t2",
+        "t3",
+        "t4"
+      ]
+    },
+    {
+      "viewMode": "grid",
+      "count": 12,
+      "expected": [
+        "t0",
+        "t1",
+        "t2",
+        "t3",
+        "t4",
+        "t5",
+        "t6",
+        "t7",
+        "t8",
+        "t9",
+        "t10",
+        "t11"
+      ]
+    },
+    {
+      "viewMode": "list",
+      "count": 0,
+      "expected": []
+    },
+    {
+      "viewMode": "list",
+      "count": 1,
+      "expected": [
+        "t0"
+      ]
+    },
+    {
+      "viewMode": "list",
+      "count": 2,
+      "expected": [
+        "t0",
+        "t1"
+      ]
+    },
+    {
+      "viewMode": "list",
+      "count": 3,
+      "expected": [
+        "t0",
+        "t1",
+        "+1"
+      ]
+    },
+    {
+      "viewMode": "list",
+      "count": 5,
+      "expected": [
+        "t0",
+        "t1",
+        "+3"
+      ]
+    },
+    {
+      "viewMode": "list",
+      "count": 12,
+      "expected": [
+        "t0",
+        "t1",
+        "+10"
+      ]
+    }
+  ],
+  "videoCases": [
+    {
+      "type": "video",
+      "expected": true
+    },
+    {
+      "type": "animated_gif",
+      "expected": true
+    },
+    {
+      "type": "photo",
+      "expected": false
+    },
+    {
+      "type": "image",
+      "expected": false
+    },
+    {
+      "type": "",
+      "expected": false
+    },
+    {
+      "type": null,
+      "expected": false
+    }
+  ],
+  "timestampCases": [
+    {
+      "value": null,
+      "locale": "en",
+      "expected": "Not synced yet"
+    },
+    {
+      "value": null,
+      "locale": "zh-CN",
+      "expected": "尚未同步"
+    }
+  ],
+  "densityCases": [
+    {
+      "length": 0,
+      "hasMedia": false,
+      "hasTags": false,
+      "copyDensityClass": "is-list-1line",
+      "templateClass": "options-result-card-list-template-compact"
+    },
+    {
+      "length": 1,
+      "hasMedia": false,
+      "hasTags": false,
+      "copyDensityClass": "is-list-1line",
+      "templateClass": "options-result-card-list-template-compact"
+    },
+    {
+      "length": 47,
+      "hasMedia": false,
+      "hasTags": false,
+      "copyDensityClass": "is-list-1line",
+      "templateClass": "options-result-card-list-template-compact"
+    },
+    {
+      "length": 48,
+      "hasMedia": false,
+      "hasTags": false,
+      "copyDensityClass": "is-list-1line",
+      "templateClass": "options-result-card-list-template-compact"
+    },
+    {
+      "length": 49,
+      "hasMedia": false,
+      "hasTags": false,
+      "copyDensityClass": "is-list-3line",
+      "templateClass": "options-result-card-list-template-default"
+    },
+    {
+      "length": 100,
+      "hasMedia": false,
+      "hasTags": false,
+      "copyDensityClass": "is-list-3line",
+      "templateClass": "options-result-card-list-template-default"
+    },
+    {
+      "length": 239,
+      "hasMedia": false,
+      "hasTags": false,
+      "copyDensityClass": "is-list-3line",
+      "templateClass": "options-result-card-list-template-default"
+    },
+    {
+      "length": 240,
+      "hasMedia": false,
+      "hasTags": false,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-default"
+    },
+    {
+      "length": 241,
+      "hasMedia": false,
+      "hasTags": false,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-default"
+    },
+    {
+      "length": 1000,
+      "hasMedia": false,
+      "hasTags": false,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-default"
+    },
+    {
+      "length": 0,
+      "hasMedia": false,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-tagged"
+    },
+    {
+      "length": 1,
+      "hasMedia": false,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-tagged"
+    },
+    {
+      "length": 47,
+      "hasMedia": false,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-tagged"
+    },
+    {
+      "length": 48,
+      "hasMedia": false,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-tagged"
+    },
+    {
+      "length": 49,
+      "hasMedia": false,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-tagged"
+    },
+    {
+      "length": 100,
+      "hasMedia": false,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-tagged"
+    },
+    {
+      "length": 239,
+      "hasMedia": false,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-tagged"
+    },
+    {
+      "length": 240,
+      "hasMedia": false,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-tagged"
+    },
+    {
+      "length": 241,
+      "hasMedia": false,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-tagged"
+    },
+    {
+      "length": 1000,
+      "hasMedia": false,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-tagged"
+    },
+    {
+      "length": 0,
+      "hasMedia": true,
+      "hasTags": false,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 1,
+      "hasMedia": true,
+      "hasTags": false,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 47,
+      "hasMedia": true,
+      "hasTags": false,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 48,
+      "hasMedia": true,
+      "hasTags": false,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 49,
+      "hasMedia": true,
+      "hasTags": false,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 100,
+      "hasMedia": true,
+      "hasTags": false,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 239,
+      "hasMedia": true,
+      "hasTags": false,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 240,
+      "hasMedia": true,
+      "hasTags": false,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 241,
+      "hasMedia": true,
+      "hasTags": false,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 1000,
+      "hasMedia": true,
+      "hasTags": false,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 0,
+      "hasMedia": true,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 1,
+      "hasMedia": true,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 47,
+      "hasMedia": true,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 48,
+      "hasMedia": true,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 49,
+      "hasMedia": true,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 100,
+      "hasMedia": true,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 239,
+      "hasMedia": true,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 240,
+      "hasMedia": true,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 241,
+      "hasMedia": true,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    },
+    {
+      "length": 1000,
+      "hasMedia": true,
+      "hasTags": true,
+      "copyDensityClass": "is-list-2line",
+      "templateClass": "options-result-card-list-template-media"
+    }
+  ],
+  "trimCases": [
+    {
+      "text": "   ",
+      "hasMedia": false,
+      "hasTags": false,
+      "expected": "is-list-1line"
+    },
+    {
+      "text": "                                                            short",
+      "hasMedia": false,
+      "hasTags": false,
+      "expected": "is-list-1line"
+    }
+  ],
+  "animationUses": [
+    {
+      "selector": ".options-detail-backdrop",
+      "keyframes": "options-fade-in",
+      "durationMs": 210,
+      "curve": "cubic-bezier(0.22, 1, 0.36, 1)"
+    },
+    {
+      "selector": ".options-detail-focus-card",
+      "keyframes": "options-detail-card-in",
+      "durationMs": 220,
+      "curve": "cubic-bezier(0.22, 1, 0.36, 1)"
+    },
+    {
+      "selector": ".options-detail-toast",
+      "keyframes": "options-detail-toast-in",
+      "durationMs": 180,
+      "curve": "cubic-bezier(0.22, 1, 0.36, 1)"
+    },
+    {
+      "selector": ".options-media-lightbox-backdrop",
+      "keyframes": "options-fade-in",
+      "durationMs": 180,
+      "curve": "cubic-bezier(0.16, 1, 0.3, 1)"
+    },
+    {
+      "selector": ".options-media-lightbox-content",
+      "keyframes": "options-lightbox-pop",
+      "durationMs": 220,
+      "curve": "cubic-bezier(0.16, 1, 0.3, 1)"
+    },
+    {
+      "selector": ".options-media-lightbox-image",
+      "keyframes": "options-lightbox-image-in",
+      "durationMs": 160,
+      "curve": "ease-out"
+    }
+  ],
+  "keyframeBodies": {
+    "options-fade-in": {
+      "scaleFrom": 1,
+      "offsetYFrom": 0,
+      "centeredX": false,
+      "fades": true
+    },
+    "options-detail-card-in": {
+      "scaleFrom": 0.96,
+      "offsetYFrom": 0,
+      "centeredX": false,
+      "fades": true
+    },
+    "options-detail-toast-in": {
+      "scaleFrom": 1,
+      "offsetYFrom": 4,
+      "centeredX": true,
+      "fades": true
+    },
+    "options-lightbox-pop": {
+      "scaleFrom": 0.96,
+      "offsetYFrom": 10,
+      "centeredX": false,
+      "fades": true
+    },
+    "options-lightbox-image-in": {
+      "scaleFrom": 0.985,
+      "offsetYFrom": 0,
+      "centeredX": false,
+      "fades": true
+    },
+    "options-autotag-progress-slide": {
+      "scaleFrom": 1,
+      "offsetYFrom": 0,
+      "centeredX": false,
+      "fades": false
+    }
+  },
+  "defaultTruncateLength": 120
+}

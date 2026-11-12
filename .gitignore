@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Build output
+.plasmo/
+build/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editor
+.DS_Store
+.claude/
+.gstack/
+.worktrees/
+
+# The design record stays local, but the loop's memory is versioned: a board,
+# lessons, a grammar and a reference pin that a fresh checkout must be able to read.
+docs/**
+!docs/loop/
+!docs/loop/**
+# A second docs tree from an earlier review; it is not the design record.
+apps/docs/
+.superpowers/
+plans/
+specs/
+
+.codex/
+
+# Pinned Go toolchain + module cache for apps/macos (see .toolchain/env.sh).
+# env.sh itself records the pin and checksum, so it is tracked.
+.toolchain/*
+!.toolchain/env.sh
+
+# MyGo agent skills: regenerable with `mygo install-skills`.
+.agents/

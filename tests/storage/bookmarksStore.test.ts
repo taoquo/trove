@@ -1,0 +1,379 @@
+import test from "node:test"
+import assert from "node:assert/strict"
+import "fake-indexeddb/auto"
+import { DB_NAME, getBookmarksDb, resetBookmarksDb } from "../../src/lib/storage/db.ts"
+import {
+  getAllBookmarks,
+  removeBookmarkSnapshot,
+  upsertBookmarks,
+  upsertBookmarkSnapshot
+} from "../../src/lib/storage/bookmarksStore.ts"
+import { attachTagToBookmark, createTag, getAllBookmarkTags } from "../../src/lib/storage/tagsStore.ts"
+import { createTagSuggestion, getAllTagSuggestions, insertNewTagSuggestions, resolveTagSuggestion } from "../../src/lib/storage/suggestionsStore.ts"
+
+test("upsertBookmarks stores bookmarks and getAllBookmarks returns them", async () => {
+  await resetBookmarksDb()
+
+  await upsertBookmarks([
+    {
+      tweetId: "123",
+      tweetUrl: "https://x.com/alice/status/123",
+      authorName: "Alice",
+      authorHandle: "alice",
+      authorAvatarUrl: "https://example.com/alice.jpg",
+      text: "hello",
+      createdAtOnX: "2026-03-15T00:00:00.000Z",
+      savedAt: "2026-03-15T01:00:00.000Z",
+    }
+  ])
+
+  const bookmarks = await getAllBookmarks()
+
+  assert.equal(bookmarks.length, 1)
+  assert.equal(bookmarks[0].tweetId, "123")
+  assert.equal(bookmarks[0].authorHandle, "alice")
+  assert.equal(bookmarks[0].authorAvatarUrl, "https://example.com/alice.jpg")
+})
+
+test("upsertBookmarks updates an existing bookmark with the same tweetId", async () => {
+  await resetBookmarksDb()
+
+  await upsertBookmarks([
+    {
+      tweetId: "123",
+      tweetUrl: "https://x.com/alice/status/123",
+      authorName: "Alice",
+      authorHandle: "alice",
+      text: "hello",
+      createdAtOnX: "2026-03-15T00:00:00.000Z",
+      savedAt: "2026-03-15T01:00:00.000Z",
+    }
+  ])
+
+  const result = await upsertBookmarks([
+    {
+      tweetId: "123",
+      tweetUrl: "https://x.com/alice/status/123",
+      authorName: "Alice",
+      authorHandle: "alice",
+      text: "updated text",
+      createdAtOnX: "2026-03-15T00:00:00.000Z",
+      savedAt: "2026-03-15T02:00:00.000Z",
+    }
+  ])
+
+  const bookmarks = await getAllBookmarks()
+
+  assert.equal(result.insertedCount, 0)
+  assert.equal(result.updatedCount, 1)
+  assert.equal(bookmarks.length, 1)
+  assert.equal(bookmarks[0].text, "updated text")
+})
+
+test("upsertBookmarks preserves the original savedAt for existing bookmarks", async () => {
+  await resetBookmarksDb()
+
+  await upsertBookmarks([
+    {
+      tweetId: "123",
+      tweetUrl: "https://x.com/alice/status/123",
+      authorName: "Alice",
+      authorHandle: "alice",
+      text: "hello",
+      createdAtOnX: "2026-03-15T00:00:00.000Z",
+      savedAt: "2026-03-15T01:00:00.000Z",
+      lastSeenAt: "2026-03-15T01:00:00.000Z",
+    }
+  ])
+
+  await upsertBookmarks([
+    {
+      tweetId: "123",
+      tweetUrl: "https://x.com/alice/status/123",
+      authorName: "Alice",
+      authorHandle: "alice",
+      text: "updated text",
+      createdAtOnX: "2026-03-15T00:00:00.000Z",
+      savedAt: "2026-03-15T02:00:00.000Z",
+      lastSeenAt: "2026-03-15T02:00:00.000Z",
+    }
+  ])
+
+  const bookmarks = await getAllBookmarks()
+
+  assert.equal(bookmarks.length, 1)
+  assert.equal(bookmarks[0].savedAt, "2026-03-15T01:00:00.000Z")
+  assert.equal(bookmarks[0].lastSeenAt, "2026-03-15T02:00:00.000Z")
+  assert.equal(bookmarks[0].text, "updated text")
+})
+
+test("upsertBookmarks preserves an existing avatar when a later sync has none", async () => {
+  await resetBookmarksDb()
+
+  await upsertBookmarks([
+    {
+      tweetId: "123",
+      tweetUrl: "https://x.com/alice/status/123",
+      authorName: "Alice",
+      authorHandle: "alice",
+      authorAvatarUrl: "https://example.com/alice-avatar.jpg",
+      text: "hello",
+      createdAtOnX: "2026-03-15T00:00:00.000Z",
+      savedAt: "2026-03-15T01:00:00.000Z",
+    }
+  ])
+
+  await upsertBookmarks([
+    {
+      tweetId: "123",
+      tweetUrl: "https://x.com/alice/status/123",
+      authorName: "Alice",
+      authorHandle: "alice",
+      authorAvatarUrl: undefined,
+      text: "updated text",
+      createdAtOnX: "2026-03-15T00:00:00.000Z",
+      savedAt: "2026-03-15T02:00:00.000Z",
+    }
+  ])
+
+  const bookmarks = await getAllBookmarks()
+
+  assert.equal(bookmarks[0].authorAvatarUrl, "https://example.com/alice-avatar.jpg")
+})
+
+test("upsertBookmarks stores bookmarkTimelineRank from synced bookmarks", async () => {
+  await resetBookmarksDb()
+
+  await upsertBookmarks([
+    {
+      tweetId: "123",
+      tweetUrl: "https://x.com/alice/status/123",
+      authorName: "Alice",
+      authorHandle: "alice",
+      text: "hello",
+      createdAtOnX: "2026-03-15T00:00:00.000Z",
+      savedAt: "2026-03-15T01:00:00.000Z",
+      bookmarkTimelineRank: 7,
+    }
+  ])
+
+  const bookmarks = await getAllBookmarks()
+  assert.equal(bookmarks[0].bookmarkTimelineRank, 7)
+})
+
+test("database migration removes the legacy knowledge-cards store", async () => {
+  await resetBookmarksDb()
+
+  await new Promise<void>((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 4)
+
+    request.onupgradeneeded = () => {
+      const db = request.result
+      if (!db.objectStoreNames.contains("bookmarks")) {
+        db.createObjectStore("bookmarks", { keyPath: "tweetId" })
+      }
+      if (!db.objectStoreNames.contains("knowledge-cards")) {
+        db.createObjectStore("knowledge-cards", { keyPath: "id" })
+      }
+      if (!db.objectStoreNames.contains("folders")) {
+        db.createObjectStore("folders", { keyPath: "id" })
+      }
+      if (!db.objectStoreNames.contains("bookmark-folders")) {
+        db.createObjectStore("bookmark-folders", { keyPath: "bookmarkId" })
+      }
+      if (!db.objectStoreNames.contains("tags")) {
+        db.createObjectStore("tags", { keyPath: "id" })
+      }
+      if (!db.objectStoreNames.contains("bookmark-tags")) {
+        const bookmarkTagsStore = db.createObjectStore("bookmark-tags", { keyPath: "id" })
+        bookmarkTagsStore.createIndex("bookmarkId", "bookmarkId", { unique: false })
+        bookmarkTagsStore.createIndex("tagId", "tagId", { unique: false })
+      }
+      if (!db.objectStoreNames.contains("sync-runs")) {
+        db.createObjectStore("sync-runs", { keyPath: "id" })
+      }
+    }
+
+    request.onsuccess = () => {
+      request.result.close()
+      resolve()
+    }
+    request.onerror = () => reject(request.error ?? new Error("Failed to open legacy database"))
+  })
+
+  const db = await getBookmarksDb()
+
+  assert.equal(db.objectStoreNames.contains("bookmarks"), true)
+  assert.equal(db.objectStoreNames.contains("knowledge-cards"), false)
+  assert.equal(db.objectStoreNames.contains("tags"), true)
+  assert.equal(db.objectStoreNames.contains("bookmark-tags"), true)
+  assert.equal(db.objectStoreNames.contains("sync-runs"), true)
+})
+
+test("upsertBookmarkSnapshot creates a minimal bookmark without overwriting richer fields", async () => {
+  await resetBookmarksDb()
+
+  await upsertBookmarks([
+    {
+      tweetId: "tweet-123",
+      tweetUrl: "https://x.com/alice/status/123",
+      authorName: "Alice Johnson",
+      authorHandle: "alice",
+      authorAvatarUrl: "https://example.com/synced-alice.jpg",
+      text: "Full synced text with richer details",
+      createdAtOnX: "2026-04-01T00:00:00.000Z",
+      savedAt: "2026-04-01T00:10:00.000Z",
+      lastSeenAt: "2026-04-01T00:10:00.000Z",
+      media: [{ type: "photo", url: "https://example.com/media.jpg", altText: "cover" }],
+      metrics: { likes: 8, retweets: 2, replies: 1 },
+    }
+  ])
+
+  const snapshot = await upsertBookmarkSnapshot({
+    tweetId: "tweet-123",
+    tweetUrl: "https://x.com/alice/status/123",
+    authorName: "Alice",
+    authorHandle: "alice",
+    authorAvatarUrl: "https://example.com/dom-alice.jpg",
+    text: "Short DOM text",
+    createdAtOnX: "2026-04-01T00:00:00.000Z"
+  })
+
+  const bookmarks = await getAllBookmarks()
+
+  assert.equal(snapshot.tweetId, "tweet-123")
+  assert.equal(bookmarks.length, 1)
+  assert.equal(bookmarks[0].text, "Full synced text with richer details")
+  assert.equal(bookmarks[0].authorAvatarUrl, "https://example.com/synced-alice.jpg")
+  assert.equal(bookmarks[0].savedAt, "2026-04-01T00:10:00.000Z")
+  assert.deepEqual(bookmarks[0].metrics, { likes: 8, retweets: 2, replies: 1 })
+  assert.match(String(bookmarks[0].lastSeenAt), /^\d{4}-\d{2}-\d{2}T/)
+})
+
+test("upsertBookmarkSnapshot stores avatar information for new site bookmarks", async () => {
+  await resetBookmarksDb()
+
+  await upsertBookmarkSnapshot({
+    tweetId: "tweet-avatar",
+    tweetUrl: "https://x.com/alice/status/avatar",
+    authorName: "Alice",
+    authorHandle: "alice",
+    authorAvatarUrl: "https://example.com/site-avatar.jpg",
+    text: "Site text",
+    createdAtOnX: "2026-04-01T00:00:00.000Z"
+  })
+
+  const bookmarks = await getAllBookmarks()
+
+  assert.equal(bookmarks[0].authorAvatarUrl, "https://example.com/site-avatar.jpg")
+})
+
+test("upsertBookmarkSnapshot assigns a temporary timeline rank so new site bookmarks surface first", async () => {
+  await resetBookmarksDb()
+
+  const snapshot = await upsertBookmarkSnapshot({
+    tweetId: "tweet-123",
+    tweetUrl: "https://x.com/alice/status/123",
+    authorName: "Alice",
+    authorHandle: "alice",
+    text: "Short DOM text",
+    createdAtOnX: "2026-04-01T00:00:00.000Z"
+  })
+
+  assert.equal(typeof snapshot.bookmarkTimelineRank, "number")
+  assert.ok((snapshot.bookmarkTimelineRank ?? 1) < 0)
+})
+
+test("removeBookmarkSnapshot removes the bookmark and all related tag mappings", async () => {
+  await resetBookmarksDb()
+
+  await upsertBookmarkSnapshot({
+    tweetId: "tweet-123",
+    tweetUrl: "https://x.com/alice/status/123",
+    authorName: "Alice",
+    authorHandle: "alice",
+    text: "Short DOM text",
+    createdAtOnX: "2026-04-01T00:00:00.000Z"
+  })
+  const tag = await createTag({ name: "AI" })
+  await attachTagToBookmark({ bookmarkId: "tweet-123", tagId: tag.id })
+
+  await removeBookmarkSnapshot("tweet-123")
+
+  assert.equal((await getAllBookmarks()).length, 0)
+  assert.equal((await getAllBookmarkTags()).length, 0)
+})
+
+test("removeBookmarkSnapshot drops the bookmark's tag suggestions", async () => {
+  await resetBookmarksDb()
+
+  await upsertBookmarkSnapshot({
+    tweetId: "tweet-123",
+    tweetUrl: "https://x.com/alice/status/123",
+    authorName: "Alice",
+    authorHandle: "alice",
+    text: "Short DOM text",
+    createdAtOnX: "2026-04-01T00:00:00.000Z"
+  })
+  const doomed = createTagSuggestion({
+    bookmarkId: "tweet-123",
+    tagName: "AI",
+    source: "hashtag",
+    confidence: 0.9
+  })
+  const survivor = createTagSuggestion({
+    bookmarkId: "tweet-999",
+    tagName: "Rust",
+    source: "hashtag",
+    confidence: 0.9
+  })
+  assert.ok(doomed && survivor)
+  await insertNewTagSuggestions([doomed, survivor])
+
+  await removeBookmarkSnapshot("tweet-123")
+
+  // A leftover pending row would still be counted by the sidebar badge and
+  // could never be resolved, because its bookmark is gone.
+  assert.deepEqual(
+    (await getAllTagSuggestions()).map((suggestion) => suggestion.id),
+    [survivor.id]
+  )
+})
+
+test("removeBookmarkSnapshot keeps rejected suggestions as the user's negative cache", async () => {
+  await resetBookmarksDb()
+
+  await upsertBookmarkSnapshot({
+    tweetId: "tweet-123",
+    tweetUrl: "https://x.com/alice/status/123",
+    authorName: "Alice",
+    authorHandle: "alice",
+    text: "Short DOM text",
+    createdAtOnX: "2026-04-01T00:00:00.000Z"
+  })
+  const pending = createTagSuggestion({
+    bookmarkId: "tweet-123",
+    tagName: "AI",
+    source: "hashtag",
+    confidence: 0.9
+  })
+  const rejected = createTagSuggestion({
+    bookmarkId: "tweet-123",
+    tagName: "Crypto",
+    source: "keyword",
+    confidence: 0.7
+  })
+  assert.ok(pending && rejected)
+  await insertNewTagSuggestions([pending, rejected])
+  await resolveTagSuggestion(rejected.id, "rejected")
+
+  await removeBookmarkSnapshot("tweet-123")
+
+  // Only the pending row is gone. A resolved row records that the user already
+  // answered, and deleting it would re-suggest a tag they explicitly turned down
+  // as soon as the bookmark is saved again.
+  assert.deepEqual(
+    (await getAllTagSuggestions()).map((suggestion) => [suggestion.id, suggestion.status]),
+    [[rejected.id, "rejected"]]
+  )
+})

@@ -1,0 +1,8 @@
+/build/
+/.mygo/
+mygo_windows_*.syso
+
+# `CGO_ENABLED=0 go build ./...` compiles the main package into a binary named
+# after this directory. The quality gate needs only the compile check, so the
+# artifact is ignored rather than left lying in the tree.
+/macos

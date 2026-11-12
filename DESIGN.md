@@ -1,0 +1,477 @@
+# x-master Extension UI / 设计说明
+
+本文档描述的是当前扩展已实现界面的真实设计语言，不是外部参考稿，也不是未来愿景稿。目标是让后续改动基于现状演进，避免继续把视觉判断建立在不相关的 inspiration 上。
+
+## 1. 范围与事实来源
+
+当前 extension 的 UI 主要分为三类：
+
+- `popup`：浏览器扩展弹窗，提供同步入口和库存快照
+- `options`：完整书签工作台，包含侧边栏、结果区、详情检视器
+- `content`：注入 X 站内的收藏按钮和标签弹层
+
+当前设计事实主要来自这些文件：
+
+- `src/styles/extension.css`
+- `src/ui/components.tsx`
+- `src/popup/App.tsx`
+- `src/popup/components/SyncPanel.tsx`
+- `src/options/OptionsApp.tsx`
+- `src/content/site-controller.ts`
+- `src/content/tag-popover.ts`
+
+### 关于 lists 与分类规则的移除
+
+当前版本已经没有「列表（list / folder）」和「基于规则的自动分类」这两个概念，组织书签的唯一结构是标签体系。此前的实现（`src/lib/storage/listsStore.ts`、`src/lib/classification/rules.ts`）已在 commit b91018d “refactor: remove lists and classification rules” 中整体删除，设置里的列表/规则字段、popup 与 options 中的列表入口、备份导出中的列表数据也一并移除。
+
+因此：
+
+- 界面上的分类入口只有标签：标签树、标签库管理模式、书签上的标签，以及自动标签产出的待确认建议。
+- 旧数据在升级时被清理。`src/lib/storage/db.ts` 在 `onupgradeneeded` 里显式删除三个遗留 IDB store：`folders`（旧列表定义）、`bookmark-folders`（旧书签-列表关系）、`knowledge-cards`（更早的知识卡片）。书签本身与标签关系不受影响；旧列表的分组信息不做迁移，丢弃后请用标签重新组织。
+
+## 2. 总体风格判断
+
+### 当前不是哪种风格
+
+当前 extension 不是暗色优先、霓虹玻璃、Linear 风格，也不是重品牌营销页风格。
+
+### 当前实际是什么风格
+
+当前 UI 更接近「轻量化本地工作台 / 编辑器式管理界面」：
+
+- 以浅色界面为主，暗色只是等价主题，不是主叙事
+- 大面积使用白底、浅灰边框、低对比阴影
+- 交互强调“可管理、可筛选、可浏览”，而不是“沉浸式品牌感”
+- 信息层级主要靠字号、字重、留白和边框建立，不靠重装饰
+- 品牌存在感较弱，更多出现在 logo、同步入口和状态色里
+
+如果要一句话概括当前气质：
+
+> 一个偏理性、偏内容运营、偏本地资料库的扩展工作台。
+
+## 3. 界面结构
+
+### Popup
+
+`popup` 是一个固定宽度的小型入口页，核心是两张卡片：
+
+- 上卡：品牌、库存统计、状态徽章、打开管理器
+- 下卡：同步摘要、同步按钮、最近同步时间
+
+特点：
+
+- 外层宽度固定在 `366px`
+- 主卡片是浅色面板
+- 同步卡片单独切成深色块，形成局部强调
+- 数字信息使用等宽字体，强化“库存 / 运行数据”感
+
+### Options
+
+`options` 是完整工作台，采用三栏布局：
+
+- 左栏 `256px`：状态、同步入口、标签树、语言/主题切换
+- 中栏 `1fr`：搜索、筛选、排序、视图切换、书签结果列表
+- 右栏 `288px`：详情检视器、媒体预览、标签操作
+
+特点：
+
+- 典型桌面应用式信息架构
+- 左右栏负责导航和详情，中间承担主内容密度
+- 大量使用滚动容器，而不是整页长滚动
+- 结果卡和检视器都偏“工具界面”，不是内容卡片秀场
+
+在此之上有两类覆盖式界面：
+
+- 设置面板：sidebar 底部齿轮打开的全屏 modal，左侧分区导航（通用 / 同步 / 自动标签 / 数据安全）+ 右侧即时保存表单。自动标签分区承载规则开关（hashtag / 作者）、关键词规则编辑、LLM 配置（API 地址、模型、API Key 保存与清除、词表模式、单次分析上限、测试连接）、立即分析 / 停止本次分析，以及上次分析结果与运行中进度。词表模式有三档：仅使用现有标签（`closed`）/ 受限创建新标签（`guarded`，默认，按候选量分配新标签额度）/ 允许创建新标签（`open`）。
+- 待确认标签：自动标签管线产出的建议以虚线 chip 呈现在结果卡与检视器上，点击接受、x 拒绝；sidebar 提供“待确认标签 (n)”入口过滤视图。
+- 标签管理模式：中栏可从书签结果切换为标签库（卡片 / 表格两种视图），支持重命名、合并、删除与批量操作；工具栏的“整理词表”把当前词表交给 LLM，返回合并 / 重命名提案，勾选后一次性套用（先合并再重命名），目标是把主题标签总量收敛在 30–50 个。
+- 标签层级与别名：层级固定两层（theme → tag），卡片和表格都提供父标签下拉，已作为父级的标签不可再挂父级；别名在管理模式内联编辑，逗号分隔，保存时按 canonical key 去重并丢弃与现有标签冲突项。删除标签会解除其子标签的父关系，合并标签会把子标签改挂到留存标签。
+- 标签关联图：管理模式的第三种视图（grid / table / graph）。数据层 `buildTagRelationGraph` 产出三类边——cooccurrence（同一书签共现，权重取 Jaccard）、hierarchy（父子主题，权重固定 1）、author-bridge（同作者但从未共现，权重 = 共同作者数 / 较小作者数）；视图层 `buildGraphViewModel` 负责作者与搜索裁剪、节点上限（默认 60）与确定性径向布局。渲染用 SVG（节点是真实 DOM，便于键盘与测试），点击节点 chip 聚焦并高亮一跳邻居，聚焦面板给出书签数、作者数与 Top 作者，可一键跳回该标签的书签列表。
+
+### Content / Site Popover
+
+站内 UI 有两部分：
+
+- X 页面上的悬浮收藏按钮
+- 点击后出现的标签弹层
+
+这套 UI 明显和 `popup/options` 不是同一视觉分支：
+
+- 使用青蓝色半透明高光
+- 更强的玻璃拟物和发光感
+- 圆角更大，动画更明显
+- 更接近“悬浮操作器”而不是“后台工作台”
+
+这说明当前 extension 实际上有两套视觉语言：
+
+1. 工作台语言：浅色、平直、克制、蓝色点缀
+2. 站内弹层语言：轻玻璃、青蓝高光、悬浮感更强
+
+## 4. 颜色系统
+
+### 主工作台颜色
+
+工作台颜色都由 `extension.css` 里的 CSS 变量驱动。
+
+亮色主题核心变量：
+
+- `--page-bg: #f5f5f3`
+- `--main-bg: #fafafa`
+- `--side-bg: #ffffff`
+- `--surface-bg: #ffffff`
+- `--surface-muted: #f5f5f3`
+- `--text-strong: #1a1a1a`
+- `--text-muted: #737373`
+- `--rail-border / --border-subtle: #e8e8e5`
+- `--accent-primary: #4285f4`
+- `--accent-primary-hover: #2f74e7`
+
+暗色主题核心变量：
+
+- `--page-bg: #171715`
+- `--main-bg: #1d1d1a`
+- `--side-bg: #20201d`
+- `--surface-bg: #22221f`
+- `--surface-muted: #262622`
+- `--text-strong: #f3f2ee`
+- `--text-muted: #b4b0a8`
+- `--rail-border / --border-subtle: #34342f`
+- `--accent-primary: #5d96f6`
+- `--accent-primary-hover: #77a8fb`
+
+结论：
+
+- 主色是蓝，不是紫，也不是品牌专属色板
+- 背景偏暖灰，不是冷白科技风
+- 暗色主题也偏棕灰和中性灰，不是纯黑
+
+### 状态色
+
+状态色是当前设计里最稳定的一组语义色：
+
+- `running`：蓝色边框和文字
+- `success`：绿色背景 + 绿色文字
+- `partial`：黄色背景 + 棕黄色文字
+- `error`：红色背景 + 深红文字
+- `idle`：中性 badge
+
+状态徽章都带一个小圆点，属于当前系统里最明确的状态识别模式。
+
+### 站内弹层颜色
+
+站内 `tag popover` 采用单独色系：
+
+- 边框偏青色：`rgba(148, 226, 232, 0.42)`
+- 面板是浅青白渐变
+- hover / selected 也围绕青蓝色展开
+- 背景遮罩带青色 radial glow
+
+这套颜色没有复用主工作台变量，属于独立实现。
+
+## 5. 排版系统
+
+### 当前实际使用的字体
+
+当前字体并不统一，至少有三层：
+
+- 全局正文继承：`Roboto`, `Noto Sans SC`, `SF Pro Text`, `-apple-system`, `sans-serif`
+- 大标题和部分 Tailwind `font-sans`：`Geist`, `Avenir Next`, `Segoe UI`, `sans-serif`
+- 等宽数字/统计：`Geist Mono`, `IBM Plex Mono`, `SFMono-Regular`, `monospace`
+
+另外还定义了：
+
+- `--display-font: "Playfair Display", ...`
+- Tailwind `font-display: "Iowan Old Style", ...`
+
+但当前 extension 主界面里基本没有实际用到这套 serif display 字体。它更像遗留 token，而不是现行规范。
+
+### 字号层级
+
+当前排版偏务实，常用层级大致如下：
+
+- 超大标题：`36px` 左右，用于 `options` 页标题
+- Popup 主标题：约 `2.08rem`
+- 大区块标题：`24px`
+- 普通卡片标题：`14px`
+- 正文：`12px` 到 `14px`
+- 说明文案：`12px`
+- Overline / Section Kicker：`10px` 到 `11px`，大写、加大字距
+- 指标数字：`36px` 或更大，并使用等宽字体
+
+### 排版特征
+
+- 标题大量使用负字距，提升紧凑度
+- overline 是系统里重复率很高的视觉模式
+- 文本密度整体偏克制，解释文案通常很短
+- 统计值和时间戳的角色区分很明确
+
+## 6. 空间、边框与阴影
+
+### 圆角
+
+当前圆角覆盖面很广，但基本落在一组稳定尺度里：
+
+- `6px`：按钮、输入框、小控件
+- `8px`：小卡、列表项、空态
+- `10px`：toolbar 控件
+- `12px`：导航行、结果卡
+- `16px` / `18px`：中等卡片和 stats 块
+- `20px` / `22px` / `24px`：主面板、popup 卡片、inspector
+- `28px`：站内 popover
+
+结论：当前系统偏好多层级圆角，但多数仍然服务于“柔和工具界面”，不是强拟物。
+
+### 边框
+
+当前边框使用很重，且比阴影更重要：
+
+- 面板边界靠 `1px` 浅灰边框定义
+- 激活状态常用 `inset box-shadow` 或蓝色描边
+- 结果卡、侧边栏、输入框、详情面板都依赖边框组织结构
+
+### 阴影
+
+阴影整体很轻：
+
+- 大多数工作台面板没有明显厚重阴影
+- hover 阴影只在结果卡、局部按钮上略微抬升
+- 站内 popover 和悬浮按钮的阴影明显更强
+
+这再次说明工作台与站内弹层是两套不同视觉力度。
+
+## 7. 组件语言
+
+### 面板
+
+当前面板基类主要是：
+
+- `SurfaceCard`
+- `.panel-surface`
+- `.panel-elevated`
+- `.workspace-surface`
+
+特征：
+
+- 白底或浅底
+- 轻边框
+- 中大圆角
+- 结构上先有标题/描述，再有正文区
+
+### 按钮
+
+当前主要按钮类型：
+
+- `glass-button`：浅灰次按钮，多用于 popup 的次级入口
+- `primary-button`：蓝色主按钮，当前主要用于同步 CTA
+- `workspace-sync-primary`：看起来是主操作按钮，但视觉上更接近浅底高优先按钮
+- `chip-button`：胶囊筛选/标签按钮
+- `options-toolbar-action`：工具栏按钮
+- `options-footer-chip` / `options-footer-icon-button`：页脚微交互按钮
+
+统一特征：
+
+- 高度常见 `40px` 或 `44px`
+- hover 时轻微上浮 `translateY(-1px)`
+- active 时轻微回弹和缩放
+- 大多没有重阴影和高饱和填充
+
+### 输入与筛选
+
+输入控件以 `field-shell` 为底：
+
+- 细边框
+- 亮色背景
+- focus 时蓝色 ring
+- 视觉存在感较弱，让筛选行为融入工作流
+
+筛选方式以：
+
+- 搜索框
+- filter popover
+- sort 循环切换
+- grid/list 视图切换
+- active filter chips
+
+为主，属于典型资料库工具组合。
+
+### 结果卡
+
+书签结果卡是 `options` 的核心表达单元：
+
+- 顶部可选媒体预览
+- 作者缩写头像
+- 作者名 / handle / 保存时间
+- 书签正文摘要
+- 标签 pills
+- 底部一排社交动作图标和外链动作
+
+特征：
+
+- 样式克制，信息密度适中
+- hover 只做很轻的位移和阴影提升
+- 选中态使用蓝色描边，不靠大面积底色
+
+### 详情检视器
+
+右侧 inspector 是典型信息检视区：
+
+- 元数据
+- 摘要
+- 媒体预览
+- 打开原文
+- 标签查看和挂载
+
+检视器强调“结构清晰”和“滚动独立”，不是高视觉冲击。
+
+### 站内弹层
+
+`tag popover` 是高度自定义组件：
+
+- 大圆角浮层
+- hero 区 + tweet 摘要卡 + 标签选择区 + 新建标签区
+- 动画更明显
+- 背景模糊和 radial glow 更强
+
+它更像一个“悬浮操作 modal”。
+
+## 8. 动效与交互反馈
+
+工作台动效统一比较克制：
+
+- 过渡时长多在 `160ms` 到 `180ms`
+- 常用 easing：`cubic-bezier(0.16, 1, 0.3, 1)`
+- hover 位移一般是 `-1px`
+- active 通常是 `scale(0.985)` 左右
+- theme 切换时通过 `data-theme-switching` 暂时禁用 transition，避免闪烁
+
+站内弹层动效更明显：
+
+- backdrop fade-in
+- pop-in 入场
+- lightbox 自带淡入和缩放
+
+## 9. 图标与品牌
+
+图标统一来自 `@phosphor-icons/react`，并且使用 regular 风格。这个选择让界面保持轻量、轮廓清晰、不显得过度系统化。
+
+品牌本体目前很轻：
+
+- 主要依赖 logo 图片资源
+- 没有建立完整品牌图形系统
+- 更像工具标识，而不是强品牌视觉主角
+
+## 10. 当前设计上的不一致点
+
+这部分很重要，因为后续新增 UI 应该知道现状里哪些是统一的，哪些还没统一。
+
+### 1. 字体系统不统一
+
+- 全局正文是 `Roboto/Noto Sans SC`
+- 一些标题走 Tailwind 的 `Geist`
+- 站内 popover 也直接写了 `Geist`
+- 定义了 serif display token，但基本没用
+
+### 2. 工作台和站内弹层不是同一视觉体系
+
+- 工作台：白底、浅灰边框、蓝色 accent
+- 站内弹层：青蓝玻璃感、渐变、发光、高模糊
+
+这不是小差异，而是明确的双风格并存。
+
+### 3. popup 的两张卡片调性不完全一致
+
+- 上卡偏工作台风格
+- 下方 `SyncPanel` 是深色强调卡
+
+它本身可用，但风格上不是完全统一。
+
+### 4. Tailwind token 与实际 UI 不完全一致
+
+Tailwind 里定义了：
+
+- `surface / ink / mist / cobalt / sand`
+- `font-display`
+- `glass-shimmer / soft-pulse / float-card`
+- `glass / soft` 阴影
+
+但这些 token 在主界面里并没有形成稳定、完整的系统使用。当前真正的设计源头仍然是 `extension.css` 的 CSS 变量和手写组件类。
+
+## 11. 后续设计修改建议
+
+如果继续扩展 `extension`，建议遵守下面的现实约束：
+
+- 新增 `popup/options` UI 时，优先沿用 `extension.css` 变量，不要直接引入一套新色板
+- 优先延续“工作台”语言，而不是再混入第三种品牌风格
+- 状态表达继续复用 `StatusBadge` 的语义模型
+- 尺寸优先沿用现有 `40px/44px` 控件高度和 `6/8/12/16/24` 圆角层级
+- 数据型数字继续使用 `font-mono`
+- 如果要统一全局风格，优先处理字体系统和 content popover 的视觉分叉
+
+## 12. 一句话结论
+
+当前扩展最准确的设计定义不是“某个品牌官网风格”，而是：
+
+> 一套以浅色本地工作台为主、以蓝色状态和工具性布局为核心，同时夹带一套独立站内玻璃弹层风格的浏览器扩展 UI。
+
+## 附录 A：LLM Provider 抽象与密钥边界
+
+设置面板的「LLM 智能标签」组不再假设只有一种 OpenAI 兼容接口，而是读取一张 provider 表。
+
+### 分层（`src/lib/llm/`）
+
+| 文件 | 角色 |
+|---|---|
+| `providers.ts` | **纯数据** provider 目录（端点、origin、凭据类型、Key 创建页链接）与 baseUrl/origin 校验 |
+| `capabilities.ts` | 能力解析（用户覆盖 → 已学结论 → 模型名前缀 → provider 默认）与请求组装 |
+| `adapters/*` | 每个 wire protocol 一个适配器（openai-chat / anthropic-messages / google-generative-ai / azure-openai-chat） |
+| `transport.ts` | 唯一的 HTTP 出口：单次超时、重试、`Retry-After`、运行预算、错误归一 |
+| `errors.ts` | 统一错误分类与密钥脱敏 |
+| `auth/` | 凭据抽象：v1 只实现 `apiKeyAuth`，`OAuthAuth` 仅有接口 |
+| `orchestrator.ts` | 组装 prompt 与请求、驱动适配器、产出 `LlmSuggestion` |
+
+**UI 与 HTTP 代码必须分离**：设置页只引用 `providers.ts` / `capabilities.ts` / copy，适配器只能进 background。这条由 `scripts/checkBundle.mjs` 在构建产物上校验，而不是靠约定。
+
+### 密钥边界
+
+- 密钥只存 `chrome.storage.local` 的 `secrets` 键，**按 provider 分 profile**，全部写在同一个键下（避免并发写入丢更新）。
+- 所有写入走 `modifySecrets` 的串行化读-改-写链；UI 与弹窗并发保存不会互相覆盖。
+- **密钥不进入代码、不读环境变量、不进日志、不进备份、不随导出**；错误信息一律经 `sanitizeLlmError` 脱敏（Gemini 的 key 在查询串里）。
+- `chrome.storage.local` 在 worker 启动时被限制为 `TRUSTED_CONTEXTS`，content script 读不到。
+- 适配器与编排层**不直接读 secrets**，只消费 `resolveAuth` 返回的 `ResolvedAuth`。
+- 备份只带 `activeProviderId` 与 `model`；`baseUrl`、部署名与任何凭据都不导出。
+
+### 新增 UI 约定
+
+- provider 下拉切换时，需要自带端点的 provider 会清空 baseUrl（避免继承上一家的地址）。
+- 「已保存」是**按 provider** 判断的；`api-key-or-none`（本地模型）显示「无需密钥」而非「缺少密钥」。
+- 「测试连接」不发生成请求（零 token 成本）：只做一次模型列表探测，结构化输出策略与被忽略参数由本地能力数据算出并回显。
+- 错误按 `LlmErrorKind` 映射为具体文案，而不是把服务端原文丢给用户。
+
+## 附录 B：自动标签运行进度
+
+自动标签一次运行只有约 20 次进度更新（每批一次），而每批是一次最长 60s 的请求加最多 30s 退避，因此"进度条"本身不足以回答问题——**它必须在"在等模型"和"已经停了"之间给出区分**。
+
+### 唯一事实来源
+
+运行状态持久化在 `settings.autoTagRunState`（`phase` / `processed` / `total` / `updatedAt` 心跳，以及 `status` / `inFlight` / `waitingUntilMs` / `providerId` / `model`）。
+
+- 实时广播（`autotag/progress`）**只用于降低延迟**，丢失它不影响正确性。
+- 共享 hook `useAutoTagRunStatus()` 负责：挂载时读持久化状态 → 订阅广播 → 订阅 `chrome.storage.onChanged` → 每秒推进"已用/剩余/静默时长"。
+- **规则**：持久化状态是权威。只有当广播比"最近一次读取"更新时，才允许在状态里没有活动运行时用它渲染——用于覆盖"运行刚开始、状态还没落盘"的窗口。这样既能在刷新后立刻显示真实数字，又不会让已结束的运行留下一条冻结的进度。
+- 心跳停止推进超过 8s 显示"正在等待模型响应"；超过存活窗口（2.5 分钟）则整条进度消失。
+
+### 展示位置
+
+`AutoTagProgressBar`（`src/ui/components.tsx`）：
+
+- **侧边栏常驻**（`sidebar-autotag-progress`）：不打开设置就能看到进度与停止按钮。
+- 设置面板内复用同一组件（`settings-autotag-progress`）。
+- 弹窗保留一行文字计数，但同样来自 hook，因此刷新后仍然准确。
+
+进度条有三种形态：确定性填充（正常）→ 不定态条纹（等待/心跳静默）→ 消失（运行结束或死亡）。等待时显示服务端要求的剩余秒数；心跳静默时显示"已 N 秒没有心跳，可能已中断"，而不是一个看起来卡住的百分比。
+
+### 相关约定
+
+- 等待信息来自 `sleep` 这一唯一接缝：编排层包装注入的 `sleep`，因此四个协议（含复用旧引擎的 OpenAI 兼容路径）都能上报退避，而无需改动任何 adapter。
+- 进度只在侧边栏/弹窗/设置面板各渲染一次，`testId` 分别为 `sidebar-autotag-progress`、`popup-autotag-progress`、`settings-autotag-progress`。
+- 设置面板的轮询不再有固定 3 分钟上限（会早于 4 分钟运行预算放弃），改为按心跳存活结束，30 分钟仅作兜底。
