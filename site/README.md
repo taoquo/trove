@@ -27,9 +27,8 @@ buttons start working with the first release. Renaming an asset in the workflow 
 
 The six page images are captures of a seeded demo library, not of anyone's account. The fixture
 (`testdata/site-fixture.json`) invents every author, handle and post; avatars render as initials,
-so no real profile ever appears on the page. Rebuild them with:
-
-From bash, with the pinned toolchain sourced (`source .toolchain/env.sh`):
+so no real profile ever appears on the page. Rebuild them from bash with the pinned toolchain
+sourced (`source .toolchain/env.sh`):
 
 ```bash
 go run ./cmd/seed -fixture testdata/site-fixture.json -locale en -data-dir /tmp/trove-site-en

@@ -18,7 +18,8 @@ concurrency:
 
 jobs:
   macos:
-    runs-on: macos-14
+    # macos-14 is retired on GitHub's hosted runners; macos-latest is the supported arm64 image.
+    runs-on: macos-latest
     timeout-minutes: 40
 
     steps:
