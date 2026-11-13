@@ -4,9 +4,17 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: macos-14
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -18,22 +26,52 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      # The checkers are part of the build, not optional tooling (AGENTS.md section 5). They are
+      # shell and grep, so they run here unchanged; the gate adds the two screenshot checks,
+      # which need a window and stay on a developer machine.
+      - name: Checkers
+        run: |
+          bash tools/check-text.sh
+          bash tools/check-wiring.sh
+          bash tools/selfcheck.sh
+
       - name: Format
         run: |
-          out=$(find . -name '*.go' -not -path './.git/*' -print0 | xargs -0 gofmt -l)
+          out=$(find . -name '*.go' -not -path './.git/*' -not -path './build/*' -print0 | xargs -0 gofmt -l)
           if [ -n "$out" ]; then
             echo "$out"
             exit 1
           fi
 
       - name: Vet
-        run: go vet ./...
-
-      - name: MyGo vet
-        run: go tool mygo vet ./cmd/trove
+        run: |
+          go vet ./...
+          go tool mygo vet ./cmd/trove
 
       - name: Test
-        run: go test -count=1 ./...
+        run: |
+          go test -count=1 -timeout 20m ./...
+          go test -race -count=1 -timeout 20m ./...
 
       - name: Build
         run: CGO_ENABLED=0 go build -o /dev/null ./cmd/trove
+
+  windows:
+    # The app ships for Windows, and a build that only compiles on the machine that wrote it is
+    # how a whole platform stops building unnoticed. NSIS and the installer are the release
+    # job's business; this asks only whether the code compiles for windows/amd64.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Cross-compile for Windows
+        run: CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o /dev/null ./cmd/trove

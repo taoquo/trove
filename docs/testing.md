@@ -20,6 +20,26 @@ bash -c 'source .toolchain/env.sh && bash tools/gate.sh'
 
 必须在将要提交的那棵树上跑；跑完再改代码就要重跑。
 
+## CI 与发布
+
+`.github/workflows/ci.yml` 在每次 push 和 PR 上跑 gate 里不需要窗口的部分：三个检查器、
+gofmt、vet、`mygo vet`、`go test` 与 `go test -race`；另有一个 ubuntu 任务只做
+`GOOS=windows` 交叉编译，防止 Windows 一侧悄悄坏掉。截图相关的两步需要窗口，只在本地跑。
+
+`.github/workflows/release.yml` 由 `v*` 标签触发：macOS 上构建两种架构的 dmg，Windows 上构建
+NSIS 安装包，改名成站点使用的固定文件名后创建 GitHub Release。
+
+| 文件 | 平台 |
+|---|---|
+| `trove-macos-arm64.dmg` | macOS Apple 芯片 |
+| `trove-macos-x64.dmg` | macOS Intel |
+| `trove-windows-x64-setup.exe` | Windows x64 |
+
+标签必须等于 `v$(mygo.json 里的 version)`，否则发布任务直接失败。站点下载走
+`https://github.com/taoquo/trove/releases/latest/download/<文件名>`，所以文件名是公开契约：
+改名必须同时改 `site/public/app.js` 的 `FILES`。当前发布包是 ad-hoc 签名的开发构建，站点已
+注明；Developer ID 签名与公证需要 `macos.signingIdentity` 和公证凭据，仓库里没有。
+
 ## 单元测试
 
 - 每个包的标准 `go test`；域规则有表驱动测试。

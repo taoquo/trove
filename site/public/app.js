@@ -101,6 +101,7 @@ const STRINGS = {
     "download.get": "Download",
     "download.note2":
       "Unsigned builds: macOS needs right-click → Open on first launch; Windows may show a SmartScreen prompt.",
+    "download.all": "All releases",
     "footer.line": "A quiet place for what you saved.",
     "footer.releases": "Releases",
     "footer.top": "Back to top",
@@ -194,6 +195,7 @@ const STRINGS = {
     "download.get": "下载",
     "download.note2":
       "未签名构建：macOS 首次启动需右键 →「打开」；Windows 可能弹出 SmartScreen 提示。",
+    "download.all": "所有版本",
     "footer.line": "给存下来的东西，一个安静的地方。",
     "footer.releases": "版本发布",
     "footer.top": "回到顶部",

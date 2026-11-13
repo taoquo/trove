@@ -19,8 +19,9 @@ stable asset names of the latest GitHub release:
 - `trove-macos-x64.dmg`
 - `trove-windows-x64-setup.exe`
 
-Until a release with those names exists, the buttons resolve to GitHub's 404 page. That is
-expected for a local preview.
+`.github/workflows/release.yml` produces exactly these names from a `v<version>` tag, so the
+buttons start working with the first release. Renaming an asset in the workflow means changing
+`FILES` in `app.js` too.
 
 ## Screenshots
 

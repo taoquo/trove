@@ -53,6 +53,21 @@ go tool mygo build -platform windows/amd64
 
 On Windows, run the built `trove.exe` or the NSIS `Setup.exe` from `build/windows-amd64`.
 
+## Releases
+
+Pushing a tag `v<version>` (matching `version` in `mygo.json`) runs
+`.github/workflows/release.yml`, which builds both Mac architectures and the Windows installer and
+attaches them to a GitHub release under the names the site links to:
+
+| Asset | Platform |
+|---|---|
+| `trove-macos-arm64.dmg` | macOS, Apple silicon |
+| `trove-macos-x64.dmg` | macOS, Intel |
+| `trove-windows-x64-setup.exe` | Windows, x64 |
+
+The builds are ad-hoc signed development builds, not notarized. Renaming an asset also means
+changing `FILES` in `site/public/app.js`.
+
 ## Test and verify
 
 ```bash
@@ -86,6 +101,7 @@ internal/bundle       Native .trovebundle format
 internal/importexport Legacy JSON import and export
 internal/ui           MyGo workspace and all drawing
 cmd/mediaprobe        Development media diagnostic
+cmd/seed              Seeds a fictional library for the site's screenshots
 site/                 Local static product page (not deployed automatically)
 tools/                Source checkers, capture tooling, quality gate
 testdata/             Frozen equivalence fixtures

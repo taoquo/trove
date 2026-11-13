@@ -110,6 +110,11 @@ go tool mygo build -platform windows/amd64
 macOS 的 `.dmg`、签名与公证需要 macOS；Windows 的 NSIS `Setup.exe` 需要 Windows。`mygo.json`
 的 `main` 指向 `./cmd/trove`，`version` 是发布版本的唯一来源。
 
+发布：推 `v<version>` 标签即触发 `.github/workflows/release.yml`，它构建三个安装包、改名成站点
+使用的固定文件名（`trove-macos-arm64.dmg`、`trove-macos-x64.dmg`、
+`trove-windows-x64-setup.exe`）并创建 Release。文件名与 `site/public/app.js` 的 `FILES` 是同一
+份契约，改名要两边一起改。CI 在 `.github/workflows/ci.yml`，只跑 gate 里不需要窗口的部分。
+
 ## 3. 架构
 
 ```text

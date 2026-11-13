@@ -50,6 +50,19 @@ go tool mygo build -platform windows/amd64
 
 Windows 上运行 `build/windows-amd64` 里的 `trove.exe` 或 NSIS `Setup.exe`。
 
+## 发布
+
+推送与 `mygo.json` 中 `version` 一致的 `v<version>` 标签，`.github/workflows/release.yml` 会构建
+两种 Mac 架构与 Windows 安装包，按站点使用的文件名挂到 GitHub Release：
+
+| 文件 | 平台 |
+|---|---|
+| `trove-macos-arm64.dmg` | macOS，Apple 芯片 |
+| `trove-macos-x64.dmg` | macOS，Intel |
+| `trove-windows-x64-setup.exe` | Windows，x64 |
+
+这些是 ad-hoc 签名的开发构建，未公证。改名要同时改 `site/public/app.js` 的 `FILES`。
+
 ## 测试与验收
 
 ```bash
@@ -82,6 +95,7 @@ internal/bundle       原生 .trovebundle 格式
 internal/importexport 旧版 JSON 导入与导出
 internal/ui           MyGo 工作区与全部绘制
 cmd/mediaprobe        开发用媒体诊断命令
+cmd/seed              用虚构书库为站点截图播种数据
 site/                 本地静态产品页（不自动部署）
 tools/                源码检查器、截图工具、质量门禁
 testdata/             冻结的等价性 fixture

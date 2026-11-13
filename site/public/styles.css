@@ -146,6 +146,21 @@ code {
 .langs button + button { border-left: 1px solid var(--rule); }
 .langs button[aria-pressed="true"] { background: var(--accent); color: #fdf9f4; }
 
+.repo-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  color: var(--ink-warm);
+  transition: color 140ms ease, border-color 140ms ease;
+}
+
+.repo-link svg { width: 15px; height: 15px; display: block; }
+.repo-link:hover { color: var(--accent); border-color: var(--muted); }
+
 /* ---------- shared type ---------- */
 
 .kicker,
@@ -528,6 +543,17 @@ html[lang="zh-CN"] .statement-line { font-size: clamp(24px, 2.9vw, 36px); }
   font-size: 11px;
   color: var(--muted);
 }
+
+.download-all {
+  display: inline-block;
+  margin-top: 18px;
+  color: var(--accent);
+  font-size: 14px;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.download-all:hover { color: var(--ink); }
 
 /* ---------- footer ---------- */
 

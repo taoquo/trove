@@ -1,0 +1,128 @@
+name: Release
+
+# A tag is the release. `mygo.json` holds the version, so the tag must agree with it, and every
+# asset name below must agree with `FILES` in site/public/app.js: the site links to
+# /releases/latest/download/<name>, and a renamed asset is a dead download button.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  macos:
+    runs-on: macos-14
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # mygo cross-compiles both arches on one runner and ad-hoc signs the bundle; signing with
+      # a Developer ID and notarizing would need macos.signingIdentity plus notarization
+      # credentials, which this repository does not carry yet.
+      - name: Build disk images
+        run: go tool mygo build -platform darwin/arm64,darwin/amd64
+
+      - name: Name the assets the site links to
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          cp build/darwin-arm64/*arm64.dmg release/trove-macos-arm64.dmg
+          cp build/darwin-amd64/*amd64.dmg release/trove-macos-x64.dmg
+          ls -l release
+
+      - name: Upload disk images
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: release/*.dmg
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build installer
+        run: go tool mygo build -platform windows/amd64
+
+      - name: Name the asset the site links to
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem build/windows-amd64 -Filter '*Setup*.exe' | Select-Object -First 1
+          if (-not $setup) { throw 'mygo did not produce a Setup.exe' }
+          New-Item -ItemType Directory -Force release | Out-Null
+          Copy-Item $setup.FullName release/trove-windows-x64-setup.exe
+          Get-ChildItem release
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: release/*.exe
+          if-no-files-found: error
+
+  publish:
+    needs: [macos, windows]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check the tag matches mygo.json
+        run: |
+          version=$(jq -r .version mygo.json)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "tag $GITHUB_REF_NAME does not match mygo.json version $version" >&2
+            exit 1
+          fi
+
+      - name: Collect assets
+        uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+
+      - name: List assets
+        run: ls -l release
+
+      # Re-running a failed release must not fail on "release already exists": upload over the
+      # old assets instead, so a broken build can be fixed and the same tag released again.
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(jq -r .version mygo.json)
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" release/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --title "trove $version" \
+              --generate-notes \
+              release/*
+          fi
