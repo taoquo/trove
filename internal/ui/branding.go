@@ -14,7 +14,9 @@ import (
 //
 // The logo is logo-128.png, drawn at 22 points with a 6-point radius in the same row as the
 // wordmark (app.css:366-374): the app's logo is a filled square rather than a line bird, and
-// 22 is the size at which the two read as one row. The asset is embedded from
+// 22 is the size at which the two read as one row. The asset is a small-size cut of the app
+// icon, kept to the tile, the book and its ribbon: the icon's inner matte and its seal dot
+// close up below 32 points and turn into noise. The asset is embedded from
 // testdata/branding/logo-128.png rather than read from disk, so the app does not depend on a
 // file beside it, and it is decoded once rather than per frame.
 

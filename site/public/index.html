@@ -3,214 +3,231 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>trove — your bookmarks, finally a library</title>
-  <meta name="description" content="trove pulls your X bookmarks into a local, searchable workspace. Tag, search, and keep them without sending your library anywhere.">
-  <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#f2ede4">
+  <title>trove — the feed forgets, your library shouldn't</title>
+  <meta name="description" content="trove files your X bookmarks into one local database you own. Sync, tag, search and read offline — no account, no sync server, no telemetry.">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#f6f0ea">
   <link rel="icon" href="img/icon.png" type="image/png">
   <link rel="apple-touch-icon" href="img/icon.png">
   <link rel="canonical" href="https://trove.example/">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="trove — your bookmarks, finally a library">
-  <meta property="og:description" content="A local-first X bookmark workspace. Search, tag, and keep what you saved.">
+  <meta property="og:title" content="trove — a local-first library for your X bookmarks">
+  <meta property="og:description" content="One SQLite file on your own disk. Sync, tag, search and read offline — no account, no telemetry.">
   <meta property="og:image" content="img/og.png">
   <meta property="og:url" content="https://trove.example/">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="trove — your bookmarks, finally a library">
-  <meta name="twitter:description" content="A local-first X bookmark workspace. Search, tag, and keep what you saved.">
+  <meta name="twitter:title" content="trove — a local-first library for your X bookmarks">
+  <meta name="twitter:description" content="One SQLite file on your own disk. Sync, tag, search and read offline.">
   <meta name="twitter:image" content="img/og.png">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <a class="skip" href="#main">Skip to content</a>
+  <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
 
   <header class="top">
-    <a class="brand" href="#top" aria-label="trove home">
-      <img src="img/icon.png" alt="" width="32" height="32">
+    <a class="brand" href="#top" aria-label="trove">
+      <img src="img/mark.png" alt="" width="30" height="30">
       <span>trove</span>
     </a>
     <nav aria-label="Primary">
-      <a href="#features" data-i18n="nav.features">Features</a>
+      <a href="#system" data-i18n="nav.system">What it does</a>
       <a href="#privacy" data-i18n="nav.privacy">Privacy</a>
       <a href="#install" data-i18n="nav.install">Install</a>
       <a href="#download" data-i18n="nav.download">Download</a>
     </nav>
-    <button class="lang" type="button" id="lang" aria-label="Switch language">中文</button>
+    <div class="langs" role="group" aria-label="Language">
+      <button type="button" id="lang-en" aria-pressed="true">EN</button>
+      <button type="button" id="lang-zh" aria-pressed="false" lang="zh-CN">中</button>
+    </div>
   </header>
 
   <main id="main">
-    <section class="hero" id="top">
-      <div class="hero-copy">
-        <p class="kicker" data-i18n="hero.kicker">Local-first bookmark library</p>
-        <h1 data-i18n-html="hero.title">Your bookmarks,<br>finally a library.</h1>
-        <p class="lede" data-i18n="hero.lede">trove pulls your X bookmarks into a local, searchable workspace. Tag them, find them, and keep them — without sending your library anywhere.</p>
-        <div class="downloads">
-          <a class="button primary" data-download="mac-arm64" href="#download">
-            <span data-i18n="hero.mac">Download for macOS</span>
-            <small data-i18n="hero.macNote">Apple silicon &amp; Intel</small>
-          </a>
-          <a class="button" data-download="windows" href="#download">
-            <span data-i18n="hero.windows">Windows</span>
-            <small data-i18n="hero.windowsNote">x64 installer</small>
-          </a>
+    <div class="wrap">
+      <section class="hero" id="top">
+        <div class="hero-copy">
+          <p class="kicker" data-i18n="hero.kicker">Local-first bookmark library</p>
+          <h1 data-i18n="hero.title">The feed forgets. Your library shouldn't.</h1>
+          <p class="lede" data-i18n="hero.lede">trove takes everything you saved on X — posts, authors, dates, counts — and files it into one database you own. Sync in the background, tag what matters, and find it again next year.</p>
+          <div class="actions">
+            <a class="button primary" data-download="mac-arm64" href="#download">
+              <span data-i18n="hero.mac">Download for macOS</span>
+              <small data-i18n="hero.macNote">Apple silicon</small>
+            </a>
+            <a class="button" data-download="windows" href="#download">
+              <span data-i18n="hero.windows">Windows</span>
+              <small data-i18n="hero.windowsNote">x64 installer</small>
+            </a>
+          </div>
+          <p class="meta" data-i18n="hero.meta">Free. No account, no telemetry — the app never phones home.</p>
         </div>
-        <p class="meta" data-i18n="hero.meta">macOS 12+ · Windows 10+ · No account, no telemetry</p>
-      </div>
 
-      <div class="hero-art" aria-hidden="true">
-        <div class="catalog">
-          <div class="catalog-tabs">
-            <span class="tab active" data-i18n="hero.tabAll">All bookmarks</span>
-            <span class="tab" data-i18n="hero.tabTags">Tags</span>
-            <span class="tab" data-i18n="hero.tabAuthors">Authors</span>
+        <figure class="shot">
+          <img src="img/library-en.webp" data-src-en="img/library-en.webp" data-src-zh="img/library-zh.webp" alt="The trove workspace: a list of saved posts beside tag and author filters" width="1600" height="938">
+          <figcaption data-i18n="hero.caption">Fig. 1 — The workspace. Accounts and posts in this sample are invented.</figcaption>
+        </figure>
+      </section>
+
+      <section class="statement">
+        <p class="statement-line" data-i18n="statement.line">A bookmark is a promise you made to your future self.</p>
+        <p class="statement-body" data-i18n="statement.body">X keeps that promise in a tab you will never open again. trove keeps it in a file you can open, search, back up and read offline — on your own disk, in a format that will outlast the app.</p>
+      </section>
+
+      <section class="system" id="system">
+        <div class="system-head">
+          <div>
+            <p class="section-note" data-i18n="system.note">What it does</p>
+            <h2 data-i18n="system.title">Four things, done properly.</h2>
           </div>
-          <div class="catalog-body">
-            <img src="img/library-en.webp" data-src-en="img/library-en.webp" data-src-zh="img/library-zh.webp" alt="" width="1600" height="869">
+          <p data-i18n="system.body">No dashboards, no streaks, no assistant in the corner. One workspace, one detail pane, and a sync that behaves when the network does not.</p>
+        </div>
+        <div class="rows">
+          <div class="row">
+            <span class="num">01</span>
+            <span class="name" data-i18n="system.one.name">Sync</span>
+            <p data-i18n="system.one.body">Pull every bookmark from X into local SQLite, with author, date and engagement counts. An interrupted run resumes; it does not start over.</p>
           </div>
-          <div class="catalog-foot">
-            <span data-i18n="hero.footCount">8 bookmarks</span>
-            <span data-i18n="hero.footLocal">Local · SQLite</span>
+          <div class="row">
+            <span class="num">02</span>
+            <span class="name" data-i18n="system.two.name">Tags</span>
+            <p data-i18n="system.two.body">Aliases, themes and a review queue. Move a whole shelf into a new tag in one pass, and merge the near-duplicates that accumulate.</p>
+          </div>
+          <div class="row">
+            <span class="num">03</span>
+            <span class="name" data-i18n="system.three.name">Auto-tag</span>
+            <p data-i18n="system.three.body">Keyword heuristics out of the box; bring your own model key for a second pass. Every suggestion waits for your yes.</p>
+          </div>
+          <div class="row">
+            <span class="num">04</span>
+            <span class="name" data-i18n="system.four.name">Detail</span>
+            <p data-i18n="system.four.body">The post, the thread, the date you saved it, your own note — read without leaving the library or loading x.com.</p>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="statement">
-      <p class="statement-line" data-i18n="statement.line">The feed forgets. A library remembers.</p>
-      <p class="statement-body" data-i18n="statement.body">X is good at saving a post for later. It is less good at helping you find it again. trove turns the archive into a place you can browse, search, and arrange — on your own disk.</p>
-    </section>
+      <section class="split" id="workspace">
+        <div class="copy">
+          <p class="section-note" data-i18n="workspace.note">The workspace</p>
+          <h2 data-i18n="workspace.title">A reading desk, not a feed.</h2>
+          <p data-i18n="workspace.body">Three columns: what you saved, what it says, what it belongs to. No infinite scroll, no recommendation, no reason to open the timeline again.</p>
+          <ul class="points">
+            <li data-i18n="workspace.point1">Search text, author and tag at the same time</li>
+            <li data-i18n="workspace.point2">Notes travel with the bookmark, not in a separate app</li>
+            <li data-i18n="workspace.point3">Media cached locally, so a deleted post stays readable</li>
+          </ul>
+        </div>
+        <figure class="shot">
+          <img src="img/detail-en.webp" data-src-en="img/detail-en.webp" data-src-zh="img/detail-zh.webp" alt="A saved post opened in trove, with its author, date and tags" width="1600" height="938" loading="lazy">
+          <figcaption data-i18n="workspace.caption">Fig. 2 — Detail. Illustrative sample.</figcaption>
+        </figure>
+      </section>
 
-    <section class="features" id="features">
-      <article>
-        <h2 data-i18n="features.one.title">Bring the whole archive</h2>
-        <p data-i18n="features.one.body">Sync every bookmark you have saved on X into one local database. Search the text, the author, the tags, or the date.</p>
-      </article>
-      <article>
-        <h2 data-i18n="features.two.title">Organize by meaning</h2>
-        <p data-i18n="features.two.body">A tag library with aliases and parent tags. Filter by author, media, or a saved view. Batch actions when a whole shelf needs moving.</p>
-      </article>
-      <article>
-        <h2 data-i18n="features.three.title">Let a model do the first pass</h2>
-        <p data-i18n="features.three.body">Use heuristics or bring your own LLM key. Suggestions wait in a review queue; nothing is applied until you say so.</p>
-      </article>
-    </section>
-
-    <section class="split" id="library">
-      <div class="split-copy">
-        <p class="section-note" data-i18n="library.note">The workspace</p>
-        <h2 data-i18n="library.title">A workspace, not a timeline.</h2>
-        <p data-i18n="library.body">Bookmarks, tags, and authors share one quiet surface. Read the post without leaving the library, open a detail card, or move a selection into a new tag. The interface stays out of the way.</p>
-        <ul class="plain-list">
-          <li data-i18n="library.point1">Full-text search over posts, authors, and notes</li>
-          <li data-i18n="library.point2">Grid and list views, with saved views for the ways you read</li>
-          <li data-i18n="library.point3">Native detail cards and an image lightbox</li>
-        </ul>
-      </div>
-      <figure class="shot">
-        <img src="img/detail-en.webp" data-src-en="img/detail-en.webp" data-src-zh="img/detail-zh.webp" alt="trove detail view with a bookmark and its metadata" width="1600" height="869" loading="lazy">
-      </figure>
-    </section>
-
-    <section class="split reverse" id="tagging">
-      <div class="split-copy">
-        <p class="section-note" data-i18n="tagging.note">The tag library</p>
-        <h2 data-i18n="tagging.title">Your vocabulary, not a hashtag soup.</h2>
-        <p data-i18n="tagging.body">Tags have aliases, parent tags, and a review path. Automatic suggestions are just suggestions: accept the useful ones, rename the near misses, and keep the vocabulary yours.</p>
-        <ul class="plain-list">
-          <li data-i18n="tagging.point1">Aliases and parent tags keep related ideas together</li>
-          <li data-i18n="tagging.point2">A review queue for heuristic or model suggestions</li>
-          <li data-i18n="tagging.point3">Batch actions over a selection</li>
-        </ul>
-      </div>
-      <figure class="shot">
-        <img src="img/list-en.webp" data-src-en="img/list-en.webp" data-src-zh="img/list-zh.webp" alt="trove library in list view with tags and authors in the sidebar" width="1600" height="869" loading="lazy">
-      </figure>
-    </section>
+      <section class="split reverse" id="tagging">
+        <div class="copy">
+          <p class="section-note" data-i18n="tagging.note">The tag library</p>
+          <h2 data-i18n="tagging.title">Tags you can actually keep.</h2>
+          <p data-i18n="tagging.body">"design" and "ui" stop being two shelves. Suggestions come from your own keywords first, never from a model you did not choose.</p>
+          <ul class="points">
+            <li data-i18n="tagging.point1">Accept, reject or merge suggestions in a batch</li>
+            <li data-i18n="tagging.point2">Every tag shows its count, so dead shelves are visible</li>
+            <li data-i18n="tagging.point3">Export the whole library as one .trovebundle file</li>
+          </ul>
+        </div>
+        <figure class="shot">
+          <img src="img/list-en.webp" data-src-en="img/list-en.webp" data-src-zh="img/list-zh.webp" alt="The tag library in trove, with each tag and its bookmark count" width="1600" height="938" loading="lazy">
+          <figcaption data-i18n="tagging.caption">Fig. 3 — Tags. Illustrative sample.</figcaption>
+        </figure>
+      </section>
+    </div>
 
     <section class="privacy" id="privacy">
-      <div class="privacy-inner">
-        <p class="section-note" data-i18n="privacy.note">Local-first, by construction</p>
-        <h2 data-i18n="privacy.title">Nothing leaves this machine.</h2>
-        <p class="privacy-lede" data-i18n="privacy.body">Your bookmarks live in a SQLite file. X cookies and model keys live in the system's secure store. There is no account, no sync server, and no telemetry.</p>
-        <div class="privacy-grid">
-          <div>
-            <h3 data-i18n="privacy.one.title">SQLite on disk</h3>
-            <p data-i18n="privacy.one.body">A single local database you can back up, inspect, or move.</p>
+      <div class="wrap">
+        <p class="section-note" data-i18n="privacy.note">Privacy</p>
+        <h2 data-i18n="privacy.title">Your reading list is nobody's business.</h2>
+        <div class="privacy-panel">
+          <p class="privacy-lede" data-i18n="privacy.body">trove talks to X with your own session cookies and writes to a SQLite file on your disk. There is no trove account, no sync server and no analytics endpoint to opt out of.</p>
+          <div class="privacy-grid">
+            <div>
+              <h3 data-i18n="privacy.one.title">Local by default</h3>
+              <p data-i18n="privacy.one.body">Every bookmark, tag and note lives in one database file. Back it up by copying it.</p>
+            </div>
+            <div>
+              <h3 data-i18n="privacy.two.title">Credentials in the system vault</h3>
+              <p data-i18n="privacy.two.body">Cookies go to the macOS Keychain or Windows Credential Manager. The app checks that a key exists; it never prints one.</p>
+            </div>
+            <div>
+              <h3 data-i18n="privacy.three.title">Nothing to opt out of</h3>
+              <p data-i18n="privacy.three.body">No telemetry, no crash reporting, no update pings. Downloads come from GitHub releases when you ask.</p>
+            </div>
           </div>
-          <div>
-            <h3 data-i18n="privacy.two.title">System credentials</h3>
-            <p data-i18n="privacy.two.body">macOS Keychain or Windows Credential Manager. The app only checks presence; it never prints a secret.</p>
-          </div>
-          <div>
-            <h3 data-i18n="privacy.three.title">Your keys, your choice</h3>
-            <p data-i18n="privacy.three.body">Automatic tagging is optional. Point it at a provider you trust, or keep it heuristic.</p>
-          </div>
+          <p class="privacy-sample" data-i18n="privacy.sample">The screenshots on this page come from a seeded demo library. Every account, post and tag in them is invented; none belongs to a real X user.</p>
         </div>
       </div>
     </section>
 
-    <section class="install" id="install">
-      <div class="install-head">
-        <p class="section-note" data-i18n="install.note">Getting started</p>
-        <h2 data-i18n="install.title">Four steps to a library.</h2>
-      </div>
-      <ol class="steps">
-        <li>
-          <span class="step-number">1</span>
-          <h3 data-i18n="install.one.title">Download your build</h3>
-          <p data-i18n="install.one.body">Apple silicon, Intel Mac, or Windows x64. The macOS app is a signed disk image; Windows has an installer and a portable executable.</p>
-        </li>
-        <li>
-          <span class="step-number">2</span>
-          <h3 data-i18n="install.two.title">Connect X</h3>
-          <p data-i18n-html="install.two.body">Paste your <code>auth_token</code> and <code>ct0</code> cookies, or let trove read them from a signed-in browser profile.</p>
-        </li>
-        <li>
-          <span class="step-number">3</span>
-          <h3 data-i18n="install.three.title">Add a model key, if you want</h3>
-          <p data-i18n="install.three.body">Automatic tagging works with heuristics alone. An LLM key adds a second pass with your own provider.</p>
-        </li>
-        <li>
-          <span class="step-number">4</span>
-          <h3 data-i18n="install.four.title">Sync and arrange</h3>
-          <p data-i18n="install.four.body">Pull the archive once, then search, tag, and keep it current on your own schedule.</p>
-        </li>
-      </ol>
-    </section>
+    <div class="wrap">
+      <section class="install" id="install">
+        <div class="install-head">
+          <p class="section-note" data-i18n="install.note">Install</p>
+          <h2 data-i18n="install.title">Two minutes, no account.</h2>
+        </div>
+        <ol class="steps">
+          <li>
+            <span class="step-number">01</span>
+            <h3 data-i18n="install.one.title">Download</h3>
+            <p data-i18n="install.one.body">Pick the build for your platform below. Every build is the same app.</p>
+          </li>
+          <li>
+            <span class="step-number">02</span>
+            <h3 data-i18n="install.two.title">Open it</h3>
+            <p data-i18n="install.two.body">macOS: right-click the app and choose Open on first launch. Windows: run the installer.</p>
+          </li>
+          <li>
+            <span class="step-number">03</span>
+            <h3 data-i18n="install.three.title">Connect X</h3>
+            <p data-i18n-html="install.three.body">trove reads the session cookies from a browser you are already signed in to, or you paste <code>auth_token</code> and <code>ct0</code> once.</p>
+          </li>
+          <li>
+            <span class="step-number">04</span>
+            <h3 data-i18n="install.four.title">Sync</h3>
+            <p data-i18n="install.four.body">The first full sync runs in the background. The app stays usable while it works.</p>
+          </li>
+        </ol>
+      </section>
 
-    <section class="download" id="download">
-      <div class="download-head">
-        <p class="section-note" data-i18n="download.note">Download</p>
-        <h2 data-i18n="download.title">Pick the build for this computer.</h2>
-        <p data-i18n="download.body">Every build is the same app. Downloads point at the latest GitHub release.</p>
-      </div>
-      <div class="download-list">
-        <a class="download-row" data-download="mac-arm64" href="#download">
-          <span class="platform" data-i18n="download.macArm">macOS · Apple silicon</span>
-          <span class="file">trove-macos-arm64.dmg</span>
-          <span class="arrow" aria-hidden="true">Download</span>
-        </a>
-        <a class="download-row" data-download="mac-x64" href="#download">
-          <span class="platform" data-i18n="download.macIntel">macOS · Intel</span>
-          <span class="file">trove-macos-x64.dmg</span>
-          <span class="arrow" aria-hidden="true">Download</span>
-        </a>
-        <a class="download-row" data-download="windows" href="#download">
-          <span class="platform" data-i18n="download.windows">Windows · x64</span>
-          <span class="file">trove-windows-x64-setup.exe</span>
-          <span class="arrow" aria-hidden="true">Download</span>
-        </a>
-      </div>
-      <p class="download-note" data-i18n="download.note2">Requires macOS 12 or later, or Windows 10/11. A GitHub release with these asset names is needed before the links resolve.</p>
-    </section>
+      <section class="download" id="download">
+        <div class="download-head">
+          <p class="section-note" data-i18n="download.note">Download</p>
+          <h2 data-i18n="download.title">Download trove.</h2>
+          <p data-i18n="download.body">Version 0.3.0, an unsigned development build for macOS 12+ and Windows 10+. Links point at the latest GitHub release.</p>
+        </div>
+        <div class="download-list">
+          <a class="download-row" data-download="mac-arm64" href="#download">
+            <span class="platform" data-i18n="download.macArm">macOS, Apple silicon</span>
+            <span class="file">trove-macos-arm64.dmg</span>
+            <span class="get" data-i18n="download.get">Download</span>
+          </a>
+          <a class="download-row" data-download="mac-x64" href="#download">
+            <span class="platform" data-i18n="download.macIntel">macOS, Intel</span>
+            <span class="file">trove-macos-x64.dmg</span>
+            <span class="get" data-i18n="download.get">Download</span>
+          </a>
+          <a class="download-row" data-download="windows" href="#download">
+            <span class="platform" data-i18n="download.windows">Windows, x64</span>
+            <span class="file">trove-windows-x64-setup.exe</span>
+            <span class="get" data-i18n="download.get">Download</span>
+          </a>
+        </div>
+        <p class="download-note" data-i18n="download.note2">Unsigned builds: macOS needs right-click → Open on first launch; Windows may show a SmartScreen prompt.</p>
+      </section>
+    </div>
   </main>
 
   <footer>
-    <div class="footer-brand">
-      <img src="img/icon.png" alt="" width="28" height="28">
+    <a class="footer-brand" href="#top">
+      <img src="img/mark.png" alt="" width="24" height="24">
       <span>trove</span>
-    </div>
-    <p data-i18n="footer.line">Local-first software for people who save too much on X.</p>
+    </a>
+    <p data-i18n="footer.line">A quiet place for what you saved.</p>
     <nav aria-label="Footer">
       <a href="https://github.com/taoquo/trove" rel="noreferrer">GitHub</a>
       <a href="https://github.com/taoquo/trove/releases" rel="noreferrer" data-i18n="footer.releases">Releases</a>

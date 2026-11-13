@@ -17,6 +17,7 @@ trove 是一个管理 X/Twitter 书签的桌面应用。Go 1.27 用 [MyGo](https
 ```text
 cmd/trove/           组合根、窗口、菜单、截图入口
 cmd/mediaprobe/      开发用媒体诊断工具
+cmd/seed/            用 testdata/site-fixture.json 造一份虚构书库，供站点截图
 internal/domain      纯规则，不依赖其他层
 internal/ports       usecase 需要的接口
 internal/usecase     workspace / tagging / syncer / suggestions / settings
