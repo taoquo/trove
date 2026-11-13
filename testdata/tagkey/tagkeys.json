@@ -1,0 +1,1681 @@
+{
+  "note": "Frozen equivalence fixture. Do not edit by hand.",
+  "generator": "apps/macos/testdata/tagkey/gentagkeys.mjs",
+  "sourceFile": "frozen-fixture",
+  "sourceCommit": "",
+  "caseCount": 318,
+  "cases": [
+    {
+      "input": "AI Agent",
+      "display": "AI Agent",
+      "key": "aiagent"
+    },
+    {
+      "input": "ai-agents",
+      "display": "ai-agents",
+      "key": "aiagent"
+    },
+    {
+      "input": "AI_Agent",
+      "display": "AI_Agent",
+      "key": "aiagent"
+    },
+    {
+      "input": "ai.agent",
+      "display": "ai.agent",
+      "key": "aiagent"
+    },
+    {
+      "input": "ai/agent",
+      "display": "ai/agent",
+      "key": "aiagent"
+    },
+    {
+      "input": "A I  Agent",
+      "display": "A I Agent",
+      "key": "aiagent"
+    },
+    {
+      "input": "machine-learning",
+      "display": "machine-learning",
+      "key": "machinelearning"
+    },
+    {
+      "input": "machine_learning",
+      "display": "machine_learning",
+      "key": "machinelearning"
+    },
+    {
+      "input": "machine.learning",
+      "display": "machine.learning",
+      "key": "machinelearning"
+    },
+    {
+      "input": "machine/learning",
+      "display": "machine/learning",
+      "key": "machinelearning"
+    },
+    {
+      "input": "machine learning",
+      "display": "machine learning",
+      "key": "machinelearning"
+    },
+    {
+      "input": "  machine   learning  ",
+      "display": "machine learning",
+      "key": "machinelearning"
+    },
+    {
+      "input": "-lead-",
+      "display": "-lead-",
+      "key": "lead"
+    },
+    {
+      "input": "_trail_",
+      "display": "_trail_",
+      "key": "trail"
+    },
+    {
+      "input": "a-b_c.d/e f",
+      "display": "a-b_c.d/e f",
+      "key": "abcdef"
+    },
+    {
+      "input": "#AI",
+      "display": "AI",
+      "key": "ai"
+    },
+    {
+      "input": "##AI",
+      "display": "AI",
+      "key": "ai"
+    },
+    {
+      "input": "### AI",
+      "display": "AI",
+      "key": "ai"
+    },
+    {
+      "input": "#  AI  ",
+      "display": "AI",
+      "key": "ai"
+    },
+    {
+      "input": "#ai",
+      "display": "ai",
+      "key": "ai"
+    },
+    {
+      "input": "#",
+      "display": "",
+      "key": ""
+    },
+    {
+      "input": "##",
+      "display": "",
+      "key": ""
+    },
+    {
+      "input": "# #",
+      "display": "#",
+      "key": "#"
+    },
+    {
+      "input": "#-",
+      "display": "-",
+      "key": ""
+    },
+    {
+      "input": "",
+      "display": "",
+      "key": ""
+    },
+    {
+      "input": " ",
+      "display": "",
+      "key": ""
+    },
+    {
+      "input": "   ",
+      "display": "",
+      "key": ""
+    },
+    {
+      "input": "\t",
+      "display": "",
+      "key": ""
+    },
+    {
+      "input": "\n",
+      "display": "",
+      "key": ""
+    },
+    {
+      "input": " \t\n ",
+      "display": "",
+      "key": ""
+    },
+    {
+      "input": "technologies",
+      "display": "technologies",
+      "key": "technology"
+    },
+    {
+      "input": "companies",
+      "display": "companies",
+      "key": "company"
+    },
+    {
+      "input": "policies",
+      "display": "policies",
+      "key": "policy"
+    },
+    {
+      "input": "batteries",
+      "display": "batteries",
+      "key": "battery"
+    },
+    {
+      "input": "stories",
+      "display": "stories",
+      "key": "story"
+    },
+    {
+      "input": "ies",
+      "display": "ies",
+      "key": "ies"
+    },
+    {
+      "input": "ties",
+      "display": "ties",
+      "key": "ty"
+    },
+    {
+      "input": "boxes",
+      "display": "boxes",
+      "key": "box"
+    },
+    {
+      "input": "churches",
+      "display": "churches",
+      "key": "church"
+    },
+    {
+      "input": "dishes",
+      "display": "dishes",
+      "key": "dish"
+    },
+    {
+      "input": "quizzes",
+      "display": "quizzes",
+      "key": "quizz"
+    },
+    {
+      "input": "sizes",
+      "display": "sizes",
+      "key": "siz"
+    },
+    {
+      "input": "taxes",
+      "display": "taxes",
+      "key": "tax"
+    },
+    {
+      "input": "cases",
+      "display": "cases",
+      "key": "cas"
+    },
+    {
+      "input": "es",
+      "display": "es",
+      "key": "es"
+    },
+    {
+      "input": "agents",
+      "display": "agents",
+      "key": "agent"
+    },
+    {
+      "input": "tags",
+      "display": "tags",
+      "key": "tag"
+    },
+    {
+      "input": "apps",
+      "display": "apps",
+      "key": "app"
+    },
+    {
+      "input": "notebooks",
+      "display": "notebooks",
+      "key": "notebook"
+    },
+    {
+      "input": "links",
+      "display": "links",
+      "key": "link"
+    },
+    {
+      "input": "tools",
+      "display": "tools",
+      "key": "tool"
+    },
+    {
+      "input": "models",
+      "display": "models",
+      "key": "model"
+    },
+    {
+      "input": "s",
+      "display": "s",
+      "key": "s"
+    },
+    {
+      "input": "class",
+      "display": "class",
+      "key": "class"
+    },
+    {
+      "input": "status",
+      "display": "status",
+      "key": "status"
+    },
+    {
+      "input": "analysis",
+      "display": "analysis",
+      "key": "analysis"
+    },
+    {
+      "input": "boss",
+      "display": "boss",
+      "key": "boss"
+    },
+    {
+      "input": "virus",
+      "display": "virus",
+      "key": "virus"
+    },
+    {
+      "input": "basis",
+      "display": "basis",
+      "key": "basis"
+    },
+    {
+      "input": "focus",
+      "display": "focus",
+      "key": "focus"
+    },
+    {
+      "input": "bus",
+      "display": "bus",
+      "key": "bus"
+    },
+    {
+      "input": "campus",
+      "display": "campus",
+      "key": "campus"
+    },
+    {
+      "input": "crisis",
+      "display": "crisis",
+      "key": "crisis"
+    },
+    {
+      "input": "chaos",
+      "display": "chaos",
+      "key": "chaos"
+    },
+    {
+      "input": "pathos",
+      "display": "pathos",
+      "key": "pathos"
+    },
+    {
+      "input": "js",
+      "display": "js",
+      "key": "js"
+    },
+    {
+      "input": "ts",
+      "display": "ts",
+      "key": "ts"
+    },
+    {
+      "input": "os",
+      "display": "os",
+      "key": "os"
+    },
+    {
+      "input": "css",
+      "display": "css",
+      "key": "css"
+    },
+    {
+      "input": "a",
+      "display": "a",
+      "key": "a"
+    },
+    {
+      "input": "ab",
+      "display": "ab",
+      "key": "ab"
+    },
+    {
+      "input": "abc",
+      "display": "abc",
+      "key": "abc"
+    },
+    {
+      "input": "abcd",
+      "display": "abcd",
+      "key": "abcd"
+    },
+    {
+      "input": "abcde",
+      "display": "abcde",
+      "key": "abcde"
+    },
+    {
+      "input": "c++",
+      "display": "c++",
+      "key": "c++"
+    },
+    {
+      "input": "c#",
+      "display": "c#",
+      "key": "c#"
+    },
+    {
+      "input": "3d",
+      "display": "3d",
+      "key": "3d"
+    },
+    {
+      "input": "4k",
+      "display": "4k",
+      "key": "4k"
+    },
+    {
+      "input": "ai2",
+      "display": "ai2",
+      "key": "ai2"
+    },
+    {
+      "input": "v2",
+      "display": "v2",
+      "key": "v2"
+    },
+    {
+      "input": "gpt-4",
+      "display": "gpt-4",
+      "key": "gpt4"
+    },
+    {
+      "input": "node.js",
+      "display": "node.js",
+      "key": "nodejs"
+    },
+    {
+      "input": "vue.js",
+      "display": "vue.js",
+      "key": "vuej"
+    },
+    {
+      "input": "x86-64",
+      "display": "x86-64",
+      "key": "x8664"
+    },
+    {
+      "input": "AI2",
+      "display": "AI2",
+      "key": "ai2"
+    },
+    {
+      "input": "123",
+      "display": "123",
+      "key": "123"
+    },
+    {
+      "input": "a1b2",
+      "display": "a1b2",
+      "key": "a1b2"
+    },
+    {
+      "input": "ＡＩ",
+      "display": "AI",
+      "key": "ai"
+    },
+    {
+      "input": "＃ＡＩ",
+      "display": "AI",
+      "key": "ai"
+    },
+    {
+      "input": "ＡＩ Ａｇｅｎｔ",
+      "display": "AI Agent",
+      "key": "aiagent"
+    },
+    {
+      "input": "café",
+      "display": "café",
+      "key": "café"
+    },
+    {
+      "input": "naïve",
+      "display": "naïve",
+      "key": "naïve"
+    },
+    {
+      "input": "Über",
+      "display": "Über",
+      "key": "über"
+    },
+    {
+      "input": "STRASSE",
+      "display": "STRASSE",
+      "key": "strasse"
+    },
+    {
+      "input": "Straße",
+      "display": "Straße",
+      "key": "straße"
+    },
+    {
+      "input": "é",
+      "display": "é",
+      "key": "é"
+    },
+    {
+      "input": "ﬁle",
+      "display": "file",
+      "key": "file"
+    },
+    {
+      "input": "㈱",
+      "display": "(株)",
+      "key": "(株)"
+    },
+    {
+      "input": "①②",
+      "display": "12",
+      "key": "12"
+    },
+    {
+      "input": "中文",
+      "display": "中文",
+      "key": "中文"
+    },
+    {
+      "input": "中文分词",
+      "display": "中文分词",
+      "key": "中文分词"
+    },
+    {
+      "input": "标签",
+      "display": "标签",
+      "key": "标签"
+    },
+    {
+      "input": "#中文",
+      "display": "中文",
+      "key": "中文"
+    },
+    {
+      "input": "机器学习",
+      "display": "机器学习",
+      "key": "机器学习"
+    },
+    {
+      "input": "日本語",
+      "display": "日本語",
+      "key": "日本語"
+    },
+    {
+      "input": "한국어",
+      "display": "한국어",
+      "key": "한국어"
+    },
+    {
+      "input": "🚀 rocket",
+      "display": "🚀 rocket",
+      "key": "🚀rocket"
+    },
+    {
+      "input": "rocket 🚀",
+      "display": "rocket 🚀",
+      "key": "rocket🚀"
+    },
+    {
+      "input": "☕",
+      "display": "☕",
+      "key": "☕"
+    },
+    {
+      "input": "a☕b",
+      "display": "a☕b",
+      "key": "a☕b"
+    },
+    {
+      "input": "—dash",
+      "display": "—dash",
+      "key": "—dash"
+    },
+    {
+      "input": "(paren)",
+      "display": "(paren)",
+      "key": "(paren)"
+    },
+    {
+      "input": "[bracket]",
+      "display": "[bracket]",
+      "key": "[bracket]"
+    },
+    {
+      "input": "GraphQL",
+      "display": "GraphQL",
+      "key": "graphql"
+    },
+    {
+      "input": "graphql",
+      "display": "graphql",
+      "key": "graphql"
+    },
+    {
+      "input": "Graph_QL",
+      "display": "Graph_QL",
+      "key": "graphql"
+    },
+    {
+      "input": "Graph-QL",
+      "display": "Graph-QL",
+      "key": "graphql"
+    },
+    {
+      "input": "REST API",
+      "display": "REST API",
+      "key": "restapi"
+    },
+    {
+      "input": "rest-api",
+      "display": "rest-api",
+      "key": "restapi"
+    },
+    {
+      "input": "TypeScript",
+      "display": "TypeScript",
+      "key": "typescript"
+    },
+    {
+      "input": "typescript",
+      "display": "typescript",
+      "key": "typescript"
+    },
+    {
+      "input": "OpenAI",
+      "display": "OpenAI",
+      "key": "openai"
+    },
+    {
+      "input": "open-ai",
+      "display": "open-ai",
+      "key": "openai"
+    },
+    {
+      "input": "open_ai",
+      "display": "open_ai",
+      "key": "openai"
+    },
+    {
+      "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "display": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "input": "tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag",
+      "display": "tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag tag",
+      "key": "tagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtagtag"
+    },
+    {
+      "input": "xxxx",
+      "display": "xxxx",
+      "key": "xxxx"
+    },
+    {
+      "input": "sses",
+      "display": "sses",
+      "key": "ss"
+    },
+    {
+      "input": "ieses",
+      "display": "ieses",
+      "key": "ies"
+    },
+    {
+      "input": " AI ",
+      "display": "AI",
+      "key": "ai"
+    },
+    {
+      "input": "　AI　",
+      "display": "AI",
+      "key": "ai"
+    },
+    {
+      "input": "AI",
+      "display": "AI",
+      "key": "ai"
+    },
+    {
+      "input": "﻿AI",
+      "display": "AI",
+      "key": "ai"
+    },
+    {
+      "input": "A B",
+      "display": "A B",
+      "key": "ab"
+    },
+    {
+      "input": "A　B",
+      "display": "A B",
+      "key": "ab"
+    },
+    {
+      "input": "A B",
+      "display": "A B",
+      "key": "ab"
+    },
+    {
+      "input": "A B",
+      "display": "A B",
+      "key": "ab"
+    },
+    {
+      "input": " AI",
+      "display": "AI",
+      "key": "ai"
+    },
+    {
+      "input": " AI",
+      "display": "AI",
+      "key": "ai"
+    },
+    {
+      "input": " AI",
+      "display": "AI",
+      "key": "ai"
+    },
+    {
+      "input": "İ",
+      "display": "İ",
+      "key": "i̇"
+    },
+    {
+      "input": "ı",
+      "display": "ı",
+      "key": "ı"
+    },
+    {
+      "input": "İstanbul",
+      "display": "İstanbul",
+      "key": "i̇stanbul"
+    },
+    {
+      "input": "İ",
+      "display": "İ",
+      "key": "i̇"
+    },
+    {
+      "input": "Σ",
+      "display": "Σ",
+      "key": "σ"
+    },
+    {
+      "input": "ς",
+      "display": "ς",
+      "key": "ς"
+    },
+    {
+      "input": "σ",
+      "display": "σ",
+      "key": "σ"
+    },
+    {
+      "input": "ΣΣ",
+      "display": "ΣΣ",
+      "key": "σς"
+    },
+    {
+      "input": "ẞ",
+      "display": "ẞ",
+      "key": "ß"
+    },
+    {
+      "input": "ﬀle",
+      "display": "ffle",
+      "key": "ffle"
+    },
+    {
+      "input": "①",
+      "display": "1",
+      "key": "1"
+    },
+    {
+      "input": "é",
+      "display": "é",
+      "key": "é"
+    },
+    {
+      "input": "news",
+      "display": "news",
+      "key": "news"
+    },
+    {
+      "input": "NEWS",
+      "display": "NEWS",
+      "key": "news"
+    },
+    {
+      "input": "newss",
+      "display": "newss",
+      "key": "newss"
+    },
+    {
+      "input": "#news",
+      "display": "news",
+      "key": "news"
+    },
+    {
+      "input": "news-tag",
+      "display": "news-tag",
+      "key": "newstag"
+    },
+    {
+      "input": "pre-news",
+      "display": "pre-news",
+      "key": "prenew"
+    },
+    {
+      "input": "devops",
+      "display": "devops",
+      "key": "devops"
+    },
+    {
+      "input": "DEVOPS",
+      "display": "DEVOPS",
+      "key": "devops"
+    },
+    {
+      "input": "devopss",
+      "display": "devopss",
+      "key": "devopss"
+    },
+    {
+      "input": "#devops",
+      "display": "devops",
+      "key": "devops"
+    },
+    {
+      "input": "devops-tag",
+      "display": "devops-tag",
+      "key": "devopstag"
+    },
+    {
+      "input": "pre-devops",
+      "display": "pre-devops",
+      "key": "predevop"
+    },
+    {
+      "input": "ops",
+      "display": "ops",
+      "key": "ops"
+    },
+    {
+      "input": "OPS",
+      "display": "OPS",
+      "key": "ops"
+    },
+    {
+      "input": "opss",
+      "display": "opss",
+      "key": "opss"
+    },
+    {
+      "input": "#ops",
+      "display": "ops",
+      "key": "ops"
+    },
+    {
+      "input": "ops-tag",
+      "display": "ops-tag",
+      "key": "opstag"
+    },
+    {
+      "input": "pre-ops",
+      "display": "pre-ops",
+      "key": "preop"
+    },
+    {
+      "input": "ios",
+      "display": "ios",
+      "key": "ios"
+    },
+    {
+      "input": "IOS",
+      "display": "IOS",
+      "key": "ios"
+    },
+    {
+      "input": "ioss",
+      "display": "ioss",
+      "key": "ioss"
+    },
+    {
+      "input": "#ios",
+      "display": "ios",
+      "key": "ios"
+    },
+    {
+      "input": "ios-tag",
+      "display": "ios-tag",
+      "key": "iostag"
+    },
+    {
+      "input": "pre-ios",
+      "display": "pre-ios",
+      "key": "preios"
+    },
+    {
+      "input": "macos",
+      "display": "macos",
+      "key": "macos"
+    },
+    {
+      "input": "MACOS",
+      "display": "MACOS",
+      "key": "macos"
+    },
+    {
+      "input": "macoss",
+      "display": "macoss",
+      "key": "macoss"
+    },
+    {
+      "input": "#macos",
+      "display": "macos",
+      "key": "macos"
+    },
+    {
+      "input": "macos-tag",
+      "display": "macos-tag",
+      "key": "macostag"
+    },
+    {
+      "input": "pre-macos",
+      "display": "pre-macos",
+      "key": "premacos"
+    },
+    {
+      "input": "aws",
+      "display": "aws",
+      "key": "aws"
+    },
+    {
+      "input": "AWS",
+      "display": "AWS",
+      "key": "aws"
+    },
+    {
+      "input": "awss",
+      "display": "awss",
+      "key": "awss"
+    },
+    {
+      "input": "#aws",
+      "display": "aws",
+      "key": "aws"
+    },
+    {
+      "input": "aws-tag",
+      "display": "aws-tag",
+      "key": "awstag"
+    },
+    {
+      "input": "pre-aws",
+      "display": "pre-aws",
+      "key": "preaw"
+    },
+    {
+      "input": "gcs",
+      "display": "gcs",
+      "key": "gcs"
+    },
+    {
+      "input": "GCS",
+      "display": "GCS",
+      "key": "gcs"
+    },
+    {
+      "input": "gcss",
+      "display": "gcss",
+      "key": "gcss"
+    },
+    {
+      "input": "#gcs",
+      "display": "gcs",
+      "key": "gcs"
+    },
+    {
+      "input": "gcs-tag",
+      "display": "gcs-tag",
+      "key": "gcstag"
+    },
+    {
+      "input": "pre-gcs",
+      "display": "pre-gcs",
+      "key": "pregc"
+    },
+    {
+      "input": "kubernetes",
+      "display": "kubernetes",
+      "key": "kubernetes"
+    },
+    {
+      "input": "KUBERNETES",
+      "display": "KUBERNETES",
+      "key": "kubernetes"
+    },
+    {
+      "input": "kubernetess",
+      "display": "kubernetess",
+      "key": "kubernetess"
+    },
+    {
+      "input": "#kubernetes",
+      "display": "kubernetes",
+      "key": "kubernetes"
+    },
+    {
+      "input": "kubernetes-tag",
+      "display": "kubernetes-tag",
+      "key": "kubernetestag"
+    },
+    {
+      "input": "pre-kubernetes",
+      "display": "pre-kubernetes",
+      "key": "prekubernete"
+    },
+    {
+      "input": "series",
+      "display": "series",
+      "key": "series"
+    },
+    {
+      "input": "SERIES",
+      "display": "SERIES",
+      "key": "series"
+    },
+    {
+      "input": "seriess",
+      "display": "seriess",
+      "key": "seriess"
+    },
+    {
+      "input": "#series",
+      "display": "series",
+      "key": "series"
+    },
+    {
+      "input": "series-tag",
+      "display": "series-tag",
+      "key": "seriestag"
+    },
+    {
+      "input": "pre-series",
+      "display": "pre-series",
+      "key": "presery"
+    },
+    {
+      "input": "redis",
+      "display": "redis",
+      "key": "redis"
+    },
+    {
+      "input": "REDIS",
+      "display": "REDIS",
+      "key": "redis"
+    },
+    {
+      "input": "rediss",
+      "display": "rediss",
+      "key": "rediss"
+    },
+    {
+      "input": "#redis",
+      "display": "redis",
+      "key": "redis"
+    },
+    {
+      "input": "redis-tag",
+      "display": "redis-tag",
+      "key": "redistag"
+    },
+    {
+      "input": "pre-redis",
+      "display": "pre-redis",
+      "key": "preredis"
+    },
+    {
+      "input": "nextjs",
+      "display": "nextjs",
+      "key": "nextjs"
+    },
+    {
+      "input": "NEXTJS",
+      "display": "NEXTJS",
+      "key": "nextjs"
+    },
+    {
+      "input": "nextjss",
+      "display": "nextjss",
+      "key": "nextjss"
+    },
+    {
+      "input": "#nextjs",
+      "display": "nextjs",
+      "key": "nextjs"
+    },
+    {
+      "input": "nextjs-tag",
+      "display": "nextjs-tag",
+      "key": "nextjstag"
+    },
+    {
+      "input": "pre-nextjs",
+      "display": "pre-nextjs",
+      "key": "prenextj"
+    },
+    {
+      "input": "nodejs",
+      "display": "nodejs",
+      "key": "nodejs"
+    },
+    {
+      "input": "NODEJS",
+      "display": "NODEJS",
+      "key": "nodejs"
+    },
+    {
+      "input": "nodejss",
+      "display": "nodejss",
+      "key": "nodejss"
+    },
+    {
+      "input": "#nodejs",
+      "display": "nodejs",
+      "key": "nodejs"
+    },
+    {
+      "input": "nodejs-tag",
+      "display": "nodejs-tag",
+      "key": "nodejstag"
+    },
+    {
+      "input": "pre-nodejs",
+      "display": "pre-nodejs",
+      "key": "prenodej"
+    },
+    {
+      "input": "nestjs",
+      "display": "nestjs",
+      "key": "nestjs"
+    },
+    {
+      "input": "NESTJS",
+      "display": "NESTJS",
+      "key": "nestjs"
+    },
+    {
+      "input": "nestjss",
+      "display": "nestjss",
+      "key": "nestjss"
+    },
+    {
+      "input": "#nestjs",
+      "display": "nestjs",
+      "key": "nestjs"
+    },
+    {
+      "input": "nestjs-tag",
+      "display": "nestjs-tag",
+      "key": "nestjstag"
+    },
+    {
+      "input": "pre-nestjs",
+      "display": "pre-nestjs",
+      "key": "prenestj"
+    },
+    {
+      "input": "threejs",
+      "display": "threejs",
+      "key": "threejs"
+    },
+    {
+      "input": "THREEJS",
+      "display": "THREEJS",
+      "key": "threejs"
+    },
+    {
+      "input": "threejss",
+      "display": "threejss",
+      "key": "threejss"
+    },
+    {
+      "input": "#threejs",
+      "display": "threejs",
+      "key": "threejs"
+    },
+    {
+      "input": "threejs-tag",
+      "display": "threejs-tag",
+      "key": "threejstag"
+    },
+    {
+      "input": "pre-threejs",
+      "display": "pre-threejs",
+      "key": "prethreej"
+    },
+    {
+      "input": "JS",
+      "display": "JS",
+      "key": "js"
+    },
+    {
+      "input": "jss",
+      "display": "jss",
+      "key": "jss"
+    },
+    {
+      "input": "#js",
+      "display": "js",
+      "key": "js"
+    },
+    {
+      "input": "js-tag",
+      "display": "js-tag",
+      "key": "jstag"
+    },
+    {
+      "input": "pre-js",
+      "display": "pre-js",
+      "key": "prej"
+    },
+    {
+      "input": "TS",
+      "display": "TS",
+      "key": "ts"
+    },
+    {
+      "input": "tss",
+      "display": "tss",
+      "key": "tss"
+    },
+    {
+      "input": "#ts",
+      "display": "ts",
+      "key": "ts"
+    },
+    {
+      "input": "ts-tag",
+      "display": "ts-tag",
+      "key": "tstag"
+    },
+    {
+      "input": "pre-ts",
+      "display": "pre-ts",
+      "key": "pret"
+    },
+    {
+      "input": "OS",
+      "display": "OS",
+      "key": "os"
+    },
+    {
+      "input": "oss",
+      "display": "oss",
+      "key": "oss"
+    },
+    {
+      "input": "#os",
+      "display": "os",
+      "key": "os"
+    },
+    {
+      "input": "os-tag",
+      "display": "os-tag",
+      "key": "ostag"
+    },
+    {
+      "input": "pre-os",
+      "display": "pre-os",
+      "key": "preos"
+    },
+    {
+      "input": "saas",
+      "display": "saas",
+      "key": "saas"
+    },
+    {
+      "input": "SAAS",
+      "display": "SAAS",
+      "key": "saas"
+    },
+    {
+      "input": "saass",
+      "display": "saass",
+      "key": "saass"
+    },
+    {
+      "input": "#saas",
+      "display": "saas",
+      "key": "saas"
+    },
+    {
+      "input": "saas-tag",
+      "display": "saas-tag",
+      "key": "saastag"
+    },
+    {
+      "input": "pre-saas",
+      "display": "pre-saas",
+      "key": "presaa"
+    },
+    {
+      "input": "paas",
+      "display": "paas",
+      "key": "paas"
+    },
+    {
+      "input": "PAAS",
+      "display": "PAAS",
+      "key": "paas"
+    },
+    {
+      "input": "paass",
+      "display": "paass",
+      "key": "paass"
+    },
+    {
+      "input": "#paas",
+      "display": "paas",
+      "key": "paas"
+    },
+    {
+      "input": "paas-tag",
+      "display": "paas-tag",
+      "key": "paastag"
+    },
+    {
+      "input": "pre-paas",
+      "display": "pre-paas",
+      "key": "prepaa"
+    },
+    {
+      "input": "iaas",
+      "display": "iaas",
+      "key": "iaas"
+    },
+    {
+      "input": "IAAS",
+      "display": "IAAS",
+      "key": "iaas"
+    },
+    {
+      "input": "iaass",
+      "display": "iaass",
+      "key": "iaass"
+    },
+    {
+      "input": "#iaas",
+      "display": "iaas",
+      "key": "iaas"
+    },
+    {
+      "input": "iaas-tag",
+      "display": "iaas-tag",
+      "key": "iaastag"
+    },
+    {
+      "input": "pre-iaas",
+      "display": "pre-iaas",
+      "key": "preiaa"
+    },
+    {
+      "input": "cms",
+      "display": "cms",
+      "key": "cms"
+    },
+    {
+      "input": "CMS",
+      "display": "CMS",
+      "key": "cms"
+    },
+    {
+      "input": "cmss",
+      "display": "cmss",
+      "key": "cmss"
+    },
+    {
+      "input": "#cms",
+      "display": "cms",
+      "key": "cms"
+    },
+    {
+      "input": "cms-tag",
+      "display": "cms-tag",
+      "key": "cmstag"
+    },
+    {
+      "input": "pre-cms",
+      "display": "pre-cms",
+      "key": "precm"
+    },
+    {
+      "input": "dns",
+      "display": "dns",
+      "key": "dns"
+    },
+    {
+      "input": "DNS",
+      "display": "DNS",
+      "key": "dns"
+    },
+    {
+      "input": "dnss",
+      "display": "dnss",
+      "key": "dnss"
+    },
+    {
+      "input": "#dns",
+      "display": "dns",
+      "key": "dns"
+    },
+    {
+      "input": "dns-tag",
+      "display": "dns-tag",
+      "key": "dnstag"
+    },
+    {
+      "input": "pre-dns",
+      "display": "pre-dns",
+      "key": "predn"
+    },
+    {
+      "input": "gis",
+      "display": "gis",
+      "key": "gis"
+    },
+    {
+      "input": "GIS",
+      "display": "GIS",
+      "key": "gis"
+    },
+    {
+      "input": "giss",
+      "display": "giss",
+      "key": "giss"
+    },
+    {
+      "input": "#gis",
+      "display": "gis",
+      "key": "gis"
+    },
+    {
+      "input": "gis-tag",
+      "display": "gis-tag",
+      "key": "gistag"
+    },
+    {
+      "input": "pre-gis",
+      "display": "pre-gis",
+      "key": "pregis"
+    },
+    {
+      "input": "aigc",
+      "display": "aigc",
+      "key": "aigc"
+    },
+    {
+      "input": "AIGC",
+      "display": "AIGC",
+      "key": "aigc"
+    },
+    {
+      "input": "aigcs",
+      "display": "aigcs",
+      "key": "aigc"
+    },
+    {
+      "input": "#aigc",
+      "display": "aigc",
+      "key": "aigc"
+    },
+    {
+      "input": "aigc-tag",
+      "display": "aigc-tag",
+      "key": "aigctag"
+    },
+    {
+      "input": "pre-aigc",
+      "display": "pre-aigc",
+      "key": "preaigc"
+    },
+    {
+      "input": "as",
+      "display": "as",
+      "key": "as"
+    },
+    {
+      "input": "aes",
+      "display": "aes",
+      "key": "aes"
+    },
+    {
+      "input": "ss",
+      "display": "ss",
+      "key": "ss"
+    },
+    {
+      "input": "aa",
+      "display": "aa",
+      "key": "aa"
+    },
+    {
+      "input": "aas",
+      "display": "aas",
+      "key": "aas"
+    },
+    {
+      "input": "aaes",
+      "display": "aaes",
+      "key": "aae"
+    },
+    {
+      "input": "aaa",
+      "display": "aaa",
+      "key": "aaa"
+    },
+    {
+      "input": "aaas",
+      "display": "aaas",
+      "key": "aaa"
+    },
+    {
+      "input": "aaaes",
+      "display": "aaaes",
+      "key": "aaae"
+    },
+    {
+      "input": "ass",
+      "display": "ass",
+      "key": "ass"
+    },
+    {
+      "input": "aaaa",
+      "display": "aaaa",
+      "key": "aaaa"
+    },
+    {
+      "input": "aaaas",
+      "display": "aaaas",
+      "key": "aaaa"
+    },
+    {
+      "input": "aaaaes",
+      "display": "aaaaes",
+      "key": "aaaae"
+    },
+    {
+      "input": "aies",
+      "display": "aies",
+      "key": "ay"
+    },
+    {
+      "input": "aass",
+      "display": "aass",
+      "key": "aass"
+    },
+    {
+      "input": "aaaaa",
+      "display": "aaaaa",
+      "key": "aaaaa"
+    },
+    {
+      "input": "aaaaas",
+      "display": "aaaaas",
+      "key": "aaaaa"
+    },
+    {
+      "input": "aaaaaes",
+      "display": "aaaaaes",
+      "key": "aaaaae"
+    },
+    {
+      "input": "aaies",
+      "display": "aaies",
+      "key": "aay"
+    },
+    {
+      "input": "aaass",
+      "display": "aaass",
+      "key": "aaass"
+    },
+    {
+      "input": "aaaaaa",
+      "display": "aaaaaa",
+      "key": "aaaaaa"
+    },
+    {
+      "input": "aaaaaas",
+      "display": "aaaaaas",
+      "key": "aaaaaa"
+    },
+    {
+      "input": "aaaaaaes",
+      "display": "aaaaaaes",
+      "key": "aaaaaae"
+    },
+    {
+      "input": "aaaies",
+      "display": "aaaies",
+      "key": "aaay"
+    },
+    {
+      "input": "aaaass",
+      "display": "aaaass",
+      "key": "aaaass"
+    }
+  ],
+  "sameTagName": [
+    {
+      "left": "AI Agent",
+      "right": "ai-agents",
+      "same": true
+    },
+    {
+      "left": "AI Agent",
+      "right": "AI_Agent",
+      "same": true
+    },
+    {
+      "left": "Agent",
+      "right": "Agents",
+      "same": true
+    },
+    {
+      "left": "Tag",
+      "right": "tags",
+      "same": true
+    },
+    {
+      "left": "news",
+      "right": "news",
+      "same": true
+    },
+    {
+      "left": "news",
+      "right": "new",
+      "same": false
+    },
+    {
+      "left": "devops",
+      "right": "devop",
+      "same": false
+    },
+    {
+      "left": "",
+      "right": "",
+      "same": false
+    },
+    {
+      "left": "",
+      "right": "x",
+      "same": false
+    },
+    {
+      "left": "x",
+      "right": "",
+      "same": false
+    },
+    {
+      "left": "中文",
+      "right": "中文",
+      "same": true
+    },
+    {
+      "left": "中文",
+      "right": "中",
+      "same": false
+    },
+    {
+      "left": "#AI",
+      "right": "AI",
+      "same": true
+    },
+    {
+      "left": "class",
+      "right": "classes",
+      "same": true
+    },
+    {
+      "left": "box",
+      "right": "boxes",
+      "same": true
+    },
+    {
+      "left": "technology",
+      "right": "technologies",
+      "same": true
+    }
+  ]
+}

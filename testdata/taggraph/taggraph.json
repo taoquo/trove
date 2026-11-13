@@ -1,0 +1,1710 @@
+{
+  "generatedFrom": "frozen-fixture",
+  "defaults": {
+    "minCooccurrenceCount": 1,
+    "minCooccurrenceWeight": 0.05,
+    "minAuthorBridgeCount": 2,
+    "maxEdgesPerNode": 8,
+    "topAuthorsPerTag": 3,
+    "includeAuthors": false,
+    "minAuthorTagCount": 2,
+    "maxAuthors": 24
+  },
+  "cases": [
+    {
+      "name": "empty",
+      "input": {
+        "tags": [],
+        "bookmarkTags": [],
+        "bookmarks": []
+      },
+      "options": {},
+      "expected": {
+        "nodes": [],
+        "edges": [],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 0
+      }
+    },
+    {
+      "name": "single tag no relations",
+      "input": {
+        "tags": [
+          {
+            "id": "t1",
+            "name": "Go"
+          }
+        ],
+        "bookmarkTags": [],
+        "bookmarks": []
+      },
+      "options": {},
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "t1",
+            "name": "Go",
+            "bookmarkCount": 0,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t1",
+            "authorCount": 0,
+            "topAuthors": []
+          }
+        ],
+        "edges": [],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 0
+      }
+    },
+    {
+      "name": "two tags co-occurring on one bookmark",
+      "input": {
+        "tags": [
+          {
+            "id": "t1",
+            "name": "Go"
+          },
+          {
+            "id": "t2",
+            "name": "Rust"
+          }
+        ],
+        "bookmarkTags": [
+          {
+            "bookmarkId": "b1",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b1",
+            "tagId": "t2"
+          }
+        ],
+        "bookmarks": [
+          {
+            "id": "b1",
+            "tweetId": "b1",
+            "authorHandle": "ada"
+          }
+        ]
+      },
+      "options": {},
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "t1",
+            "name": "Go",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t1",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "tagId": "t2",
+            "name": "Rust",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t2",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "sourceTagId": "t1",
+            "targetTagId": "t2",
+            "type": "cooccurrence",
+            "weight": 1,
+            "rawCount": 1
+          }
+        ],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 0
+      }
+    },
+    {
+      "name": "co-occurrence count three",
+      "input": {
+        "tags": [
+          {
+            "id": "t1",
+            "name": "Go"
+          },
+          {
+            "id": "t2",
+            "name": "Rust"
+          }
+        ],
+        "bookmarkTags": [
+          {
+            "bookmarkId": "b1",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b1",
+            "tagId": "t2"
+          },
+          {
+            "bookmarkId": "b2",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b2",
+            "tagId": "t2"
+          },
+          {
+            "bookmarkId": "b3",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b3",
+            "tagId": "t2"
+          },
+          {
+            "bookmarkId": "b4",
+            "tagId": "t1"
+          }
+        ],
+        "bookmarks": [
+          {
+            "id": "b1",
+            "tweetId": "b1",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "b2",
+            "tweetId": "b2",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "b3",
+            "tweetId": "b3",
+            "authorHandle": "grace"
+          },
+          {
+            "id": "b4",
+            "tweetId": "b4",
+            "authorHandle": "grace"
+          }
+        ]
+      },
+      "options": {},
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "t1",
+            "name": "Go",
+            "bookmarkCount": 4,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t1",
+            "authorCount": 2,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 2
+              },
+              {
+                "authorHandle": "grace",
+                "count": 2
+              }
+            ]
+          },
+          {
+            "tagId": "t2",
+            "name": "Rust",
+            "bookmarkCount": 3,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t2",
+            "authorCount": 2,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 2
+              },
+              {
+                "authorHandle": "grace",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "sourceTagId": "t1",
+            "targetTagId": "t2",
+            "type": "cooccurrence",
+            "weight": 0.75,
+            "rawCount": 3
+          }
+        ],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 0
+      }
+    },
+    {
+      "name": "duplicate relation rows count once per bookmark",
+      "input": {
+        "tags": [
+          {
+            "id": "t1",
+            "name": "Go"
+          },
+          {
+            "id": "t2",
+            "name": "Rust"
+          }
+        ],
+        "bookmarkTags": [
+          {
+            "bookmarkId": "b1",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b1",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b1",
+            "tagId": "t2"
+          },
+          {
+            "bookmarkId": "b1",
+            "tagId": "t2"
+          }
+        ],
+        "bookmarks": [
+          {
+            "id": "b1",
+            "tweetId": "b1",
+            "authorHandle": "ada"
+          }
+        ]
+      },
+      "options": {},
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "t1",
+            "name": "Go",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t1",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "tagId": "t2",
+            "name": "Rust",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t2",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "sourceTagId": "t1",
+            "targetTagId": "t2",
+            "type": "cooccurrence",
+            "weight": 1,
+            "rawCount": 1
+          }
+        ],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 0
+      }
+    },
+    {
+      "name": "relation to an unknown tag is ignored",
+      "input": {
+        "tags": [
+          {
+            "id": "t1",
+            "name": "Go"
+          }
+        ],
+        "bookmarkTags": [
+          {
+            "bookmarkId": "b1",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b1",
+            "tagId": "missing"
+          }
+        ],
+        "bookmarks": [
+          {
+            "id": "b1",
+            "tweetId": "b1",
+            "authorHandle": "ada"
+          }
+        ]
+      },
+      "options": {},
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "t1",
+            "name": "Go",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t1",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        "edges": [],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 0
+      }
+    },
+    {
+      "name": "hierarchy produces an edge and clusters the child",
+      "input": {
+        "tags": [
+          {
+            "id": "root",
+            "name": "Languages"
+          },
+          {
+            "id": "child",
+            "name": "Go",
+            "parentId": "root"
+          },
+          {
+            "id": "orphan",
+            "name": "Rust",
+            "parentId": "removed"
+          }
+        ],
+        "bookmarkTags": [],
+        "bookmarks": []
+      },
+      "options": {},
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "root",
+            "name": "Languages",
+            "bookmarkCount": 0,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "root",
+            "authorCount": 0,
+            "topAuthors": []
+          },
+          {
+            "tagId": "child",
+            "name": "Go",
+            "bookmarkCount": 0,
+            "aliases": [],
+            "depth": 1,
+            "clusterId": "root",
+            "authorCount": 0,
+            "topAuthors": [],
+            "parentId": "root"
+          },
+          {
+            "tagId": "orphan",
+            "name": "Rust",
+            "bookmarkCount": 0,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "orphan",
+            "authorCount": 0,
+            "topAuthors": []
+          }
+        ],
+        "edges": [
+          {
+            "sourceTagId": "root",
+            "targetTagId": "child",
+            "type": "hierarchy",
+            "weight": 1,
+            "rawCount": 1
+          }
+        ],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 0
+      }
+    },
+    {
+      "name": "author bridge without shared bookmarks",
+      "input": {
+        "tags": [
+          {
+            "id": "t1",
+            "name": "Go"
+          },
+          {
+            "id": "t2",
+            "name": "Rust"
+          }
+        ],
+        "bookmarkTags": [
+          {
+            "bookmarkId": "b1",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b2",
+            "tagId": "t2"
+          },
+          {
+            "bookmarkId": "b3",
+            "tagId": "t1"
+          }
+        ],
+        "bookmarks": [
+          {
+            "id": "b1",
+            "tweetId": "b1",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "b2",
+            "tweetId": "b2",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "b3",
+            "tweetId": "b3",
+            "authorHandle": "grace"
+          }
+        ]
+      },
+      "options": {},
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "t1",
+            "name": "Go",
+            "bookmarkCount": 2,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t1",
+            "authorCount": 2,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              },
+              {
+                "authorHandle": "grace",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "tagId": "t2",
+            "name": "Rust",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t2",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        "edges": [],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 1
+      }
+    },
+    {
+      "name": "author bridge at the threshold survives",
+      "input": {
+        "tags": [
+          {
+            "id": "t1",
+            "name": "Go"
+          },
+          {
+            "id": "t2",
+            "name": "Rust"
+          }
+        ],
+        "bookmarkTags": [
+          {
+            "bookmarkId": "b1",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b2",
+            "tagId": "t2"
+          },
+          {
+            "bookmarkId": "b3",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b4",
+            "tagId": "t2"
+          }
+        ],
+        "bookmarks": [
+          {
+            "id": "b1",
+            "tweetId": "b1",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "b2",
+            "tweetId": "b2",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "b3",
+            "tweetId": "b3",
+            "authorHandle": "grace"
+          },
+          {
+            "id": "b4",
+            "tweetId": "b4",
+            "authorHandle": "grace"
+          }
+        ]
+      },
+      "options": {},
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "t1",
+            "name": "Go",
+            "bookmarkCount": 2,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t1",
+            "authorCount": 2,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              },
+              {
+                "authorHandle": "grace",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "tagId": "t2",
+            "name": "Rust",
+            "bookmarkCount": 2,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t2",
+            "authorCount": 2,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              },
+              {
+                "authorHandle": "grace",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "sourceTagId": "t1",
+            "targetTagId": "t2",
+            "type": "author-bridge",
+            "weight": 1,
+            "rawCount": 2
+          }
+        ],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 0
+      }
+    },
+    {
+      "name": "author bridge below the threshold is dropped",
+      "input": {
+        "tags": [
+          {
+            "id": "t1",
+            "name": "Go"
+          },
+          {
+            "id": "t2",
+            "name": "Rust"
+          }
+        ],
+        "bookmarkTags": [
+          {
+            "bookmarkId": "b1",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b2",
+            "tagId": "t2"
+          }
+        ],
+        "bookmarks": [
+          {
+            "id": "b1",
+            "tweetId": "b1",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "b2",
+            "tweetId": "b2",
+            "authorHandle": "ada"
+          }
+        ]
+      },
+      "options": {},
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "t1",
+            "name": "Go",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t1",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "tagId": "t2",
+            "name": "Rust",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t2",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        "edges": [],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 1
+      }
+    },
+    {
+      "name": "author layer included",
+      "input": {
+        "tags": [
+          {
+            "id": "t1",
+            "name": "Go"
+          },
+          {
+            "id": "t2",
+            "name": "Rust"
+          },
+          {
+            "id": "t3",
+            "name": "SQL"
+          }
+        ],
+        "bookmarkTags": [
+          {
+            "bookmarkId": "b1",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b2",
+            "tagId": "t2"
+          },
+          {
+            "bookmarkId": "b3",
+            "tagId": "t3"
+          },
+          {
+            "bookmarkId": "b4",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b5",
+            "tagId": "t2"
+          }
+        ],
+        "bookmarks": [
+          {
+            "id": "b1",
+            "tweetId": "b1",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "b2",
+            "tweetId": "b2",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "b3",
+            "tweetId": "b3",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "b4",
+            "tweetId": "b4",
+            "authorHandle": "grace"
+          },
+          {
+            "id": "b5",
+            "tweetId": "b5",
+            "authorHandle": "grace"
+          }
+        ]
+      },
+      "options": {
+        "includeAuthors": true
+      },
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "t1",
+            "name": "Go",
+            "bookmarkCount": 2,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t1",
+            "authorCount": 2,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              },
+              {
+                "authorHandle": "grace",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "tagId": "t2",
+            "name": "Rust",
+            "bookmarkCount": 2,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t2",
+            "authorCount": 2,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              },
+              {
+                "authorHandle": "grace",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "tagId": "t3",
+            "name": "SQL",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t3",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "sourceTagId": "t1",
+            "targetTagId": "t2",
+            "type": "author-bridge",
+            "weight": 1,
+            "rawCount": 2
+          }
+        ],
+        "authorNodes": [
+          {
+            "authorHandle": "ada",
+            "bookmarkCount": 3,
+            "tagCount": 3
+          },
+          {
+            "authorHandle": "grace",
+            "bookmarkCount": 2,
+            "tagCount": 2
+          }
+        ],
+        "authorEdges": [
+          {
+            "authorHandle": "ada",
+            "tagId": "t1",
+            "weight": 0.333,
+            "rawCount": 1
+          },
+          {
+            "authorHandle": "ada",
+            "tagId": "t2",
+            "weight": 0.333,
+            "rawCount": 1
+          },
+          {
+            "authorHandle": "ada",
+            "tagId": "t3",
+            "weight": 0.333,
+            "rawCount": 1
+          },
+          {
+            "authorHandle": "grace",
+            "tagId": "t1",
+            "weight": 0.5,
+            "rawCount": 1
+          },
+          {
+            "authorHandle": "grace",
+            "tagId": "t2",
+            "weight": 0.5,
+            "rawCount": 1
+          }
+        ],
+        "droppedEdgeCount": 2
+      }
+    },
+    {
+      "name": "author layer excluded by default",
+      "input": {
+        "tags": [
+          {
+            "id": "t1",
+            "name": "Go"
+          },
+          {
+            "id": "t2",
+            "name": "Rust"
+          },
+          {
+            "id": "t3",
+            "name": "SQL"
+          }
+        ],
+        "bookmarkTags": [
+          {
+            "bookmarkId": "b1",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b2",
+            "tagId": "t2"
+          },
+          {
+            "bookmarkId": "b3",
+            "tagId": "t3"
+          }
+        ],
+        "bookmarks": [
+          {
+            "id": "b1",
+            "tweetId": "b1",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "b2",
+            "tweetId": "b2",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "b3",
+            "tweetId": "b3",
+            "authorHandle": "ada"
+          }
+        ]
+      },
+      "options": {},
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "t1",
+            "name": "Go",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t1",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "tagId": "t2",
+            "name": "Rust",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t2",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "tagId": "t3",
+            "name": "SQL",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t3",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        "edges": [],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 3
+      }
+    },
+    {
+      "name": "bookmark without an author handle is skipped",
+      "input": {
+        "tags": [
+          {
+            "id": "t1",
+            "name": "Go"
+          },
+          {
+            "id": "t2",
+            "name": "Rust"
+          }
+        ],
+        "bookmarkTags": [
+          {
+            "bookmarkId": "b1",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b2",
+            "tagId": "t2"
+          }
+        ],
+        "bookmarks": [
+          {
+            "id": "b1",
+            "tweetId": "b1",
+            "authorHandle": "   "
+          },
+          {
+            "id": "b2",
+            "tweetId": "b2",
+            "authorHandle": ""
+          }
+        ]
+      },
+      "options": {},
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "t1",
+            "name": "Go",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t1",
+            "authorCount": 0,
+            "topAuthors": []
+          },
+          {
+            "tagId": "t2",
+            "name": "Rust",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t2",
+            "authorCount": 0,
+            "topAuthors": []
+          }
+        ],
+        "edges": [],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 0
+      }
+    },
+    {
+      "name": "per-node edge budget trims a dense graph",
+      "input": {
+        "tags": [
+          {
+            "id": "c",
+            "name": "Centre"
+          },
+          {
+            "id": "a",
+            "name": "A"
+          },
+          {
+            "id": "b",
+            "name": "B"
+          },
+          {
+            "id": "d",
+            "name": "D"
+          }
+        ],
+        "bookmarkTags": [
+          {
+            "bookmarkId": "x1",
+            "tagId": "c"
+          },
+          {
+            "bookmarkId": "x1",
+            "tagId": "a"
+          },
+          {
+            "bookmarkId": "x2",
+            "tagId": "c"
+          },
+          {
+            "bookmarkId": "x2",
+            "tagId": "b"
+          },
+          {
+            "bookmarkId": "x3",
+            "tagId": "c"
+          },
+          {
+            "bookmarkId": "x3",
+            "tagId": "d"
+          },
+          {
+            "bookmarkId": "x4",
+            "tagId": "a"
+          },
+          {
+            "bookmarkId": "x4",
+            "tagId": "b"
+          }
+        ],
+        "bookmarks": [
+          {
+            "id": "x1",
+            "tweetId": "x1",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "x2",
+            "tweetId": "x2",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "x3",
+            "tweetId": "x3",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "x4",
+            "tweetId": "x4",
+            "authorHandle": "grace"
+          }
+        ]
+      },
+      "options": {
+        "maxEdgesPerNode": 2,
+        "includeAuthors": false
+      },
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "c",
+            "name": "Centre",
+            "bookmarkCount": 3,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "c",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 3
+              }
+            ]
+          },
+          {
+            "tagId": "a",
+            "name": "A",
+            "bookmarkCount": 2,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "a",
+            "authorCount": 2,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              },
+              {
+                "authorHandle": "grace",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "tagId": "b",
+            "name": "B",
+            "bookmarkCount": 2,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "b",
+            "authorCount": 2,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              },
+              {
+                "authorHandle": "grace",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "tagId": "d",
+            "name": "D",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "d",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "sourceTagId": "a",
+            "targetTagId": "b",
+            "type": "cooccurrence",
+            "weight": 0.333,
+            "rawCount": 1
+          },
+          {
+            "sourceTagId": "c",
+            "targetTagId": "d",
+            "type": "cooccurrence",
+            "weight": 0.333,
+            "rawCount": 1
+          },
+          {
+            "sourceTagId": "a",
+            "targetTagId": "c",
+            "type": "cooccurrence",
+            "weight": 0.25,
+            "rawCount": 1
+          },
+          {
+            "sourceTagId": "b",
+            "targetTagId": "c",
+            "type": "cooccurrence",
+            "weight": 0.25,
+            "rawCount": 1
+          }
+        ],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 2
+      }
+    },
+    {
+      "name": "co-occurrence weight below the floor is dropped",
+      "input": {
+        "tags": [
+          {
+            "id": "big",
+            "name": "Big"
+          },
+          {
+            "id": "small",
+            "name": "Small"
+          }
+        ],
+        "bookmarkTags": [
+          {
+            "bookmarkId": "s1",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "s1",
+            "tagId": "small"
+          },
+          {
+            "bookmarkId": "big0",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big1",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big2",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big3",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big4",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big5",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big6",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big7",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big8",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big9",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big10",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big11",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big12",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big13",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big14",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big15",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big16",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big17",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big18",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big19",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big20",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big21",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big22",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big23",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big24",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big25",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big26",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big27",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big28",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big29",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big30",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big31",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big32",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big33",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big34",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big35",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big36",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big37",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big38",
+            "tagId": "big"
+          },
+          {
+            "bookmarkId": "big39",
+            "tagId": "big"
+          }
+        ],
+        "bookmarks": []
+      },
+      "options": {
+        "minCooccurrenceWeight": 0.5
+      },
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "big",
+            "name": "Big",
+            "bookmarkCount": 41,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "big",
+            "authorCount": 0,
+            "topAuthors": []
+          },
+          {
+            "tagId": "small",
+            "name": "Small",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "small",
+            "authorCount": 0,
+            "topAuthors": []
+          }
+        ],
+        "edges": [],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 1
+      }
+    },
+    {
+      "name": "aliases and top authors round-trip on the node",
+      "input": {
+        "tags": [
+          {
+            "id": "t1",
+            "name": "Go",
+            "aliases": [
+              "golang",
+              "go-lang"
+            ]
+          }
+        ],
+        "bookmarkTags": [
+          {
+            "bookmarkId": "b1",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b2",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b3",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b4",
+            "tagId": "t1"
+          }
+        ],
+        "bookmarks": [
+          {
+            "id": "b1",
+            "tweetId": "b1",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "b2",
+            "tweetId": "b2",
+            "authorHandle": "ada"
+          },
+          {
+            "id": "b3",
+            "tweetId": "b3",
+            "authorHandle": "grace"
+          },
+          {
+            "id": "b4",
+            "tweetId": "b4",
+            "authorHandle": "alan"
+          }
+        ]
+      },
+      "options": {
+        "topAuthorsPerTag": 2
+      },
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "t1",
+            "name": "Go",
+            "bookmarkCount": 4,
+            "aliases": [
+              "golang",
+              "go-lang"
+            ],
+            "depth": 0,
+            "clusterId": "t1",
+            "authorCount": 3,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 2
+              },
+              {
+                "authorHandle": "alan",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        "edges": [],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 0
+      }
+    },
+    {
+      "name": "three tags on one bookmark make three edges",
+      "input": {
+        "tags": [
+          {
+            "id": "t1",
+            "name": "Go"
+          },
+          {
+            "id": "t2",
+            "name": "Rust"
+          },
+          {
+            "id": "t3",
+            "name": "SQL"
+          }
+        ],
+        "bookmarkTags": [
+          {
+            "bookmarkId": "b1",
+            "tagId": "t1"
+          },
+          {
+            "bookmarkId": "b1",
+            "tagId": "t2"
+          },
+          {
+            "bookmarkId": "b1",
+            "tagId": "t3"
+          }
+        ],
+        "bookmarks": [
+          {
+            "id": "b1",
+            "tweetId": "b1",
+            "authorHandle": "ada"
+          }
+        ]
+      },
+      "options": {},
+      "expected": {
+        "nodes": [
+          {
+            "tagId": "t1",
+            "name": "Go",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t1",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "tagId": "t2",
+            "name": "Rust",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t2",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          },
+          {
+            "tagId": "t3",
+            "name": "SQL",
+            "bookmarkCount": 1,
+            "aliases": [],
+            "depth": 0,
+            "clusterId": "t3",
+            "authorCount": 1,
+            "topAuthors": [
+              {
+                "authorHandle": "ada",
+                "count": 1
+              }
+            ]
+          }
+        ],
+        "edges": [
+          {
+            "sourceTagId": "t1",
+            "targetTagId": "t2",
+            "type": "cooccurrence",
+            "weight": 1,
+            "rawCount": 1
+          },
+          {
+            "sourceTagId": "t1",
+            "targetTagId": "t3",
+            "type": "cooccurrence",
+            "weight": 1,
+            "rawCount": 1
+          },
+          {
+            "sourceTagId": "t2",
+            "targetTagId": "t3",
+            "type": "cooccurrence",
+            "weight": 1,
+            "rawCount": 1
+          }
+        ],
+        "authorNodes": [],
+        "authorEdges": [],
+        "droppedEdgeCount": 0
+      }
+    }
+  ]
+}

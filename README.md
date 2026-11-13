@@ -2,113 +2,100 @@
 
 [中文说明](./README.zh-CN.md)
 
-## Preview
+trove is a native macOS and Windows app for people who save too much on X and still want to find the
+right post later. It syncs X bookmarks into a local SQLite database and gives them a proper workspace:
+browse, search, filter, tag, and review — without a hosted backend.
 
-Workspace overview
+The app renders its own interface with [MyGo](https://github.com/egoist/mygo): there is no webview,
+no HTML and no JavaScript in the product.
 
-![Workspace overview](./assets/readme/workspace-overview.png)
+## What it does
 
-Inline tag management on X
+- Sync bookmarks from X using your own `auth_token` + `ct0` cookies (stored in the macOS Keychain or Windows Credential Manager).
+- Keep every bookmark locally in SQLite.
+- Browse, search and filter by tag, author, media and saved view.
+- Organize bookmarks with a tag library, including aliases and parent tags.
+- Suggest tags with heuristics or an LLM provider; review suggestions before applying them.
+- Show a tag-relation graph and batch actions over a selection.
+- Import legacy `exportVersion: 2` JSON backups and export a native bundle.
+- Stay local-first and bilingual (English / Simplified Chinese).
 
-![Inline tag management on X](./assets/readme/inline-tagging.png)
+## Requirements
 
-trove is a Chrome extension for people who save too much on X and still want to find the right post later. It turns X bookmarks into a local-first workspace you can sync, review, tag, and organize without relying on a hosted backend.
+- macOS 12 or later (Apple silicon or Intel), or Windows 10/11 x64.
+- macOS release builds need a Developer ID for signing and notarization; Windows builds use NSIS for
+the installer.
+- The pinned Go toolchain under `.toolchain/` (Go 1.27.2). It is mandatory: it fixes the version,
+  forbids implicit toolchain switching and routes module downloads through a reachable mirror.
+- Python 3 with Pillow for the screenshot-based checks.
 
-## Why Use It
+## Build and run
 
-- X bookmarks are easy to save and hard to revisit.
-- Native X bookmark management does not give you a proper local inventory or tagging workflow.
-- This extension gives you a dedicated workspace for collecting, classifying, and reviewing bookmarks you actually want to keep useful.
-
-## What the Extension Does
-
-- Sync bookmarks from X into local IndexedDB storage.
-- Show sync status, inventory counts, and unclassified bookmark counts in the popup.
-- Open a full manager view for browsing bookmarks, filtering by tags, and inspecting details.
-- Organize bookmarks with tags.
-- Apply tags inline on X without leaving the timeline.
-- Keep data local-first inside the browser instead of sending bookmarks to a hosted service.
-
-## Who It Is For
-
-- Heavy X users who treat bookmarks as research material.
-- People who want a local archive instead of a SaaS bookmark database.
-- Users who need tags and lightweight triage, not just a save button.
-
-## Install the Extension
-
-Install from the Chrome Web Store:
-
-[trove on Chrome Web Store](https://chromewebstore.google.com/detail/x-bookmark-manager/olefipkonojnpmkikdlpacchbpfdleef)
-
-Or build it locally:
+Source the toolchain from bash (not zsh — `env.sh` locates itself through `BASH_SOURCE`):
 
 ```bash
-npm install
-npm run build
+bash -c 'source .toolchain/env.sh && go tool mygo build -skip-dmg'
 ```
 
-Load it into Chrome:
+The bundle lands at `build/darwin-arm64/trove.app`. Launch the binary directly rather than using
+`open`, so a running instance cannot be reused by LaunchServices:
 
-1. Open `chrome://extensions`.
-2. Enable Developer mode.
-3. Click `Load unpacked`.
-4. Select `build/chrome-mv3`.
+```bash
+build/darwin-arm64/trove.app/Contents/MacOS/trove
+```
 
-## How to Use It
+To build both Mac architectures and the Windows portable executable, pass a platform list to MyGo:
 
-1. Sign in to X in Chrome.
-2. Open the extension popup and click `Sync now`.
-3. Wait for the first bookmark sync to finish.
-4. Click `Open manager` to enter the full workspace.
-5. Review bookmarks, filter them, and attach tags.
-6. Create tags that match how you actually read or archive content.
-7. While browsing X, use the inline tag action to tag bookmarked posts directly on the site.
+```bash
+go tool mygo build -platform darwin/arm64,darwin/amd64
+go tool mygo build -platform windows/amd64
+```
 
-## Typical Workflow
+On Windows, run the built `trove.exe` or the NSIS `Setup.exe` from `build/windows-amd64`.
 
-1. Save posts on X as usual.
-2. Run a sync from the popup.
-3. Open the manager and inspect what is still unclassified.
-4. Create a small tag system such as `AI`, `Product`, `Reading`, or `To Review`.
-5. Revisit the workspace by searching, filtering by tags or authors, and narrowing to media or longform posts.
+## Test and verify
 
-## Data and Storage
+```bash
+bash -c 'source .toolchain/env.sh && go test ./...'
+```
 
-- Bookmark data is stored locally in the browser.
-- Sync status and workspace settings are stored locally as well.
-- The project is designed as a local-first extension and does not require a hosted backend.
+The full quality gate is the canonical pre-commit check. It runs the source checkers,
+`gofmt`/`go vet`/build, the test suite with and without the race detector, a MyGo build, a
+launch/single-instance/quit smoke test, and two pixel checks against a live capture:
 
-## Repository Structure
+```bash
+bash -c 'source .toolchain/env.sh && bash tools/gate.sh'
+```
+
+The pixel checks read captures under `docs/screenshots`, which are local-only.
+
+## Repository layout
 
 ```text
-assets/   Static extension assets
-scripts/  Build scripts
-src/      Extension source code
-tests/    Automated tests
+cmd/trove             Composition root, window, menu and capture entry point
+internal/domain       Pure rules (no dependencies)
+internal/ports        Interfaces the use cases need
+internal/usecase      Workspace, tagging, sync, suggestions, settings
+internal/storage      SQLite repositories and migrations
+internal/xsource      X GraphQL client and query catalog
+internal/llm          Model providers, adapters and errors
+internal/autotag      Automatic tagging pipeline
+internal/credentials  Keychain / Credential Manager and browser cookie reader
+internal/media        Media download and disk cache
+internal/bundle       Native .trovebundle format
+internal/importexport Legacy JSON import and export
+internal/ui           MyGo workspace and all drawing
+cmd/mediaprobe        Development media diagnostic
+site/                 Local static product page (not deployed automatically)
+tools/                Source checkers, capture tooling, quality gate
+testdata/             Frozen equivalence fixtures
+docs/                 Architecture, data, testing and design
 ```
 
-## Development
+Screenshots under `docs/screenshots/` are captured locally and are not versioned.
 
-Run the extension test suite:
+## Data and privacy
 
-```bash
-npm test
-```
-
-Build the extension with the custom `esbuild + Tailwind CSS` pipeline:
-
-```bash
-npm run build
-```
-
-Run static checks:
-
-```bash
-npm run typecheck
-npm run lint
-```
-
-## Build Output
-
-- Unpacked build: `build/chrome-mv3`
+Bookmarks, tags and settings live in a local SQLite file. X credentials and LLM API keys are stored
+in the macOS Keychain or Windows Credential Manager. No account, telemetry or hosted service is
+involved.

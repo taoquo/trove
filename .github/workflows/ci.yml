@@ -6,25 +6,34 @@ on:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: macos-14
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          node-version: "24"
+          go-version-file: go.mod
+          cache: true
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Format
+        run: |
+          out=$(find . -name '*.go' -not -path './.git/*' -print0 | xargs -0 gofmt -l)
+          if [ -n "$out" ]; then
+            echo "$out"
+            exit 1
+          fi
 
-      - name: Typecheck
-        run: npm run typecheck
+      - name: Vet
+        run: go vet ./...
 
-      - name: Lint
-        run: npm run lint
+      - name: MyGo vet
+        run: go tool mygo vet ./cmd/trove
 
       - name: Test
-        run: npm test
+        run: go test -count=1 ./...
+
+      - name: Build
+        run: CGO_ENABLED=0 go build -o /dev/null ./cmd/trove
