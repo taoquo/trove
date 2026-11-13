@@ -102,7 +102,7 @@ internal/importexport Legacy JSON import and export
 internal/ui           MyGo workspace and all drawing
 cmd/mediaprobe        Development media diagnostic
 cmd/seed              Seeds a fictional library for the site's screenshots
-site/                 Local static product page (not deployed automatically)
+site/                 Static product page (Cloudflare Worker, deployed by hand)
 tools/                Source checkers, capture tooling, quality gate
 testdata/             Frozen equivalence fixtures
 docs/                 Architecture, data, testing and design

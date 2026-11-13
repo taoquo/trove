@@ -96,7 +96,7 @@ internal/importexport 旧版 JSON 导入与导出
 internal/ui           MyGo 工作区与全部绘制
 cmd/mediaprobe        开发用媒体诊断命令
 cmd/seed              用虚构书库为站点截图播种数据
-site/                 本地静态产品页（不自动部署）
+site/                 静态产品页（Cloudflare Worker，手动发布）
 tools/                源码检查器、截图工具、质量门禁
 testdata/             冻结的等价性 fixture
 docs/                 架构、数据、测试与设计

@@ -16,8 +16,9 @@ docs/screenshots/
 # MyGo's Windows resource object; generated per build.
 mygo_windows_*.syso
 
-# Site tooling output. The site itself is versioned; nothing is deployed yet.
-site/.wrangler/
+# Site tooling output. The site and its deploy config are versioned; wrangler's
+# local state and installed packages are not.
+.wrangler/
 site/node_modules/
 
 # Local tooling and editor state

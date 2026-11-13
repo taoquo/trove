@@ -32,7 +32,7 @@ internal/importexport 旧版 exportVersion: 2 JSON
 internal/ui          MyGo 工作区与全部绘制
 internal/i18n        中英文案目录
 resources/           应用图标等随包资源
-site/                本地静态产品页（不自动部署）
+site/                静态产品页（Cloudflare Worker，手动发布）
 testdata/            冻结的等价性 fixture
 tools/               检查器、截图工具、quality gate
 docs/                当前架构与设计文档
@@ -176,5 +176,8 @@ UI 测试用 `ui.NewTester`（不开窗口），是复现布局和状态缺陷�
 
 ## 8. 站点
 
-`site/public/` 是本地维护的静态产品页，用来预览和后续部署；当前不自动部署，也不接 CI。
+`site/public/` 是静态产品页，通过 Cloudflare Worker `trove-site` 发布到
+<https://trove.taoquo.com/>（配置在 `site/wrangler.jsonc`，安全响应头在
+`site/public/_headers`）。发布是手动的一步：在 `site/` 里 `npm run check` 验证配置、
+`npm run dev` 本地跑 Workers 运行时、`npm run deploy` 上线；CI 不发布站点。
 改站点只改 `site/`，不要把构建产物或截图散落到根目录。

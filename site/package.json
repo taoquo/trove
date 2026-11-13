@@ -1,0 +1,13 @@
+{
+  "name": "trove-site",
+  "private": true,
+  "description": "Static product page for trove, deployed to Cloudflare Workers.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "wrangler deploy --dry-run --outdir .wrangler/dry-run"
+  },
+  "devDependencies": {
+    "wrangler": "^4.161.0"
+  }
+}

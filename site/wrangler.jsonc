@@ -1,0 +1,13 @@
+{
+  // Serves site/public as static assets from a Cloudflare Worker.
+  // Deploy from this directory: `npm run deploy` (wrangler deploy).
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "trove-site",
+  "compatibility_date": "2026-11-10",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./public"
+  },
+  "routes": [{ "pattern": "trove.taoquo.com", "custom_domain": true }]
+}
