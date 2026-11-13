@@ -9,9 +9,26 @@
 # The two tools below report candidates rather than findings, so this does not demand
 # zero: it demands that the known set does not grow. Removing a name from an allowlist is
 # part of fixing the gap it names.
+#
+#     bash tools/check-wiring.sh [--source-only]
+#
+# --source-only drops the one pair of checks that reads a captured build under
+# docs/screenshots. CI has no capture (the pictures are not versioned and the gate makes them
+# from a real build), so it passes this flag; the gate itself always runs the full set.
 set -u
 
 cd "$(dirname "$0")/.."
+
+source_only=0
+for arg in "$@"; do
+  case "$arg" in
+    --source-only) source_only=1 ;;
+    *)
+      echo "unknown argument: $arg" >&2
+      exit 2
+      ;;
+  esac
+done
 
 fail=0
 
@@ -201,23 +218,25 @@ fi
 # Both pictures are kept, because the pair is the evidence: 259-inspector-unbordered.png is the
 # build before the boundary is drawn and 259-inspector-bordered.png is after, and the check has
 # to tell them apart. A checker that only ever saw one of them could pass by accident.
-columns=$(python3 tools/columns.py \
-    docs/screenshots/259-inspector-bordered.png --boundary 1752 2>&1 | tr '\n' ' ')
-if [ -n "$columns" ]; then
-  echo "FAIL: the inspector pane has no separator at its left edge:$columns"
-  echo "      the panes read as one surface; see the shell's spacing rules"
-  fail=1
-fi
+if [ "$source_only" -eq 0 ]; then
+  columns=$(python3 tools/columns.py \
+      docs/screenshots/259-inspector-bordered.png --boundary 1752 2>&1 | tr '\n' ' ')
+  if [ -n "$columns" ]; then
+    echo "FAIL: the inspector pane has no separator at its left edge:$columns"
+    echo "      the panes read as one surface; see the shell's spacing rules"
+    fail=1
+  fi
 
-# And the pair must still differ in the way the check watches for. If a later change makes the
-# unbordered picture pass too -- the boundary moving, or the tolerance widening until anything
-# counts -- the case above stops proving anything. This is the mutation, run every time.
-columns_before=$(python3 tools/columns.py \
-    docs/screenshots/259-inspector-unbordered.png --boundary 1752 2>&1 | tr '\n' ' ')
-if [ -z "$columns_before" ]; then
-  echo "FAIL: the unbordered baseline now passes, so the separator check proves nothing"
-  echo "      it must fail on 259-inspector-unbordered.png and pass on the bordered one"
-  fail=1
+  # And the pair must still differ in the way the check watches for. If a later change makes the
+  # unbordered picture pass too -- the boundary moving, or the tolerance widening until anything
+  # counts -- the case above stops proving anything. This is the mutation, run every time.
+  columns_before=$(python3 tools/columns.py \
+      docs/screenshots/259-inspector-unbordered.png --boundary 1752 2>&1 | tr '\n' ' ')
+  if [ -z "$columns_before" ]; then
+    echo "FAIL: the unbordered baseline now passes, so the separator check proves nothing"
+    echo "      it must fail on 259-inspector-unbordered.png and pass on the bordered one"
+    fail=1
+  fi
 fi
 
 # Cinnabar in one place, and no colour a theme cannot reach.

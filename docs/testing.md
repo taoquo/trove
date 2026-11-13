@@ -22,9 +22,11 @@ bash -c 'source .toolchain/env.sh && bash tools/gate.sh'
 
 ## CI 与发布
 
-`.github/workflows/ci.yml` 在每次 push 和 PR 上跑 gate 里不需要窗口的部分：三个检查器、
-gofmt、vet、`mygo vet`、`go test` 与 `go test -race`；另有一个 ubuntu 任务只做
-`GOOS=windows` 交叉编译，防止 Windows 一侧悄悄坏掉。截图相关的两步需要窗口，只在本地跑。
+`.github/workflows/ci.yml` 在每次 push 和 PR 上跑 gate 里不需要窗口的部分：文案检查、
+`check-wiring.sh --source-only`（跳过读 `docs/screenshots` 的一对列检查）、gofmt、vet、
+`mygo vet`、`go test` 与 `go test -race`；另有一个 ubuntu 任务只做 `GOOS=windows`
+交叉编译，防止 Windows 一侧悄悄坏掉。`selfcheck.sh` 与截图检查需要 Pillow、真实截取和窗口，
+只在本地 gate 跑。
 
 `.github/workflows/release.yml` 由 `v*` 标签触发：macOS 上构建两种架构的 dmg，Windows 上构建
 NSIS 安装包，改名成站点使用的固定文件名后创建 GitHub Release。

@@ -27,14 +27,14 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      # The checkers are part of the build, not optional tooling (AGENTS.md section 5). They are
-      # shell and grep, so they run here unchanged; the gate adds the two screenshot checks,
-      # which need a window and stay on a developer machine.
+      # The checkers are part of the build, not optional tooling (AGENTS.md section 5). The part
+      # that reads a captured window is skipped here: those pictures are made by a real build
+      # and are not versioned, so --source-only drops exactly that pair. selfcheck and the
+      # capture checks stay in the gate, which has both a window and the images.
       - name: Checkers
         run: |
           bash tools/check-text.sh
-          bash tools/check-wiring.sh
-          bash tools/selfcheck.sh
+          bash tools/check-wiring.sh --source-only
 
       - name: Format
         run: |
