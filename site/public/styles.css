@@ -8,6 +8,8 @@
   --ink-warm: #3a312d;
   --muted: #756a63;
   --accent: #b83d2e;
+  --accent-pressed: #7e241c; /* the step below the accent, the app's pressed value */
+  --on-accent: #ffffff;      /* text on the accent, as in the app */
   --max: 1120px;
   --serif: "Source Serif 4", Charter, Georgia, "Songti SC", "Noto Serif CJK SC", "STSong", Palatino, serif;
   --mono: "JetBrains Mono", "SF Mono", ui-monospace, "Songti SC", monospace;
@@ -144,7 +146,7 @@ code {
 }
 
 .langs button + button { border-left: 1px solid var(--rule); }
-.langs button[aria-pressed="true"] { background: var(--accent); color: #fdf9f4; }
+.langs button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 
 .repo-link {
   display: inline-flex;
@@ -256,11 +258,11 @@ p { color: var(--ink-warm); }
 .button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fdf9f4;
+  color: var(--on-accent);
 }
 
 .button.primary small { color: #f0d8d1; }
-.button.primary:hover { background: #a33426; border-color: #a33426; }
+.button.primary:hover { background: var(--accent-pressed); border-color: var(--accent-pressed); }
 .button:not(.primary):hover { border-color: var(--ink-warm); }
 
 /* ---------- hero ---------- */

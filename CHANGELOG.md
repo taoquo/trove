@@ -4,6 +4,23 @@
 update it signs, so the heading below must exist before a tag is pushed. Keep the
 heading plain (`## 0.3.2`) or Keep a Changelog's (`## [0.3.2] - 2026-11-14`).
 
+## 0.3.5
+
+### Changed
+
+- The window is set in the folio family: parchment pages and ivory cards in the light
+  appearance, warm ink in the dark one, one cinnabar accent, and headings in the display
+  serif. The download page and the app are now one palette.
+- The title bar's brand lockup reads `trove` in both languages; the page's own name sits in
+  the crumb beside it.
+- Confirmations are the app's own card instead of the platform alert, so a destructive
+  action is the danger ink on paper rather than the system's accent button.
+
+### Fixed
+
+- The scrollbar thumb is warm paper in both appearances instead of the toolkit's neutral
+  grey.
+
 ## 0.3.4
 
 ### Fixed
