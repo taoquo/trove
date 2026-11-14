@@ -267,6 +267,39 @@ func TestAVideoShowsItsPosterNotTheFile(t *testing.T) {
 	}
 }
 
+// TestTheDetailKeepsAFrameForAPictureThatNeverArrives is the design's missing-media state:
+// a post whose picture is gone keeps the frame the picture would have taken, so the rest of
+// the pane does not move and the detail does not open a hole where the picture was.
+//
+// Nothing is fetched here: the media entry has no URL, which is what a payload looks like
+// when the attachment was deleted. mediaPicture reports "not ready", the ratio falls back to
+// 16:9, and the box is painted in the page ground -- a placeholder, not a blank.
+func TestTheDetailKeepsAFrameForAPictureThatNeverArrives(t *testing.T) {
+	const text = "a post whose picture never arrived"
+	_, tester := detailShell(t, domain.Bookmark{
+		TweetID: "detail-missing-media", TweetURL: "https://x.com/ada/status/detail-missing-media",
+		AuthorName: "Ada Lovelace", AuthorHandle: "ada",
+		Text:    text,
+		SavedAt: clockBase, LastSeenAt: clockBase, UpdatedAt: clockBase,
+		Media: []domain.Media{{Type: domain.MediaPhoto}},
+	})
+
+	frame, found := tester.Find(DetailMediaTriggerLabel)
+	if !found {
+		t.Fatalf("a picture with no URL left no frame; texts: %q", tester.Texts())
+	}
+	if frame.W <= 0 || frame.H <= 0 {
+		t.Fatalf("the empty frame has no area: %.0f x %.0f", frame.W, frame.H)
+	}
+	if ratio := frame.W / frame.H; ratio < 1.70 || ratio > 1.86 {
+		t.Errorf("the empty frame is %.0f x %.0f (%.2f:1), want the 16:9 placeholder",
+			frame.W, frame.H, ratio)
+	}
+	if !tester.HasText(text) {
+		t.Errorf("the post is not drawn beside its empty picture; texts: %q", tester.Texts())
+	}
+}
+
 // TestEachPictureOpensItsOwnPreview pins the post's media grid: two pictures draw two
 // triggers, and the second one opens the second picture rather than the first.
 //

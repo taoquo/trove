@@ -2,7 +2,9 @@ package ui
 
 import (
 	"context"
+	"image/color"
 	"testing"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/taoquo/trove/internal/i18n"
@@ -79,6 +81,71 @@ func TestTheConfirmationCardPutsReturnOnCancel(t *testing.T) {
 	tester.Frame()
 	if got := len(shell.state.Data.Tags); got != 0 {
 		t.Errorf("%d tags after choosing %q, want none", got, confirm)
+	}
+}
+
+// TestTheDestructiveAnswerFillsUnderThePointer pins the confirmation card's hover state.
+//
+// At rest the confirming action is the danger ink on the danger-soft ground: readable, but
+// plainly a warning rather than the path of least resistance. Under the pointer the ground
+// fills with the danger ink and the label turns to the accent's foreground, so the press the
+// reader is about to make is the one they see. The ground is sampled from the frame because
+// the wiring -- which token reaches this one button -- is what the palette change touched.
+func TestTheDestructiveAnswerFillsUnderThePointer(t *testing.T) {
+	shell, db := newShell(t)
+	ctx := context.Background()
+	seed(t, db, "a", "ada", "a post about compilers", clockBase)
+	shell.Reload(ctx)
+	if _, err := shell.service.AddTags(ctx, []string{"a"}, []string{"Rust"}); err != nil {
+		t.Fatalf("AddTags: %v", err)
+	}
+	shell.Reload(ctx)
+	if len(shell.state.Data.Tags) != 1 {
+		t.Fatalf("%d tags, want the one just filed", len(shell.state.Data.Tags))
+	}
+
+	tester := ui.NewTester(shell.View, 1180, 900)
+	shell.state.ConfirmDeleteTag = shell.state.Data.Tags[0].ID
+	tester.Frame()
+
+	cancelRect, found := tester.Find(shell.t().T(i18n.ActionCancel))
+	if !found {
+		t.Fatalf("the dialog's Cancel is not drawn; texts: %q", tester.Texts())
+	}
+
+	theme := FolioTheme(shell.state.Appearance, shell.state.SystemDark)
+	rest := dangerSoftFor(theme.Dark)
+	same := func(c color.RGBA, want ui.Color) bool {
+		return c.R == want.R && c.G == want.G && c.B == want.B
+	}
+
+	// The confirming button is the sibling left of Cancel. Find(confirm) cannot locate it:
+	// the dialog panel answers to the same name as the button's words, and comes first. The
+	// ground is found by its colour instead -- the run of danger-soft pixels on the button
+	// row, left of Cancel, sampled two points in from its left edge where only padding shows.
+	img := tester.Image()
+	scale := float32(img.Rect.Dx()) / 1180
+	row := int((cancelRect.Y + cancelRect.H/2) * scale)
+	sample := -1
+	for x := int((cancelRect.X - 120) * scale); x+3 < int(cancelRect.X*scale); x++ {
+		if same(img.RGBAAt(x, row), rest) &&
+			same(img.RGBAAt(x+1, row), rest) &&
+			same(img.RGBAAt(x+2, row), rest) &&
+			same(img.RGBAAt(x+3, row), rest) {
+			sample = x + 2
+			break
+		}
+	}
+	if sample < 0 {
+		t.Fatalf("no danger-soft ground on the confirming button's row; texts: %q", tester.Texts())
+	}
+
+	tester.Move(float32(sample)/scale, float32(row)/scale)
+	time.Sleep(2 * time.Duration(MotionFastMs) * time.Millisecond)
+	tester.Frame()
+	if got := tester.Image().RGBAAt(sample, row); !same(got, theme.Danger) {
+		t.Errorf("under the pointer the confirming action is %v, want the danger fill %v",
+			got, theme.Danger)
 	}
 }
 

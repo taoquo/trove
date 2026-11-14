@@ -7,16 +7,16 @@
 
 | Token | 值 | 说明 | 我们的常量 |
 |---|---|---|---|
-| 设置页内边距 | 顶 8 / 底 8 | 页面顶部与底部的呼吸空间 | `SettingsPagePadTop/Bottom`（`metrics_interaction.go:86`） |
-| 设置行 | 48 高 / `12 12 12 14` / gap 14 | 一行偏好的高度、内边距与间距 | `SettingsRowHeight/PadY/PadLeft/PadRight/Gap`（`metrics_interaction.go:109`） |
-| 设置卡间距 | 8 | 相邻卡片之间 | `SettingsCardGap`（`metrics_interaction.go:117`） |
+| 设置页内边距 | 顶 8 / 底 8 | 页面顶部与底部的呼吸空间 | `SettingsPagePadTop/Bottom`（`metrics_interaction.go:87`） |
+| 设置行 | 48 高 / `12 12 12 14` / gap 14 | 一行偏好的高度、内边距与间距 | `SettingsRowHeight/PadY/PadLeft/PadRight/Gap`（`metrics_interaction.go:110`） |
+| 设置卡间距 | 8 | 相邻卡片之间 | `SettingsCardGap`（`metrics_interaction.go:118`） |
 | 数字字段 | 72×24 / 右对齐 | 数字输入的宽度、高度与对齐 | `SettingsNumberWidth/Height`（`metrics_interaction.go:151`） |
 | 字段 | 24 高 / `0 8` / 圆角 7 / 1px `--line` | 小字段的盒子 | `SettingsNumberPadX/FieldRadius`（`metrics_interaction.go:150`） |
 | 行内动作 | 27 高 / `0 10` / 圆角 6 / 1px `--line` | 行内按钮 | `SettingsAction*`（`metrics_interaction.go:135`） |
 | 下拉 | 24 高 / `0 6 0 9` / 圆角 7 / `--pill` | 选择器 | `SettingsPick*`（`metrics_interaction.go:121`） |
-| 页签 | 22 高 / `0 7` / 圆角 6 / 11 600 `.12em` 大写 | 分区页签 | `SettingsTab*`（`metrics_interaction.go:93`） |
-| 查找框 | `0 1 180`，最小 120 | 搜索字段的宽度 | `SettingsFindWidth`（`metrics_interaction.go:104`） |
-| 行名 / 副行 | 13 / 500；11.5 `--fg-2` | 名称与说明的字号 | `SettingsRowNameFont/SubFont`（`metrics_interaction.go:114`） |
+| 页签 | 22 高 / `0 7` / 圆角 6 / 11 600 `.12em` 大写 | 分区页签 | `SettingsTab*`（`metrics_interaction.go:94`） |
+| 查找框 | `0 1 180`，最小 120 | 搜索字段的宽度 | `SettingsFindWidth`（`metrics_interaction.go:105`） |
+| 行名 / 副行 | 13 / 500；11.5 `--fg-2` | 名称与说明的字号 | `SettingsRowNameFont/SubFont`（`metrics_interaction.go:115`） |
 | 列表卡 | 圆角 10，1px `--line`，无阴影 | 卡片与列表的表面 | `RadiusPanel` + `rail.Line` |
 | 页面容器 | `2 / 16 / 8 / 16`，内容 1200 居中 | 页面的内边距与阅读宽度 | `ResultsPadTop/Bottom` + `pageInset` |
 
@@ -82,16 +82,17 @@ crumb，设置、标签库、标签图写在自己的内容页头（带返回键
 |---|---|---|---|
 | 设置 | 默认 | 通用页签、语言/主题两行 | `TestTheSettingsPanelDrawsItsSections` |
 | 设置 | 页面内边距 | 顶/底 8，页面下沿不留额外空白 | `TestTheSettingsPageKeepsItsPagePadding` |
-| 设置 | 搜索无结果 | 页签让位，跨分区结果带分区名，空态在流内 | 待补 |
+| 设置 | 搜索无结果 | 页签让位，跨分区结果带分区名，空态在流内 | `TestTheSettingsFindFieldSearchesEveryTab`、`TestTheSettingsFindFieldSaysWhenNothingMatches` |
 | 设置 | API Key 未存 | 行说明“尚未存密钥”，字段为空、无掩码 | `TestAStoredKeyStillReadsAsStoredAfterReopening` |
 | 设置 | API Key 已存 | 行说明“已保存”，字段空但显示掩码占位 | `TestAStoredKeyStillReadsAsStoredAfterReopening` |
 | 自动打标 | 运行中 | 进度分母是本轮工作量；预算秒数与在途数可见 | `TestTheModelPhaseMeasuresItsOwnWorkload` |
 | 自动打标 | 取消 | 进度条显示“正在停止”并禁用；页面与侧栏不再有第二个停止按钮；在途批次保留 | `TestAutoTagStoppingOffersNoSecondStopButton`、`TestAutoTagStopKeepsTheBatchItIsOn` |
 | 自动打标 | 恢复 | 重启后按状态记为 interrupted / cancelled；有剩余且开关允许时续跑，预算跨重启累计 | `TestHealStaleRun`、`TestHealingACancelledRunKeepsItCancelled`、`TestAutoTagPanelReportsTheInterruptedRun`、`TestAutoTagResumeDecision` |
 | 确认 | 键盘 | 焦点在取消，回车与 Esc 都拒绝；选中确认动作才执行 | `TestTheConfirmationCardPutsReturnOnCancel` |
-| 同步 | 未配置凭据 | 失败原因可读，不显示空列表 | 待补 |
-| 详情 | 媒体缺失 | 占位而不是空白 | 待补 |
-| 筛选 | 无匹配 | 空态在流内，说明当前筛选 | 待补 |
+| 确认 | 危险动作悬停 | 静止为危险墨 + 危险浅底；指针下填实危险色 | `TestTheDestructiveAnswerFillsUnderThePointer` |
+| 同步 | 未配置凭据 | 失败原因可读，不显示空列表 | `TestSyncFailureSaysWhatToDo` |
+| 详情 | 媒体缺失 | 占位而不是空白 | `TestTheDetailKeepsAFrameForAPictureThatNeverArrives` |
+| 筛选 | 无匹配 | 空态在流内，说明当前筛选 | `TestTheEmptyResultNamesEveryCondition`、`TestTheEmptyResultOffersAWayOut` |
 
 ## 4. 品牌标记
 

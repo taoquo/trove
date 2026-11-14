@@ -552,9 +552,10 @@ func (s *Shell) pendingSuggestionsBar(c *ui.Context, theme *ui.Theme, rail RailT
 	if n == 0 {
 		return
 	}
-	// The bar's ground is the panel surface, not the pressed/hover surface. rail.Muted is
-	// theme.SurfacePressed -- a platform colour -- so the bar would render cool grey
-	// (221,221,225) on a warm page instead of the panel's (251,247,243).
+	// The bar's ground is the panel surface, not the recessed one. rail.Muted is
+	// theme.SurfaceHover -- the tray ground (#efe7df light, #2b2421 dark) -- so the bar
+	// would read as a sunken strip above the cards; the card's own ground (#fbf7f3 light,
+	// #221c19 dark) makes it the first row of the panel instead.
 	// The bulk bar's `margin-top: -6px; margin-bottom: 14px` sets the gap. The bottom margin
 	// is the whole gap between the bar and the first card: without it the grid starts at the
 	// bar's edge, 14 points high.

@@ -89,8 +89,8 @@ func (s *Shell) settingsUpdatesSection(c *ui.Context, theme *ui.Theme, rail Rail
 	)
 }
 
-// versionLine is the version and when the app last finished a check -- "trove 0.3.4 · last
-// checked 2026-11-14 11:34" -- or that it has not checked yet. A date is local time and minute
+// versionLine is the version and when the app last finished a check -- "trove <version> ·
+// last checked 2026-11-14 11:34" -- or that it has not checked yet. A date is local time and minute
 // precision: seconds would be noise, and the day is what the reader is asking about.
 func (s *Shell) versionLine(version string) string {
 	if s.state.UpdateLastCheck.IsZero() {
