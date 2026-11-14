@@ -4,6 +4,15 @@
 update it signs, so the heading below must exist before a tag is pushed. Keep the
 heading plain (`## 0.3.2`) or Keep a Changelog's (`## [0.3.2] - 2026-11-14`).
 
+## 0.3.3
+
+### Changed
+
+- Nothing behaves differently in this release. It exists so an installed 0.3.2
+  has a newer version to find, which is how the update path is verified from
+  the outside: the assets, the signed manifest and the delta are built exactly
+  as a real release's are.
+
 ## 0.3.2
 
 ### Changed
