@@ -16,6 +16,15 @@ import (
 
 // The auto-tagging page of tag management.
 
+// openAutoTagPage enters the tag library on its auto-tagging tab, which is the only way in:
+// Settings used to carry a signpost to it and no longer does.
+func openAutoTagPage(shell *Shell) {
+	shell.closePanels()
+	shell.state.TagMode = true
+	shell.state.GraphMode = false
+	shell.selectTagLibraryView(TagViewAutoTag)
+}
+
 // TestTheAutoTagPageIsReachedFromTheTable is the move's acceptance criterion: the controls
 // that were in Settings are now one click from the tags they produce, and the table's own
 // controls are gone while the other page is on screen.
@@ -139,42 +148,6 @@ func TestSwitchingPagesKeepsTheTableState(t *testing.T) {
 	}
 }
 
-// TestTheSettingsSignpostOpensTheAutoTagPage is the second entrance: Settings no longer draws
-// the controls, but it has to take a reader who looks there to the one place that does.
-func TestTheSettingsSignpostOpensTheAutoTagPage(t *testing.T) {
-	shell, db := newShell(t)
-	ctx := context.Background()
-	seed(t, db, "1", "ada", "a post", clockBase)
-	shell.Reload(ctx)
-	shell.OpenSettings()
-	shell.state.SettingsSection = SettingsSectionAutoTag
-
-	tester := ui.NewTester(shell.View, 1180, 900)
-	tester.Frame()
-
-	if !tester.HasText(shell.t().T(i18n.SettingsAutoTagMoved)) {
-		t.Fatalf("Settings does not say where auto-tagging went; texts: %q", tester.Texts())
-	}
-	if tester.HasText(shell.t().T(i18n.ActionRunNow)) {
-		t.Errorf("the run control is still drawn in Settings")
-	}
-	if err := tester.Click(shell.t().T(i18n.ActionOpenTagManagement)); err != nil {
-		t.Fatalf("the signpost has no way to the page: %v", err)
-	}
-	tester.Frame()
-
-	if shell.state.SettingsOpen {
-		t.Errorf("the settings sheet stayed open")
-	}
-	if !shell.state.TagMode || shell.tagView() != TagViewAutoTag {
-		t.Errorf("the signpost landed on tagMode=%v view=%q, want the auto-tagging page",
-			shell.state.TagMode, shell.tagView())
-	}
-	if !tester.HasText(shell.t().T(i18n.ActionRunNow)) {
-		t.Errorf("the auto-tagging page did not open; texts: %q", tester.Texts())
-	}
-}
-
 // TestTheAutoTagPageOffersTheSuggestionsItProduced closes the loop the old placement left
 // open: the result's "N pending" used to be a number with no way to act on it.
 func TestTheAutoTagPageOffersTheSuggestionsItProduced(t *testing.T) {
@@ -291,11 +264,6 @@ func TestTheAutoTagPageReadsTheStoredConfiguration(t *testing.T) {
 	shell.ToggleTagMode(ctx)
 	shell.selectTagLibraryView(TagViewAutoTag)
 	check("the view switch")
-
-	reset()
-	shell.state.TagMode = false
-	shell.OpenTagManagementAutoTag()
-	check("the settings signpost")
 }
 
 // TestTheVocabularyModeShowsNamesAndStoresIDs closes a content defect the re-layout exposed:
@@ -371,7 +339,7 @@ func TestTheDeploymentFieldIsOnlyForAzure(t *testing.T) {
 	seed(t, db, "1", "ada", "a post", clockBase)
 	shell.Reload(ctx)
 	shell.ToggleTagMode(ctx)
-	shell.OpenTagManagementAutoTag()
+	openAutoTagPage(shell)
 
 	tester := ui.NewTester(shell.View, 1180, 900)
 	tester.Frame()

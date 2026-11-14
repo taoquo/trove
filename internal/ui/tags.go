@@ -64,24 +64,6 @@ func (s *Shell) ToggleTagMode(ctx context.Context) {
 	s.ReloadTagLibraryAsync(ctx)
 }
 
-// OpenTagManagementAutoTag closes the settings sheet and opens the auto-tagging page of tag
-// management. It is what the signpost in Settings calls; it does not go through ToggleTagMode
-// because that resets the page to the table.
-func (s *Shell) OpenTagManagementAutoTag() {
-	s.closePanels()
-	s.state.TagMode = true
-	s.state.GraphMode = false
-	s.state.TagView = TagViewAutoTag
-	// The page draws stored configuration, not whatever the shell happens to hold: this entry
-	// point must read the stored values itself.
-	s.loadAutoTagSettings(context.Background())
-	s.ReloadTagLibraryAsync(context.Background())
-	s.ReloadPendingSuggestions(context.Background())
-	if s.window != nil {
-		s.window.Invalidate()
-	}
-}
-
 // ReloadTagLibrary rebuilds the tag management view.
 func (s *Shell) ReloadTagLibrary(ctx context.Context) {
 	items, err := s.service.LoadTagLibrary(ctx)

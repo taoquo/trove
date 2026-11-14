@@ -42,7 +42,7 @@ func TestACancelledSyncSaysCancelled(t *testing.T) {
 // resume sentence needs one too.
 func TestTheResumeLineOffersTheSyncItAsksFor(t *testing.T) {
 	shell, _ := newShell(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	shell.state.SyncResumePending = true
 
 	tester := ui.NewTester(shell.View, 1180, 760)

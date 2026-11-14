@@ -19,7 +19,7 @@ func TestTheRunningCaptureDoesNotAlsoOfferAnalyzeNow(t *testing.T) {
 	if !shell.ApplyCaptureState("autotag-running") {
 		t.Fatal("the capture state is unknown")
 	}
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 
 	tester := ui.NewTester(shell.View, 1180, 760)
 	tester.Frame()

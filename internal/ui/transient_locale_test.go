@@ -49,7 +49,7 @@ func TestChangingTheLanguageDropsTheOldLanguageReports(t *testing.T) {
 		t.Fatalf("the fixture filled %d of 8 reports", got)
 	}
 
-	shell.SetLocale("zh-CN", "en")
+	shell.SetLocale("zh-CN")
 
 	for name, value := range reports() {
 		if value != "" {

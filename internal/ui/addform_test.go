@@ -18,7 +18,7 @@ import (
 func TestTheAddFormNamesItsFieldsAndAddsOnEnter(t *testing.T) {
 	shell, db := newShell(t)
 	ctx := context.Background()
-	shell.SetLocale("en", "en")
+	shell.SetLocale("en")
 	shell.Reload(ctx)
 	shell.ToggleAddForm()
 

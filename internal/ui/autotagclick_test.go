@@ -28,7 +28,7 @@ import (
 func TestTheAutoTagPageAnswersEveryClick(t *testing.T) {
 	shell, db := newBatchShell(t)
 	ctx := context.Background()
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	seed(t, db, "1", "ada", "a post", clockBase)
 	shell.Reload(ctx)
 	shell.ToggleTagMode(ctx)
@@ -128,7 +128,7 @@ func TestTheRunAndItsSuggestionsAnswerEveryClick(t *testing.T) {
 	defer releaseRun()
 
 	shell, db := newBatchShell(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	seed(t, db, "1", "ada", "a post about Go schedulers", clockBase)
 
 	repos := autoTagRepos(db)

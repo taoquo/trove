@@ -16,7 +16,7 @@ import (
 // both answer this with the same back square in the page's head; the graph page now does too.
 func TestTheGraphPageHasAWayBackToTheBookmarks(t *testing.T) {
 	shell, _ := newShell(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	ctx := context.Background()
 	shell.Reload(ctx)
 	shell.state.GraphMode = true

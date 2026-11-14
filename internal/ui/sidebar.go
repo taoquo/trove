@@ -259,12 +259,13 @@ func (s *Shell) sidebarFooter(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 				locale = locale.Background(theme.SurfaceHover)
 			}
 			locale.OnClick(func() {
-				// The locale chip switches between the two catalogs.
-				next := i18n.EN
-				if s.state.Locale == i18n.EN {
-					next = i18n.ZHCN
+				// The locale chip switches between the two catalogs. An unset preference is
+				// English on screen, so the chip's first press is the one that makes it Chinese.
+				next := i18n.ZHCN
+				if s.state.Locale == i18n.ZHCN {
+					next = i18n.EN
 				}
-				s.SetLocale(next, s.state.SystemLocale)
+				s.SetLocale(next)
 			}).Children(func() {
 				ui.Text(c, s.localeChipLabel()).FontSize(FontSmall).FontWeight(700).
 					TextColor(theme.TextMuted).Padding(0, FooterChipPadX)

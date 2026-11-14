@@ -25,7 +25,7 @@ import (
 // again.
 func TestTheSyncSectionNamesTheCredentialCardOnce(t *testing.T) {
 	shell, _ := newShell(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	shell.OpenSettings()
 	shell.state.SettingsSection = SettingsSectionSync
 
@@ -56,7 +56,7 @@ func TestTheSyncSectionNamesTheCredentialCardOnce(t *testing.T) {
 func TestTheBlockedTagRowSaysWhatItIsAndConfirmsTheClear(t *testing.T) {
 	shell, _, tagger := shellWithTagging(t)
 	ctx := context.Background()
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	for _, name := range []string{"spam", "crypto"} {
 		if err := tagger.BlockTagKey(ctx, name); err != nil {
 			t.Fatalf("block %q: %v", name, err)

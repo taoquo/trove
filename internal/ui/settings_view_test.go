@@ -35,7 +35,6 @@ func TestTheSettingsPanelDrawsItsSections(t *testing.T) {
 	for _, key := range []i18n.Key{
 		i18n.SettingsSectionGeneral,
 		i18n.SettingsSectionSync,
-		i18n.SettingsSectionAutoTag,
 		i18n.SettingsSectionDataSafety,
 		i18n.SettingsSectionListsViews,
 	} {
@@ -70,18 +69,7 @@ func TestTheSettingsPanelDrawsItsSections(t *testing.T) {
 		}
 	}
 	if containsText(texts, shell.t().T(i18n.SettingsGroupAutoTagBasics)) {
-		t.Error("the auto-tagging section is drawn while the general tab is selected")
-	}
-
-	// Choosing the auto-tagging section draws the signpost, not the controls: they live in tag
-	// management, and a second copy here would be two homes for one setting.
-	shell.state.SettingsSection = SettingsSectionAutoTag
-	tester.Frame()
-	if !containsText(tester.Texts(), shell.t().T(i18n.SettingsAutoTagMoved)) {
-		t.Errorf("the auto-tagging tab does not say where the controls went; texts: %q", tester.Texts())
-	}
-	if containsText(tester.Texts(), strings.ToUpper(shell.t().T(i18n.SettingsGroupAutoTagBasics))) {
-		t.Errorf("the auto-tagging controls are still drawn in Settings; texts: %q", tester.Texts())
+		t.Error("the auto-tagging controls are drawn in Settings; they live in tag management")
 	}
 
 	// There is deliberately no "and it is not drawn with the panel closed" half. Tester

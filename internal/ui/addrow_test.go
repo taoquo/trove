@@ -18,7 +18,7 @@ import (
 func TestTheAddRowHasAWayToCloseItself(t *testing.T) {
 	shell, db := newShell(t)
 	seed(t, db, "1", "ada", "post 1", clockBase)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	shell.Reload(context.Background())
 
 	shell.ToggleAddForm()

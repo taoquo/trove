@@ -32,7 +32,7 @@ func TestTheProgressLineNamesPagesAndItems(t *testing.T) {
 		t.Errorf("en = %q, the bare count is back", en)
 	}
 
-	shell.SetLocale("zh-CN", "en")
+	shell.SetLocale("zh-CN")
 	zh := syncProgressLabel(shell.t(), progress)
 	if zh == en {
 		t.Fatalf("zh = %q, want its own sentence", zh)

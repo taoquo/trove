@@ -86,7 +86,6 @@ func buildUILibrary(t *testing.T, n int) (*Shell, *sqlite.DB) {
 	}
 
 	shell := NewShell(workspace.New(repos, benchClock{now: base}, idgen.New("bench")), AppearanceLight)
-	shell.State().SystemLocale = "en"
 	shell.Reload(ctx)
 	return shell, db
 }

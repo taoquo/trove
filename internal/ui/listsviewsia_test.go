@@ -19,7 +19,7 @@ import (
 func TestTheDefaultSavedViewNameSpeaksTheUiLanguage(t *testing.T) {
 	shell, db := newShell(t)
 	ctx := context.Background()
-	shell.SetLocale("zh-CN", "zh-CN")
+	shell.SetLocale("zh-CN")
 
 	shell.state.SavedViewName = ""
 	shell.SaveCurrentView(ctx)

@@ -32,12 +32,12 @@ func TestTheStatusBadgeSurvivesALanguageChange(t *testing.T) {
 			t.Errorf("in English, status %q reached the badge as %q", status, got)
 		}
 
-		shell.SetLocale("zh-CN", "en")
+		shell.SetLocale("zh-CN")
 		if got := shell.workspaceStatus(); got != status {
 			t.Errorf("after switching to Chinese, status %q reached the badge as %q -- the badge "+
 				"compares a stored word against a fresh translation again", status, got)
 		}
-		shell.SetLocale("en", "en")
+		shell.SetLocale("en")
 	}
 
 	// And the idle case stays idle, so the mapping is not simply passing everything through.

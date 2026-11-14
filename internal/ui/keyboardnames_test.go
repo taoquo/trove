@@ -22,7 +22,7 @@ import (
 func TestTheViewTogglesTellTheKeyboardWhichIsWhich(t *testing.T) {
 	shell, db := newShell(t)
 	seed(t, db, "1", "ada", "a post", clockBase)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	shell.Reload(context.Background())
 
 	tester := ui.NewTester(shell.View, 1180, 760)
@@ -42,7 +42,7 @@ func TestTheViewTogglesTellTheKeyboardWhichIsWhich(t *testing.T) {
 // stray number.
 func TestThePendingFilterChipNamesItsCount(t *testing.T) {
 	shell, _ := newShell(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	shell.state.TagMode = true
 	// The chip counts tags with something pending, not the suggestions themselves.
 	shell.state.TagItems = []domain.TagLibraryItem{

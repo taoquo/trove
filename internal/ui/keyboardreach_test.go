@@ -32,7 +32,7 @@ func tabUntil(tester *ui.Tester, want string) bool {
 func TestTheTagLibrariesRowControlsTakeTheKeyboard(t *testing.T) {
 	shell, db := newShell(t)
 	ctx := context.Background()
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	seedTagOnly(t, db, "a", "rust")
 	shell.ReloadTagLibrary(ctx)
 	shell.ToggleTagMode(ctx)
@@ -56,7 +56,7 @@ func TestTheTagLibrariesRowControlsTakeTheKeyboard(t *testing.T) {
 func TestTheDetailTagPillCanBeRemovedFromTheKeyboard(t *testing.T) {
 	shell, db := newShell(t)
 	ctx := context.Background()
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	seed(t, db, "1", "ada", "a post", clockBase)
 	seedTagOnly(t, db, "a", "rust")
 	if _, err := shell.service.AddTags(ctx, []string{"1"}, []string{"rust"}); err != nil {
@@ -93,7 +93,7 @@ func TestTheDetailTagPillCanBeRemovedFromTheKeyboard(t *testing.T) {
 func TestTheSidebarsChromeTakesTheKeyboard(t *testing.T) {
 	shell, db := newShell(t)
 	ctx := context.Background()
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	seed(t, db, "1", "ada", "a post", clockBase)
 	shell.Reload(ctx)
 

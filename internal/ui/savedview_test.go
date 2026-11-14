@@ -1836,7 +1836,7 @@ func TestTheSettingsPanelHasItsSections(t *testing.T) {
 
 	// Settings is a page, and its sections are uppercase tabs.
 	for _, key := range []i18n.Key{
-		i18n.SettingsSectionGeneral, i18n.SettingsSectionSync, i18n.SettingsSectionAutoTag,
+		i18n.SettingsSectionGeneral, i18n.SettingsSectionSync, i18n.SettingsSectionDataSafety,
 	} {
 		want := strings.ToUpper(shell.t().T(key))
 		if !tester.HasText(want) {

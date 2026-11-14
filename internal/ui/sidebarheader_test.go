@@ -28,7 +28,7 @@ func TestTheFacetControlsSitBesideTheirTabs(t *testing.T) {
 	seed(t, db, "1", "ada", "a post", clockBase)
 	// The column's default locale is the narrow one for these labels; the wide one is what
 	// lets the row hold both ends at 212, and it is the case the report was made in.
-	shell.translator = i18n.New("zh-CN", "zh-CN")
+	shell.translator = i18n.New("zh-CN")
 	shell.state.Data.Tags = []domain.TagSummary{{ID: "1", Name: "golang", BookmarkCount: 2}}
 	shell.Reload(context.Background())
 

@@ -211,7 +211,7 @@ func TestThePreviewSitsAboveTheDetail(t *testing.T) {
 
 	// The backdrop is the lightbox's own dim; with the lightbox under the detail, the press
 	// lands on the detail's backdrop and closes the detail instead.
-	if err := tester.Click(i18n.New("en", "en").T(i18n.MediaClose)); err != nil {
+	if err := tester.Click(i18n.New("en").T(i18n.MediaClose)); err != nil {
 		t.Fatalf("Click: %v", err)
 	}
 	tester.Frame()
@@ -326,7 +326,7 @@ func TestAVideoOffersPlayInThePreview(t *testing.T) {
 
 	shell.OpenLightbox(0)
 	tester.Frame()
-	play := i18n.New("en", "en").T(i18n.MediaPlay)
+	play := i18n.New("en").T(i18n.MediaPlay)
 	if !tester.HasText(play) {
 		t.Fatalf("the preview of a video offers no play control; texts: %q", tester.Texts())
 	}

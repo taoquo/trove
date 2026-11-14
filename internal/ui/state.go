@@ -515,10 +515,9 @@ type State struct {
 	// value matches.
 	MiddleWidth float32
 
-	// Locale is the user's language preference; empty means follow the system.
+	// Locale is the user's language preference; empty means none has been chosen, which
+	// resolves to English.
 	Locale string
-	// SystemLocale is what the OS reports.
-	SystemLocale string
 
 	// SettingsOpen shows the settings panel.
 	SettingsOpen bool
@@ -674,7 +673,7 @@ type Shell struct {
 func NewShell(service *workspace.Service, appearance Appearance) *Shell {
 	shell := &Shell{
 		service:    service,
-		translator: i18n.New("", ""),
+		translator: i18n.New(""),
 		updates:    defaultUpdates(),
 		state: &State{
 			Appearance: appearance,

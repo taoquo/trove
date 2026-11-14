@@ -101,6 +101,40 @@ if [ -s "$LOG" ]; then
 fi
 rm -f "$LOG"
 
+# 5. The red button's path, which is the one a reader actually presses to leave.
+#
+# MyGo runs the same OnClose listener for Window.Close and for the traffic light, so asking the
+# app to close its own window exercises the handler the button calls. Pressing the button from
+# here is not possible: macOS reports "osascript is not allowed assistive access", and a check
+# that cannot run is not a check. The delay is longer than the first wait, so the second
+# assertion means the close ended the process rather than a crash at launch.
+LOG2=$(mktemp)
+TROVE_SMOKE=1 TROVE_SMOKE_CLOSE=10s "$BIN" >"$LOG2" 2>&1 &
+closed=$!
+sleep 7
+
+if kill -0 "$closed" 2>/dev/null; then
+  note ok "alive 7s after launch, before the close"
+else
+  note FAIL "exited before the close was asked for; log follows"
+  sed 's/^/       /' "$LOG2"
+fi
+
+sleep 6
+
+if kill -0 "$closed" 2>/dev/null; then
+  note FAIL "still running after its own window closed (pid $closed)"
+  kill "$closed" 2>/dev/null
+else
+  note ok "gone after its own window closed"
+fi
+
+if [ -s "$LOG2" ]; then
+  echo "  ---- output ----"
+  sed 's/^/       /' "$LOG2"
+fi
+rm -f "$LOG2"
+
 echo
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]

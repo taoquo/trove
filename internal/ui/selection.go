@@ -105,8 +105,8 @@ func (s *Shell) syncBatchLabels() {
 
 func (s *Shell) relabelBatchChoice(current string, key i18n.Key) string {
 	if current == "" ||
-		current == i18n.New("en", "en").T(key) ||
-		current == i18n.New("zh-CN", "zh-CN").T(key) {
+		current == i18n.New("en").T(key) ||
+		current == i18n.New("zh-CN").T(key) {
 		return s.t().T(key)
 	}
 	return current

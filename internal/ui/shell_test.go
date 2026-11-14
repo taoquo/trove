@@ -514,7 +514,7 @@ func TestTheHeadingsUseTheSystemFace(t *testing.T) {
 	shell, _ := newShell(t)
 
 	for _, locale := range []string{"en", i18n.ZHCN} {
-		shell.SetLocale(locale, locale)
+		shell.SetLocale(locale)
 		if got := shell.displayFace(); got != "" {
 			t.Errorf("under %s headings ask for %q, want the toolkit's system face", locale, got)
 		}
@@ -705,7 +705,7 @@ func TestShellDeleteFailsClosed(t *testing.T) {
 func TestShellRendersInChinese(t *testing.T) {
 	shell, db := newShell(t)
 	seed(t, db, "1", "ada", "a post", clockBase)
-	shell.SetLocale("zh-CN", "en")
+	shell.SetLocale("zh-CN")
 	shell.Reload(context.Background())
 
 	tester := ui.NewTester(shell.View, 1180, 760)
@@ -755,7 +755,7 @@ func TestPreferencesPersistAcrossRestarts(t *testing.T) {
 
 	// The user changes both preferences.
 	shell.SetAppearance(AppearanceDark)
-	shell.SetLocale("zh-CN", "en")
+	shell.SetLocale("zh-CN")
 
 	// A second shell over the same database is what a relaunch looks like.
 	second := NewShell(nil, AppearanceSystem)
@@ -901,16 +901,17 @@ func TestSettingsSelectorsMapToPreferences(t *testing.T) {
 	if got := shell.localeFor("English"); got != "en" {
 		t.Errorf("English mapped to %q", got)
 	}
-	// The first entry follows the system, which is the empty preference.
-	if got := shell.localeFor(shell.localeLabels()[0]); got != "" {
-		t.Errorf("the follow-system entry mapped to %q, want empty", got)
+	// The selector offers the two catalogs and nothing else: there is no "follow the system"
+	// entry, because nothing in the app asks the OS which language to use.
+	if got := shell.localeLabels(); len(got) != 2 {
+		t.Errorf("the language selector offers %q, want 中文 and English", got)
 	}
 }
 
 // TestSettingsPanelRenders checks the panel is reachable and shows both controls.
 func TestSettingsPanelRenders(t *testing.T) {
 	shell, _ := newShell(t)
-	shell.SetLocale("en", "en")
+	shell.SetLocale("en")
 	shell.Reload(context.Background())
 
 	shell.State().SettingsOpen = true
@@ -1324,7 +1325,7 @@ func TestLocaleChangeRebuildsTheMenuBar(t *testing.T) {
 	rebuilt := 0
 	shell.OnLocaleChanged(func() { rebuilt++ })
 
-	shell.SetLocale("zh-CN", "en")
+	shell.SetLocale("zh-CN")
 	if rebuilt != 1 {
 		t.Errorf("the menu was rebuilt %d time(s), want 1", rebuilt)
 	}
@@ -1332,7 +1333,7 @@ func TestLocaleChangeRebuildsTheMenuBar(t *testing.T) {
 		t.Errorf("menu label = %q, want the Chinese one", got)
 	}
 
-	shell.SetLocale("en", "en")
+	shell.SetLocale("en")
 	if rebuilt != 2 {
 		t.Errorf("the menu was rebuilt %d time(s), want 2", rebuilt)
 	}

@@ -29,11 +29,11 @@ func (s *Shell) OnLocaleChanged(fn func()) { s.onLocaleChanged = fn }
 // SetLocale changes the language and rebuilds the translator.
 //
 // It is the only way the language changes: a view body may be rebuilt several
-// times per event, so resolving the locale there would be a side effect.
-func (s *Shell) SetLocale(preferred, system string) {
+// times per event, so resolving the locale there would be a side effect. An empty preference
+// means nothing has been chosen and resolves to English.
+func (s *Shell) SetLocale(preferred string) {
 	s.state.Locale = preferred
-	s.state.SystemLocale = system
-	s.translator = i18n.New(preferred, system)
+	s.translator = i18n.New(preferred)
 	s.clearTransientMessages()
 	// The auto-tagging page holds translated select values, not just keys, so a language
 	// change has to re-derive them (the vocabulary mode's name is held as text).
@@ -61,8 +61,7 @@ func (s *Shell) SetLocale(preferred, system string) {
 // the Chinese strings fit the same boxes.
 func (s *Shell) ApplyCaptureLocale(locale string) {
 	s.state.Locale = locale
-	s.state.SystemLocale = locale
-	s.translator = i18n.New(locale, locale)
+	s.translator = i18n.New(locale)
 	s.clearTransientMessages()
 	// Capture states run before the language is pinned, so a translated value loaded there
 	// still holds the previous language. Re-derive only that value: a full settings reload here
@@ -181,9 +180,8 @@ func (s *Shell) ApplyPreferences(ctx context.Context) error {
 		s.state.Appearance = preferences.Appearance
 	}
 	s.state.Locale = preferences.Locale
-	// The translator is rebuilt from the loaded values; systemLocale is untouched
-	// because only the caller knows what the OS reports.
-	s.translator = i18n.New(preferences.Locale, s.state.SystemLocale)
+	// The stored preference is all the translator needs: an empty one resolves to English.
+	s.translator = i18n.New(preferences.Locale)
 
 	// The sync block's fields have to be in state before the first frame: the
 	// launch-time sync reads them, and until now they were loaded only when the
@@ -222,7 +220,7 @@ func (s *Shell) persistPreferences(ctx context.Context) {
 // build anything.
 func (s *Shell) t() *i18n.Translator {
 	if s.translator == nil {
-		s.translator = i18n.New("", "")
+		s.translator = i18n.New("")
 	}
 	return s.translator
 }
@@ -241,9 +239,14 @@ func (s *Shell) appearanceLabels() []string {
 	}
 }
 
-// localeLabels renders the language choices, with an entry for following the OS.
+// localeLabels renders the language choices.
+//
+// There is no "follow the system" entry. It was offered, stored as an empty preference, and
+// resolved against a system locale the app never filled in -- so it was a third choice that
+// behaved exactly like the second. English is what an unset preference means, and it is the
+// number every install starts on.
 func (s *Shell) localeLabels() []string {
-	return []string{s.t().T(i18n.AppearanceSystem), "中文", "English"}
+	return []string{"中文", "English"}
 }
 
 // appearanceFor maps a selector label back to a preference.
@@ -261,17 +264,13 @@ func (s *Shell) appearanceFor(label string) Appearance {
 	return AppearanceSystem
 }
 
-// localeFor maps a language label to a locale.
+// localeFor maps a language label to a locale. Anything but 中文 is English, which is what the
+// selector shows for an unset preference.
 func (s *Shell) localeFor(label string) string {
-	switch label {
-	case "中文":
-		return "zh-CN"
-	case "English":
-		return "en"
-	default:
-		// The first entry means "follow the system".
-		return ""
+	if label == "中文" {
+		return i18n.ZHCN
 	}
+	return i18n.EN
 }
 
 // syncPreferenceLabels refreshes the bound selector values from the state.
@@ -286,13 +285,11 @@ func (s *Shell) syncPreferenceLabels() {
 		s.state.AppearanceLabel = appearances[0]
 	}
 
-	switch s.state.Locale {
-	case "zh-CN":
+	// An unset preference reads as English, because that is what it resolves to.
+	if s.state.Locale == i18n.ZHCN {
 		s.state.LocaleLabel = "中文"
-	case "en":
+	} else {
 		s.state.LocaleLabel = "English"
-	default:
-		s.state.LocaleLabel = s.localeLabels()[0]
 	}
 }
 

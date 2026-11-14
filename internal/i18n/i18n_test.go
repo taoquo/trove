@@ -21,7 +21,7 @@ func TestEveryLocaleTranslatesEveryKey(t *testing.T) {
 // blank renders as nothing, which looks like a layout bug.
 func TestNoTranslationIsEmpty(t *testing.T) {
 	for _, locale := range AllLocales {
-		translator := New(locale, locale)
+		translator := New(locale)
 		for _, key := range Keys() {
 			if text := translator.T(key); text == "" {
 				t.Errorf("locale %q renders %q as empty", locale, key)
@@ -33,7 +33,7 @@ func TestNoTranslationIsEmpty(t *testing.T) {
 // TestNoTranslationIsStillAKey catches a key that was never added to English and
 // so would be shown raw.
 func TestNoTranslationIsStillAKey(t *testing.T) {
-	translator := New(EN, EN)
+	translator := New(EN)
 
 	for _, key := range Keys() {
 		if text := translator.T(key); text == key {
@@ -43,8 +43,8 @@ func TestNoTranslationIsStillAKey(t *testing.T) {
 }
 
 func TestChineseAndEnglishDiffer(t *testing.T) {
-	zh := New(ZHCN, ZHCN)
-	en := New(EN, EN)
+	zh := New(ZHCN)
+	en := New(EN)
 
 	// If these matched, one catalog would be a copy of the other. AppName is not
 	// sampled: "trove" is the product's name in its own lower case, and names do not
@@ -67,14 +67,14 @@ func TestFallbackIsEnglish(t *testing.T) {
 }
 
 func TestTfInterpolates(t *testing.T) {
-	translator := New(EN, EN)
+	translator := New(EN)
 
 	// The count is a bare number, because the number and the word sit on separate lines: the
 	// visual reference reads "9300" over "结果", not "9300 结果" on one line.
 	if got := translator.Tf(ToolbarCount, 42); got != "42" {
 		t.Errorf("Tf = %q", got)
 	}
-	if got := New(ZHCN, ZHCN).Tf(ToolbarShowingOf, 100, 4321); got != "100 / 4321" {
+	if got := New(ZHCN).Tf(ToolbarShowingOf, 100, 4321); got != "100 / 4321" {
 		t.Errorf("Tf = %q", got)
 	}
 
@@ -88,21 +88,20 @@ func TestResolveLocale(t *testing.T) {
 	tests := []struct {
 		name      string
 		preferred string
-		system    string
 		want      Locale
 	}{
-		{"an explicit preference wins", ZHCN, EN, ZHCN},
-		{"an explicit preference wins the other way", EN, ZHCN, EN},
-		{"system is used when unset", "", ZHCN, ZHCN},
-		{"an unsupported system falls back", "", "fr", EN},
-		{"an unsupported preference falls back to the system", "fr", ZHCN, ZHCN},
-		{"both unsupported", "fr", "de", EN},
+		{"a stored Chinese preference wins", ZHCN, ZHCN},
+		{"a stored English preference wins", EN, EN},
+		// Nothing stored is the fresh install, and it is English whatever the machine is set
+		// to: the language is chosen inside the app, not by the OS.
+		{"nothing stored is English", "", EN},
+		{"an unsupported preference falls back to English", "fr", EN},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := ResolveLocale(tc.preferred, tc.system); got != tc.want {
-				t.Errorf("ResolveLocale(%q, %q) = %q, want %q", tc.preferred, tc.system, got, tc.want)
+			if got := ResolveLocale(tc.preferred); got != tc.want {
+				t.Errorf("ResolveLocale(%q) = %q, want %q", tc.preferred, got, tc.want)
 			}
 		})
 	}

@@ -153,7 +153,7 @@ func TestTheFacetTabsKeepTheirLabelsOnOneLine(t *testing.T) {
 	for i := 0; i < 60; i++ {
 		seed(t, db, fmt.Sprintf("b%d", i), fmt.Sprintf("author%d", i), "a post", clockBase)
 	}
-	shell.SetLocale("zh-CN", "en")
+	shell.SetLocale("zh-CN")
 	shell.Reload(ctx)
 
 	// An author condition adds the dot to the authors tab.

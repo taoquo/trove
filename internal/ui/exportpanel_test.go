@@ -26,7 +26,7 @@ func TestClickingExportAsksForAPathOffTheWindowThread(t *testing.T) {
 	bundleService(t, shell, db)
 	seed(t, db, "1", "ada", "a post", clockBase)
 	shell.Reload(context.Background())
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 
 	shell.state.SettingsOpen = true
 	shell.state.SettingsSection = SettingsSectionDataSafe

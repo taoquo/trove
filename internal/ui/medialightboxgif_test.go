@@ -28,12 +28,12 @@ func TestAGifOffersPlayInThePreview(t *testing.T) {
 	shell.OpenLightbox(0)
 	tester.Frame()
 
-	play := i18n.New("en", "en").T(i18n.MediaPlayGif)
+	play := i18n.New("en").T(i18n.MediaPlayGif)
 	if !tester.HasText(play) {
 		t.Fatalf("the preview of a GIF offers no play control; texts: %q", tester.Texts())
 	}
 	// The control is over a GIF, so it must not call the thing a video.
-	if tester.HasText(i18n.New("en", "en").T(i18n.MediaPlay)) {
+	if tester.HasText(i18n.New("en").T(i18n.MediaPlay)) {
 		t.Errorf("a GIF's play control is named after a video; texts: %q", tester.Texts())
 	}
 
@@ -68,7 +68,7 @@ func TestThePreviewNamesItself(t *testing.T) {
 	shell.OpenLightbox(0)
 	tester.Frame()
 
-	want := i18n.New("en", "en").T(i18n.MediaTitle)
+	want := i18n.New("en").T(i18n.MediaTitle)
 	if _, ok := tester.Find(want); !ok {
 		t.Errorf("the preview dialog has no name; want %q, texts: %q", want, tester.Texts())
 	}

@@ -16,7 +16,7 @@ import (
 func TestEachTagPillNamesTheTagItRemoves(t *testing.T) {
 	shell, db := newShell(t)
 	seedTagged(t, db, "1", "ai agent", "design")
-	shell.SetLocale("en", "")
+	shell.SetLocale("en")
 	shell.Reload(context.Background())
 	shell.State().Selected = "1"
 	shell.OpenSelectedDetail()

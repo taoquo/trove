@@ -158,10 +158,6 @@ func (s *Shell) ApplyCaptureState(state string) bool {
 	case "settings-sync":
 		s.OpenSettings()
 		s.state.SettingsSection = SettingsSectionSync
-	case "settings-autotag":
-		// The second settings tab, for comparing its content against the reference picture.
-		s.OpenSettings()
-		s.state.SettingsSection = SettingsSectionAutoTag
 	case "settings-data":
 		s.OpenSettings()
 		s.state.SettingsSection = SettingsSectionDataSafe

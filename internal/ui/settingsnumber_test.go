@@ -21,7 +21,7 @@ func TestTypingIntoANumberFieldReplacesTheValue(t *testing.T) {
 	ctx := context.Background()
 	tagger := tagging.New(autoTagRepos(db), fixedClock{now: clockBase}, nil)
 	shell.UseTagging(tagger)
-	shell.OpenTagManagementAutoTag()
+	openAutoTagPage(shell)
 
 	// Tall enough that the pacing rows are not clipped: Find reports the clipped
 	// rect, and a clipped rect would make the click land somewhere else.

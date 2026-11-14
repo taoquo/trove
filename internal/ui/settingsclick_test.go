@@ -10,16 +10,15 @@ import (
 	"github.com/taoquo/trove/internal/i18n"
 )
 
-// TestTheSettingsPageAnswersEveryClick walks the settings page: the way back, all five tabs,
-// the general tab's appearance picker, the sync tab's switch, the auto-tag tab's jump, the
-// find field, and the way out.
+// TestTheSettingsPageAnswersEveryClick walks the settings page: the way back, all four tabs,
+// the general tab's appearance picker, the sync tab's switch, the find field, and the way out.
 //
-// The page is a stack of five surfaces in one slot, so a control that only exists on one tab is
+// The page is a stack of four surfaces in one slot, so a control that only exists on one tab is
 // easy to leave unnamed or unwired; the back control, for one, was tooltip-only.
 func TestTheSettingsPageAnswersEveryClick(t *testing.T) {
 	shell, db := newShell(t)
 	ctx := context.Background()
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	seed(t, db, "1", "ada", "first", clockBase)
 	shell.Reload(ctx)
 	shell.OpenSettings()
@@ -48,7 +47,6 @@ func TestTheSettingsPageAnswersEveryClick(t *testing.T) {
 		key i18n.Key
 	}{
 		{SettingsSectionSync, i18n.SettingsSectionSync},
-		{SettingsSectionAutoTag, i18n.SettingsSectionAutoTag},
 		{SettingsSectionDataSafe, i18n.SettingsSectionDataSafety},
 		{SettingsSectionListsViews, i18n.SettingsSectionListsViews},
 		{SettingsSectionGeneral, i18n.SettingsSectionGeneral},
@@ -78,17 +76,6 @@ func TestTheSettingsPageAnswersEveryClick(t *testing.T) {
 	if shell.state.SyncOnLaunch == wasSyncOnLaunch {
 		t.Error("the sync-on-launch switch did not flip")
 	}
-
-	// The auto-tag tab is a signpost; its one action leaves for the tag library's own page.
-	click(tab(i18n.SettingsSectionAutoTag))
-	click(shell.t().T(i18n.ActionOpenTagManagement))
-	if !shell.state.TagMode || shell.state.TagView != TagViewAutoTag {
-		t.Errorf("Open tag management left tagMode=%v view=%q, want the auto-tag page",
-			shell.state.TagMode, shell.state.TagView)
-	}
-	shell.state.TagMode = false
-	shell.OpenSettings()
-	tester.Frame()
 
 	// The find field narrows the page; the clear key puts the tabs back.
 	click(shell.t().T(i18n.SettingsSearchPlaceholder))

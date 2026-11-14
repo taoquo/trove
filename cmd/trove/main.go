@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"time"
 
 	"encoding/json"
 	"github.com/egoist/mygo"
@@ -365,7 +366,13 @@ func start() error {
 		Content: ui.View(shell.View),
 	})
 	shell.Attach(window)
-	hideOnClose(window)
+	closeQuits(window)
+	// The smoke run can press the red button's path for real: Window.Close fires the same
+	// OnClose the button does, so a build whose close handler stopped quitting fails the
+	// check instead of quietly passing it. Nothing but tools/smoke.sh sets this.
+	if delay := smokeCloseDelay(); delay > 0 {
+		time.AfterFunc(delay, window.Close)
+	}
 	captureForReview(window, shell)
 
 	// The first read happens after the window exists, so a slow query cannot delay
@@ -403,62 +410,55 @@ func start() error {
 	return nil
 }
 
-// hideOnClose makes the red button hide the window rather than quit the app.
+// closeQuits makes the window's red button quit the app.
 //
-// The app keeps running when its window closes: the workspace holds an open database and a
-// sync runner, and quitting on a stray close would stop a run in flight. Hiding leaves both.
-// The scheme puts Quit in the menu bar's own entry and makes the window's close button only
-// hide. MyGo can express it: Window.OnClose receives a Preventable, PreventDefault keeps the
-// window open, and Window.Hide hides it, so all three pieces are public API.
-func hideOnClose(window *mygo.Window) {
-	// The hide-on-close scheme belongs to the macOS window model: the Dock icon
-	// brings the window back. Windows has no equivalent activation path here, so
-	// its close button keeps the default behavior and quits.
+// The first version hid the window and kept the app running, so that a stray close could not
+// stop a sync in flight. It read as a broken button: MyGo prevents a close by leaving the window
+// exactly where it was, so the click did nothing visible, and a reader who wanted out had to
+// find Quit in the menu. A single-window app whose window is the whole interface has one answer
+// for the red button, and this is it.
+//
+// The handler still has to tell the two closes apart. MyGo asks before terminating and then
+// closes every window; a handler that prevented that close too would cancel the quit, and Cmd-Q
+// would report "User canceled. (-128)" while nothing happened. quitting is set by the quit
+// sequence before it walks the windows, so the same handler lets the quitting close through.
+func closeQuits(window *mygo.Window) {
+	// Windows closes its last window by quitting, and has no Dock icon to bring a hidden
+	// window back, so there is nothing to change there.
 	if runtime.GOOS != "darwin" {
 		return
 	}
 
-	// Quit has to be told that a close which hides is not a close which cancels.
-	//
-	// MyGo asks the application before terminating (applicationShouldTerminate: ->
-	// Application.prepareQuit), and prepareQuit walks the windows calling close() on each. A
-	// window whose OnClose listener prevents the close returns false there, which makes
-	// prepareQuit report a cancelled quit -- so with a handler that only prevents the close,
-	// Cmd-Q and the Quit menu item do nothing at all, reporting `User canceled. (-128)`.
-	//
-	// quitting is set by prepareQuit before the walk, and the walk happens after this fires,
-	// so setting it here is what makes the close below a real one on the quit path and a
-	// hide on the red button's path.
 	quitting := false
 	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) { quitting = true })
-	mygo.App.OnWillQuit(func(*mygo.QuitEvent) { quitting = true })
-
 	window.OnClose(func(event *mygo.CloseEvent) {
-		if !shouldHideOnClose(quitting) {
+		if quitting {
 			return
 		}
-		// Preventing the close is all the hiding this needs. Calling Hide() here was the
-		// first version and it did not work: MyGo runs ShouldClose on the main thread and
-		// Hide() on the main thread calls native.Hide() directly, so the window was hidden
-		// from inside the close the framework was in the middle of handling. Preventing the
-		// close leaves the window hidden by the close itself.
+		// The close is postponed rather than performed: Quit runs the app's own quit sequence,
+		// which walks this window again with quitting set and lets that close through.
 		event.PreventDefault()
-	})
-
-	// The other half: a window that is never destroyed is a window that can come back.
-	// Clicking the Dock icon re-shows it, which is what App.OnActivate reports.
-	mygo.App.OnActivate(func(bool) {
-		window.Show()
-		window.Focus()
+		mygo.App.Quit()
 	})
 }
 
-// shouldHideOnClose decides whether this close is the red button's (hide) or the quit path's
-// (really close).
+// smokeCloseDelay reads the delayed window close tools/smoke.sh asks for, and reports zero
+// unless both the smoke run and a positive duration are in the environment.
 //
-// It exists as a function so the decision can be asserted: the handler it feeds needs a live
-// window, and a window that is worth testing is a window that has to be clicked.
-func shouldHideOnClose(quitting bool) bool { return !quitting }
+// A close that asked for itself is the only way to test the red button without a pointer: the
+// checker cannot press it (macOS wants assistive access for that), and Window.Close is the same
+// close event. The delay leaves the script time to see the process alive first, so "gone after
+// the close" means the close did it rather than a crash at launch.
+func smokeCloseDelay() time.Duration {
+	if os.Getenv("TROVE_SMOKE") == "" {
+		return 0
+	}
+	delay, err := time.ParseDuration(os.Getenv("TROVE_SMOKE_CLOSE"))
+	if err != nil || delay <= 0 {
+		return 0
+	}
+	return delay
+}
 
 // buildMenu assembles the menu bar.
 //

@@ -127,7 +127,7 @@ func TestLastSyncLineShowsADateNotAStoredTimestamp(t *testing.T) {
 		{"en", "Oct"},
 		{"zh-CN", "月"},
 	} {
-		shell.SetLocale(tc.locale, "en")
+		shell.SetLocale(tc.locale)
 		got := shell.lastSyncLine()
 
 		if strings.Contains(got, "T") && strings.HasSuffix(got, "Z") {

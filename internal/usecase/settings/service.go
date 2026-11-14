@@ -83,7 +83,7 @@ func ValidAppearance(value string) bool {
 var AllLocales = []string{"zh-CN", "en"}
 
 // ValidLocale reports whether a locale is supported. An empty value is valid and
-// means "follow the system".
+// means no choice has been made, which the interface resolves to English.
 func ValidLocale(value string) bool {
 	if value == "" {
 		return true

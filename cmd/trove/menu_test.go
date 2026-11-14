@@ -67,7 +67,7 @@ func TestTheMenuBarIsCompleteAndLocalized(t *testing.T) {
 		{"en", "Sync now"},
 		{"zh-CN", "立即同步"},
 	} {
-		shell.SetLocale(locale.tag, "en")
+		shell.SetLocale(locale.tag)
 		menu := buildMenu(shell)
 
 		ids := map[string]string{}
@@ -177,7 +177,7 @@ func TestEveryMenuCommandDoesSomething(t *testing.T) {
 // key equivalent if the press lands in the list's own field.
 func TestTheMenuFocusSearchLandsInTheToolbar(t *testing.T) {
 	shell, db := menuShell(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	seedMenuBookmark(t, db)
 	shell.Reload(context.Background())
 	menu := buildMenu(shell)

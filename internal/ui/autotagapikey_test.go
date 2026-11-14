@@ -17,7 +17,7 @@ import (
 // exist.
 func TestTheClearKeyButtonAppearsOnlyWithAStoredKey(t *testing.T) {
 	shell, _, _ := shellWithTagging(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	shell.state.TagMode = true
 	shell.selectTagLibraryView(TagViewAutoTag)
 	clearLabel := shell.t().T(i18n.ActionClear)

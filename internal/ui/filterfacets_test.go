@@ -806,7 +806,7 @@ func TestAVeryLongFilterNameIsCapped(t *testing.T) {
 	if _, err := sqlite.NewBookmarkRepository(db).UpsertMany(ctx, []domain.Bookmark{bookmark}); err != nil {
 		t.Fatalf("UpsertMany: %v", err)
 	}
-	shell.SetLocale("zh-CN", "en")
+	shell.SetLocale("zh-CN")
 	shell.Reload(ctx)
 	shell.state.ActiveAuthors = []string{"longname"}
 	shell.Reload(ctx)

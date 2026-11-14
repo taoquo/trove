@@ -50,7 +50,7 @@ func TestEachActiveFilterChipNamesWhatItRemoves(t *testing.T) {
 // only": a second key and a second phrase for the same checkbox on the same screen.
 func TestTheMediaChipUsesTheSameWordAsTheFilterItRepresents(t *testing.T) {
 	shell, _ := newShell(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	shell.state.OnlyWithMedia = true
 
 	tester := ui.NewTester(shell.View, 1180, 760)

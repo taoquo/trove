@@ -18,7 +18,7 @@ import (
 func TestTheCardAnswersEveryClick(t *testing.T) {
 	shell, db := newShell(t)
 	ctx := context.Background()
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	seed(t, db, "1", "ada", "first post", clockBase)
 	seed(t, db, "2", "grace", "second post", clockBase.Add(-1))
 	shell.Reload(ctx)

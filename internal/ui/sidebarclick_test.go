@@ -17,7 +17,7 @@ import (
 func TestTheSidebarAnswersEveryClick(t *testing.T) {
 	shell, db := newShell(t)
 	ctx := context.Background()
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	seed(t, db, "1", "ada", "a post", clockBase)
 	seedTagOnly(t, db, "t-rust", "rust")
 	if _, err := shell.service.AddTags(ctx, []string{"1"}, []string{"rust"}); err != nil {

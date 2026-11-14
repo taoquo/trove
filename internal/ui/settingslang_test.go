@@ -20,7 +20,7 @@ import (
 // re-derives the labels after the language is applied.
 func TestTheSidebarLanguageChipRelabelsTheSettingsPage(t *testing.T) {
 	shell, _ := newShell(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	shell.OpenSettings()
 
 	tester := ui.NewTester(shell.View, 1180, 900)
@@ -28,7 +28,7 @@ func TestTheSidebarLanguageChipRelabelsTheSettingsPage(t *testing.T) {
 	if !tester.HasText(shell.t().T(i18n.SettingsLanguage)) {
 		t.Fatalf("the settings page is not open; texts: %q", tester.Texts())
 	}
-	if !tester.HasText(i18n.New(i18n.EN, i18n.EN).T(i18n.AppearanceLight)) {
+	if !tester.HasText(i18n.New(i18n.EN).T(i18n.AppearanceLight)) {
 		t.Fatalf("the theme row does not show its English label to begin with; texts: %q", tester.Texts())
 	}
 
@@ -40,7 +40,7 @@ func TestTheSidebarLanguageChipRelabelsTheSettingsPage(t *testing.T) {
 	if shell.state.Locale != i18n.ZHCN {
 		t.Fatalf("the chip left the language at %q", shell.state.Locale)
 	}
-	zh := i18n.New(i18n.ZHCN, i18n.ZHCN)
+	zh := i18n.New(i18n.ZHCN)
 	if !tester.HasText(zh.T(i18n.AppearanceLight)) {
 		t.Errorf("the theme row still does not read %q after switching to Chinese; texts: %q",
 			zh.T(i18n.AppearanceLight), tester.Texts())

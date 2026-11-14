@@ -46,7 +46,7 @@ func TestSidebarShowsTheBrandRow(t *testing.T) {
 	}
 
 	// And in the other locale, which is also the title's source.
-	shell.SetLocale("zh-CN", "en")
+	shell.SetLocale("zh-CN")
 	tester.Frame()
 	if !tester.HasText("书签") {
 		t.Errorf("the Chinese sidebar is missing its brand title; texts: %q", tester.Texts())

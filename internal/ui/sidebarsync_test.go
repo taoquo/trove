@@ -20,7 +20,7 @@ import (
 // One label changes between the two.
 func TestTheSyncingSidebarSaysItOnce(t *testing.T) {
 	shell, _ := newShell(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	shell.state.SyncRunning = true
 	shell.state.SyncProgress = syncProgressLabel(shell.t(),
 		xsource.Progress{PagesCompleted: 3, Fetched: 60})
@@ -48,7 +48,7 @@ func TestTheSyncingSidebarSaysItOnce(t *testing.T) {
 // is idle, running or failed.
 func TestAFailedSyncOffersTheWayToTryAgain(t *testing.T) {
 	shell, _ := newShell(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	shell.state.LastSyncStatus = domain.SyncError
 	shell.state.LastSyncErrorKind = "network"
 	shell.state.LastSyncErrorSummary = "the network is unreachable"

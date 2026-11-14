@@ -24,7 +24,6 @@ import (
 const (
 	SettingsSectionGeneral  = "general"
 	SettingsSectionSync     = "sync"
-	SettingsSectionAutoTag  = "autotag"
 	SettingsSectionDataSafe = "data-safety"
 	// SettingsSectionListsViews is where the lists and saved views are managed. They do not
 	// belong at the end of the data-safety card, under "backups and restores stay on this
@@ -52,8 +51,6 @@ func (s *Shell) settingsPage(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 				switch s.state.SettingsSection {
 				case SettingsSectionSync:
 					s.settingsSyncSection(c, theme, rail)
-				case SettingsSectionAutoTag:
-					s.settingsAutoTagSection(c, theme, rail)
 				case SettingsSectionDataSafe:
 					s.settingsDataSafetySection(c, theme, rail)
 				case SettingsSectionListsViews:
@@ -131,7 +128,6 @@ func (s *Shell) settingsTabs(c *ui.Context, theme *ui.Theme, rail RailTokens) ui
 		}{
 			{SettingsSectionGeneral, i18n.SettingsSectionGeneral},
 			{SettingsSectionSync, i18n.SettingsSectionSync},
-			{SettingsSectionAutoTag, i18n.SettingsSectionAutoTag},
 			{SettingsSectionDataSafe, i18n.SettingsSectionDataSafety},
 			{SettingsSectionListsViews, i18n.SettingsSectionListsViews},
 		} {
@@ -195,7 +191,6 @@ var settingsSectionKeys = map[string][]i18n.Key{
 		i18n.SettingsXCredentialPaste, i18n.SettingsXCredentialPasteHint,
 		i18n.ActionSaveCookies,
 	},
-	SettingsSectionAutoTag: {i18n.SettingsAutoTagMoved, i18n.ActionOpenTagManagement},
 	SettingsSectionDataSafe: {
 		i18n.SettingsData, i18n.SettingsDataSafetyHint,
 		i18n.SettingsBackupRow, i18n.ExportData, i18n.SettingsBackupHint,
@@ -225,7 +220,6 @@ func (s *Shell) settingsFilteredSections(c *ui.Context, theme *ui.Theme, rail Ra
 	}{
 		{SettingsSectionGeneral, i18n.SettingsSectionGeneral, s.settingsGeneralSection},
 		{SettingsSectionSync, i18n.SettingsSectionSync, s.settingsSyncSection},
-		{SettingsSectionAutoTag, i18n.SettingsSectionAutoTag, s.settingsAutoTagSection},
 		{SettingsSectionDataSafe, i18n.SettingsSectionDataSafety, s.settingsDataSafetySection},
 		{SettingsSectionListsViews, i18n.SettingsSectionListsViews, s.settingsListsViewsSection},
 	} {
@@ -264,7 +258,7 @@ func (s *Shell) settingsGeneralSection(c *ui.Context, theme *ui.Theme, rail Rail
 			control: func() {
 				settingsPick(c, theme, rail, s.t().T(i18n.SettingsLanguage),
 					&s.state.LocaleLabel, s.localeLabels(), func() {
-						s.SetLocale(s.localeFor(s.state.LocaleLabel), s.state.SystemLocale)
+						s.SetLocale(s.localeFor(s.state.LocaleLabel))
 						// The labels themselves are translated, so they change with the language
 						// and have to be re-derived.
 						s.syncPreferenceLabels()
@@ -429,27 +423,6 @@ func (s *Shell) settingsSyncSection(c *ui.Context, theme *ui.Theme, rail RailTok
 		},
 	)
 	return drawn
-}
-
-// settingsAutoTagSection is the signpost left where 自动标签 used to be.
-//
-// The controls moved to the tag library's own page: a run, its result
-// and the tags it writes belong together, and the table is where the tags are. The section is
-// kept rather than deleted because Settings is where a reader looks for it first, and a
-// vanished section is worse than a sentence that says where it went.
-func (s *Shell) settingsAutoTagSection(c *ui.Context, theme *ui.Theme, rail RailTokens) int {
-	// The row is named for where it goes, not for the tab it sits under: a row called
-	// "Auto-tagging" beneath the Auto-tagging tab would say the tab's name twice, and the
-	// sentence already names auto-tagging as the thing that moved.
-	return s.settingsCard(c, theme, rail, settingsItem{
-		keys: []i18n.Key{i18n.SettingsSectionAutoTag, i18n.SettingsAutoTagMoved, i18n.ActionOpenTagManagement},
-		name: s.t().T(i18n.TagManageLabel),
-		sub:  s.t().T(i18n.SettingsAutoTagMoved),
-		control: func() {
-			settingsAction(c, theme, rail, s.t().T(i18n.ActionOpenTagManagement),
-				false, false, func() { s.OpenTagManagementAutoTag() })
-		},
-	})
 }
 
 // settingsDataSafetySection is 数据安全: where the backups go, and the lists and views this build

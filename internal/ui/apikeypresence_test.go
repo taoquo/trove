@@ -36,7 +36,7 @@ func TestAStoredKeyStillReadsAsStoredAfterReopening(t *testing.T) {
 
 	// Reopening the page is the path that used to forget. It reloads the settings and
 	// has to ask the Keychain again, not the in-memory flag.
-	shell.OpenTagManagementAutoTag()
+	openAutoTagPage(shell)
 	if !shell.State().APIKeyStored {
 		t.Fatal("a key stored in an earlier session must still read as stored")
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 	"github.com/taoquo/trove/internal/idgen"
@@ -52,19 +53,33 @@ func TestCompositionRootRendersWithoutAWindow(t *testing.T) {
 	}
 }
 
-// TestShouldHideOnCloseTellsTheTwoPathsApart pins the decision the close handler makes.
+// The close button's handler is not tested here.
 //
-// The handler needs a live window, so what is testable is the predicate. The two paths differ
-// in one bit: the red button's close must be prevented (which hides the window), and the quit
-// path's close must not be, because MyGo's prepareQuit walks the windows calling close() and
-// treats a prevented one as a cancelled quit. Getting this wrong is not subtle -- an earlier
-// version shipped with every close prevented, and Cmd-Q stopped working while the red button
-// appeared to work.
-func TestShouldHideOnCloseTellsTheTwoPathsApart(t *testing.T) {
-	if !shouldHideOnClose(false) {
-		t.Error("a close outside a quit must be prevented, or the red button quits the app")
+// It needs a live window, and the decision it makes -- a close outside a quit is postponed into
+// the quit sequence, a close inside one is let through -- only shows up as a process that
+// either ends or does not. tools/smoke.sh is where that is observed: the app closes its own
+// window (Window.Close fires the same event the traffic light does) and the script fails if the
+// pid survives.
+
+// TestSmokeCloseDelay pins the hook's conditions: it needs the smoke run, and a duration it can
+// parse and use, so a typo cannot take the window away from a real user.
+func TestSmokeCloseDelay(t *testing.T) {
+	t.Setenv("TROVE_SMOKE", "1")
+	t.Setenv("TROVE_SMOKE_CLOSE", "10s")
+	if got := smokeCloseDelay(); got != 10*time.Second {
+		t.Errorf("smokeCloseDelay = %v, want 10s", got)
 	}
-	if shouldHideOnClose(true) {
-		t.Error("a close during a quit must not be prevented, or Quit is cancelled and does nothing")
+
+	t.Setenv("TROVE_SMOKE", "")
+	if got := smokeCloseDelay(); got != 0 {
+		t.Errorf("without the smoke run smokeCloseDelay = %v, want 0", got)
+	}
+
+	t.Setenv("TROVE_SMOKE", "1")
+	for _, raw := range []string{"", "soon", "0s", "-5s"} {
+		t.Setenv("TROVE_SMOKE_CLOSE", raw)
+		if got := smokeCloseDelay(); got != 0 {
+			t.Errorf("smokeCloseDelay with %q = %v, want 0", raw, got)
+		}
 	}
 }

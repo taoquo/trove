@@ -19,7 +19,7 @@ import (
 func TestTheDetailAnswersEveryClick(t *testing.T) {
 	shell, db := newShell(t)
 	ctx := context.Background()
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 
 	// One post with two pictures: enough for the preview to have both arrows and a counter,
 	// with no network picture needed for any of the controls to exist.

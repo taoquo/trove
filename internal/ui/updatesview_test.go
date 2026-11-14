@@ -14,7 +14,7 @@ import (
 // updater instead of only looking like they do.
 func TestTheUpdatesTabSaysWhatItRunsAndCallsTheUpdater(t *testing.T) {
 	shell, _ := newShell(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 
 	checks, saved := 0, 0
 	shell.UseUpdates(Updates{
@@ -69,7 +69,7 @@ func TestTheUpdatesTabSaysWhatItRunsAndCallsTheUpdater(t *testing.T) {
 // updater reports a finished check the row says when, and the "not checked" copy is gone.
 func TestTheUpdatesTabShowsWhenItLastChecked(t *testing.T) {
 	shell, _ := newShell(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	checked := time.Date(2026, 11, 14, 9, 5, 0, 0, time.Local)
 	shell.UseUpdates(Updates{
 		Version:            "9.9.9",

@@ -25,7 +25,7 @@ import (
 // the page read as saying nothing.
 func TestTheGraphUsesTheWholeCanvas(t *testing.T) {
 	shell, _ := newShell(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	shell.Reload(context.Background())
 
 	model := ringGraph(60)
@@ -72,7 +72,7 @@ func TestTheGraphUsesTheWholeCanvas(t *testing.T) {
 // is the whole of the fix, and it has to be on the page for the page to be about something.
 func TestTheGraphSaysWhatItsMarksMean(t *testing.T) {
 	shell, _ := newShell(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	shell.Reload(context.Background())
 
 	model := ringGraph(12)
@@ -106,7 +106,7 @@ func TestTheGraphSaysWhatItsMarksMean(t *testing.T) {
 // so the whole layer was anonymous circles around the tags.
 func TestTheAuthorLayerIsCountedInWords(t *testing.T) {
 	shell, _ := newShell(t)
-	shell.SetLocale(i18n.EN, i18n.EN)
+	shell.SetLocale(i18n.EN)
 	shell.Reload(context.Background())
 
 	model := ringGraph(8)

@@ -24,10 +24,13 @@ const (
 // AllLocales is the supported set, in display order.
 var AllLocales = []Locale{ZHCN, EN}
 
-// DefaultLocale is what a fresh install uses.
+// DefaultLocale is what a fresh install uses, and it is English.
 //
-// It is the system locale when that is supported, and English otherwise, so a
-// user in a third language gets readable text rather than empty labels.
+// It used to follow the system locale when that was supported, which made the app's first
+// screen depend on whose Mac installed it. This is an English-first app shipped to both
+// audiences: the language is a setting inside it, and it starts in English until someone says
+// otherwise. The strings are the same either way; only the guess about the reader's language
+// has gone.
 const DefaultLocale = EN
 
 // ValidLocale reports whether a stored preference is supported.
@@ -40,13 +43,13 @@ func ValidLocale(locale string) bool {
 	return false
 }
 
-// ResolveLocale picks the locale to use from a preference and the system setting.
-func ResolveLocale(preferred, system string) Locale {
+// ResolveLocale picks the locale to use from the stored preference.
+//
+// An empty or unsupported preference is English. Nothing consults the OS: a stored "zh-CN" is
+// the only thing that makes the interface Chinese.
+func ResolveLocale(preferred string) Locale {
 	if ValidLocale(preferred) {
 		return preferred
-	}
-	if ValidLocale(system) {
-		return system
 	}
 	return DefaultLocale
 }
@@ -413,11 +416,8 @@ const (
 	SettingsVersionLineNever Key = "settingsVersionLineNever"
 	// SettingsAutoCheck is the switch that decides whether the app looks for a new version in
 	// the background. Its hint says how often, so the switch is not a guess about the cost.
-	SettingsAutoCheck     Key = "settingsAutoCheck"
-	SettingsAutoCheckHint Key = "settingsAutoCheckHint"
-	// SettingsAutoTagMoved is the sentence left in Settings after the auto-tagging controls
-	// moved into tag management.
-	SettingsAutoTagMoved       Key = "settingsAutoTagMoved"
+	SettingsAutoCheck          Key = "settingsAutoCheck"
+	SettingsAutoCheckHint      Key = "settingsAutoCheckHint"
 	SettingsGroupAutoTagBasics Key = "settingsGroupAutoTagBasics"
 	SettingsGroupAutoTagLlm    Key = "settingsGroupAutoTagLlm"
 	SettingsLlmEnabled         Key = "settingsLlmEnabled"
@@ -554,36 +554,35 @@ const (
 	// OutcomeDisabled is the sentence for pressing run while the feature's own switch is
 	// off. The fallthrough "Done: 0 new suggestions" reads as a finished run; saying the
 	// switch is off is the only reading of the same fact that is true.
-	OutcomeDisabled         Key = "settingsAutoTagResultDisabled"
-	OutcomeNoCandidates     Key = "settingsAutoTagResultNoCandidates"
-	OutcomeEmptyVocabulary  Key = "settingsAutoTagResultEmptyVocabulary"
-	OutcomeLlmDisabled      Key = "settingsAutoTagResultLlmDisabled"
-	OutcomeMissingKey       Key = "settingsAutoTagResultMissingKey"
-	OutcomeFailed           Key = "settingsAutoTagResultFailed"
-	OutcomeAllBlocked       Key = "settingsAutoTagResultAllBlocked"
-	OutcomeBudgetExhausted  Key = "settingsAutoTagResultBudgetExhausted"
-	OutcomeTimedOut         Key = "settingsAutoTagResultTimedOut"
-	OutcomeInterrupted      Key = "settingsAutoTagResultInterrupted"
-	OutcomeCancelled        Key = "settingsAutoTagResultCancelled"
-	RunPhaseHeuristics      Key = "settingsAutoTagPhaseHeuristics"
-	RunPhaseLlm             Key = "settingsAutoTagPhaseLlm"
-	RunAnalyzing            Key = "settingsAutoTagProgress"
-	RunWaiting              Key = "settingsAutoTagWaiting"
-	RunStalled              Key = "settingsAutoTagStalled"
-	RunElapsed              Key = "settingsAutoTagElapsed"
-	RunRemaining            Key = "settingsAutoTagRemaining"
-	RunBudgetRemaining      Key = "settingsAutoTagBudgetRemaining"
-	RunSuggestionsMade      Key = "settingsAutoTagSuggestionsMade"
-	RunRecentTags           Key = "settingsAutoTagRecentTags"
-	RunStopping             Key = "settingsAutoTagStopping"
-	RunCancelRequested      Key = "settingsAutoTagCancelRequested"
-	RunAlreadyRunning       Key = "settingsAutoTagAlreadyRunning"
-	ActionRunNow            Key = "settingsRunAutoTagNow"
-	ActionStopRun           Key = "settingsAutoTagCancel"
-	ActionOpenTagManagement Key = "action.openTagManagement"
-	ConnectionOK            Key = "connection.ok"
-	ConnectionFailed        Key = "connection.failed"
-	ConnectionNoTester      Key = "connection.noTester"
+	OutcomeDisabled        Key = "settingsAutoTagResultDisabled"
+	OutcomeNoCandidates    Key = "settingsAutoTagResultNoCandidates"
+	OutcomeEmptyVocabulary Key = "settingsAutoTagResultEmptyVocabulary"
+	OutcomeLlmDisabled     Key = "settingsAutoTagResultLlmDisabled"
+	OutcomeMissingKey      Key = "settingsAutoTagResultMissingKey"
+	OutcomeFailed          Key = "settingsAutoTagResultFailed"
+	OutcomeAllBlocked      Key = "settingsAutoTagResultAllBlocked"
+	OutcomeBudgetExhausted Key = "settingsAutoTagResultBudgetExhausted"
+	OutcomeTimedOut        Key = "settingsAutoTagResultTimedOut"
+	OutcomeInterrupted     Key = "settingsAutoTagResultInterrupted"
+	OutcomeCancelled       Key = "settingsAutoTagResultCancelled"
+	RunPhaseHeuristics     Key = "settingsAutoTagPhaseHeuristics"
+	RunPhaseLlm            Key = "settingsAutoTagPhaseLlm"
+	RunAnalyzing           Key = "settingsAutoTagProgress"
+	RunWaiting             Key = "settingsAutoTagWaiting"
+	RunStalled             Key = "settingsAutoTagStalled"
+	RunElapsed             Key = "settingsAutoTagElapsed"
+	RunRemaining           Key = "settingsAutoTagRemaining"
+	RunBudgetRemaining     Key = "settingsAutoTagBudgetRemaining"
+	RunSuggestionsMade     Key = "settingsAutoTagSuggestionsMade"
+	RunRecentTags          Key = "settingsAutoTagRecentTags"
+	RunStopping            Key = "settingsAutoTagStopping"
+	RunCancelRequested     Key = "settingsAutoTagCancelRequested"
+	RunAlreadyRunning      Key = "settingsAutoTagAlreadyRunning"
+	ActionRunNow           Key = "settingsRunAutoTagNow"
+	ActionStopRun          Key = "settingsAutoTagCancel"
+	ConnectionOK           Key = "connection.ok"
+	ConnectionFailed       Key = "connection.failed"
+	ConnectionNoTester     Key = "connection.noTester"
 	// ConnectionTesting covers the seconds a provider probe spends on the network.
 	ConnectionTesting Key = "connection.testing"
 	ActionClear       Key = "action.clear"
@@ -948,7 +947,6 @@ var catalogs = map[Locale]map[Key]string{
 		SettingsVersionLineNever:            "trove %s · not checked since it was installed",
 		SettingsAutoCheck:                   "Check for updates automatically",
 		SettingsAutoCheckHint:               "Once a day, in the background. A new version opens the update window.",
-		SettingsAutoTagMoved:                "Auto-tagging and its model settings now live in tag management.",
 		SettingsGroupAutoTagBasics:          "Rule-based tagging",
 		SettingsGroupAutoTagLlm:             "LLM tagging",
 		SettingsLlmEnabled:                  "Send batches to a model",
@@ -1069,7 +1067,6 @@ var catalogs = map[Locale]map[Key]string{
 		RunAlreadyRunning:                   "An analysis is already running. Wait for it to finish.",
 		ActionRunNow:                        "Analyze now",
 		ActionStopRun:                       "Stop this run",
-		ActionOpenTagManagement:             "Open tag management",
 		ConnectionOK:                        "Connected. %s answered.",
 		ConnectionFailed:                    "The connection failed.",
 		ConnectionNoTester:                  "No connection tester is configured.",
@@ -1413,7 +1410,6 @@ var catalogs = map[Locale]map[Key]string{
 		SettingsVersionLineNever:            "trove %s · 安装后尚未检查过",
 		SettingsAutoCheck:                   "自动检查更新",
 		SettingsAutoCheckHint:               "每天在后台检查一次；发现新版本会打开更新窗口。",
-		SettingsAutoTagMoved:                "自动标签与模型配置已移到标签管理。",
 		SettingsGroupAutoTagBasics:          "基础规则",
 		SettingsGroupAutoTagLlm:             "大模型标签",
 		SettingsLlmEnabled:                  "向模型发送批次",
@@ -1534,7 +1530,6 @@ var catalogs = map[Locale]map[Key]string{
 		RunAlreadyRunning:                   "已有一次分析正在进行，请等待它结束。",
 		ActionRunNow:                        "立即分析",
 		ActionStopRun:                       "停止本次分析",
-		ActionOpenTagManagement:             "打开标签管理",
 		ConnectionOK:                        "连接成功，%s 已响应。",
 		ConnectionFailed:                    "连接失败。",
 		ConnectionNoTester:                  "未配置连接测试器。",
@@ -1608,9 +1603,9 @@ type Translator struct {
 	locale Locale
 }
 
-// New builds a translator, resolving the locale against the system setting.
-func New(preferred, system string) *Translator {
-	return &Translator{locale: ResolveLocale(preferred, system)}
+// New builds a translator for a stored preference.
+func New(preferred string) *Translator {
+	return &Translator{locale: ResolveLocale(preferred)}
 }
 
 // Locale returns the resolved locale.
