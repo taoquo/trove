@@ -88,7 +88,7 @@ func (s *Shell) escape(ctx context.Context) {
 		s.ToggleTagMode(ctx)
 	case len(s.state.SelectedIDs) > 0:
 		// The ticked boxes are the last thing Escape undoes before the search: one press
-		// takes back the bulk selection, the next clears the query (magpie's cascade --
+		// takes back the bulk selection, the next clears the query (the cascade:
 		// the sheet, then the search, then the selection).
 		s.ClearBatchSelection()
 	default:
@@ -121,7 +121,7 @@ func (s *Shell) View(c *ui.Context) {
 		// Up and down move by a row, which in the two-column grid means two cards; left
 		// and right move by one. Home and End go to the ends of the loaded page, PageUp
 		// and PageDown by a screenful, and Space ticks the selected card's batch box
-		// without opening it -- the set of keys magpie's own lists answer to.
+		// without opening it -- the set of keys the list answers to.
 		c.OnShortcut(0, ui.KeyDown, func() { s.MoveSelection(1) })
 		c.OnShortcut(0, ui.KeyUp, func() { s.MoveSelection(-1) })
 		c.OnShortcut(0, ui.KeyLeft, func() { s.MoveSelectionBy(-1) })
@@ -139,7 +139,7 @@ func (s *Shell) View(c *ui.Context) {
 		c.OnShortcut(ui.Super|ui.Shift, ui.KeyA, func() { s.SelectAllResults(ctx) })
 		c.OnShortcut(0, ui.KeyEnter, func() { s.OpenSelectedDetail() })
 	}
-	// The sidebar hides from anywhere in the window, on magpie's own binding:
+	// The sidebar hides from anywhere in the window, on its own binding:
 	// its button's shortcut is Control-Command-S. The key is
 	// registered outside the list gate because it is a window-level layout command, not a
 	// list one: it must work while the detail, the graph or a settings page has the surface.
@@ -200,7 +200,7 @@ func (s *Shell) View(c *ui.Context) {
 	// progress because a progress value is computed against one Entrance.
 
 	root.Children(func() {
-		// magpie hides the column rather than folding it; the header's button brings it back.
+		// The column is hidden rather than folded; the header's button brings it back.
 		// Which of the two is drawn is a read of state -- the toggle persists the choice.
 		collapsed := s.sidebarCollapsed()
 		track := s.sidebarPaneWidth()
@@ -219,8 +219,8 @@ func (s *Shell) View(c *ui.Context) {
 			// .Fill() is required: without it the split takes its natural width and the window
 			// keeps a wide empty strip on the right -- about 40% of the window blank.
 			//
-			// The split sits at the sidebar's own width. magpie's sidebar is fixed with a
-			// `border-right` (app.css:372-375), and ui.Split's one-point line is that border;
+			// The split sits at the sidebar's own width. The sidebar is fixed with a
+			// `border-right`, and ui.Split's one-point line is that border;
 			// the twelve-point middle track is gone.
 			pane := track
 			outer := ui.Split(c, &pane, func() {
@@ -258,7 +258,7 @@ func (s *Shell) View(c *ui.Context) {
 						// The boundary the inspector never had.
 						//
 						// The shell is three tracks with the separator living in the middle
-						// one, and it is a single 1px line (--border-subtle) rather than a
+						// one, and it is a single 1px line (the subtle hairline) rather than a
 						// border on each pane -- do not stack two borders. MyGo paints it with
 						// BorderWidth's CSS argument order, top right bottom left, so a left
 						// edge is BorderWidth(0, 0, 0, 1).
@@ -281,11 +281,11 @@ func (s *Shell) View(c *ui.Context) {
 			// then cost nothing, and only a real drag reaches the database.
 			if outer.Changed() && !collapsed {
 				// Dragging well past the minimum hides the column instead of pinning it at the
-				// floor: magpie hides below `SIDE_MIN - 64`, and it is the gesture a reader
+				// floor: the column hides below `SIDE_MIN - 64`, and it is the gesture a reader
 				// tries when they want the column gone.
 				if pane < WidthSidebarMin-SidebarCollapseDrag {
-					// A drag past the floor is a pick too: magpie's `sideDrag` calls
-					// `toggleSideNav` there, which writes the layout.
+					// A drag past the floor is a pick too: the drag toggles the sidebar
+					// there, which writes the layout.
 					s.state.SidebarCollapsed = true
 					s.state.SidebarChosen = true
 				} else {
@@ -313,9 +313,9 @@ func (s *Shell) View(c *ui.Context) {
 		//
 		// The behaviours needed are DialogBase's own: clicking the backdrop and Escape both
 		// clear the flag. The backdrop's colour is set here because DialogBase leaves it
-		// transparent, and this is magpie's modal scrim: 32% black over the page
-		// (`.modal { background: rgba(0, 0, 0, .28) }` plus a blur this toolkit has no
-		// equivalent for, app.css:4048-4052). Mixing the page's own colour into the scrim
+		// transparent, and this is the modal scrim: 32% black over the page
+		// (`background: rgba(0, 0, 0, .28)` plus a blur this toolkit has no
+		// equivalent for). Mixing the page's own colour into the scrim
 		// greys the window instead of dimming it.
 		ui.DialogBase(c, &s.state.DetailOpen, func(backdrop, panel ui.Element) {
 			backdrop.Background(ui.RGBA(0, 0, 0, 0.28))
@@ -393,10 +393,10 @@ func (s *Shell) View(c *ui.Context) {
 	// The status line, drawn last so it sits above every panel it might be reporting on.
 	//
 	// It used to be a dark, inverse pill drawn inside the root's row, which put it under the
-	// settings and review modals; magpie's line lifts to the foot of the window whenever the
-	// footer is covered (`.status.lift`, app.css:2242), and it carries the outcome's own
+	// settings and review modals; the line lifts to the foot of the window whenever the
+	// footer is covered, and it carries the outcome's own
 	// colour rather than one colour for all three. This shell has no footer, so the pill
-	// always floats, at the same inset the stylesheet's lifted state uses (bottom 18).
+	// always floats, at the same inset the lifted state uses (bottom 18).
 	if message := s.ToastText(); message != "" {
 		toastEntrance := EntranceProgress(root, "entrance-toast",
 			s.ToastText() != "", EntranceToast, reduceMotion)
@@ -407,7 +407,7 @@ func (s *Shell) View(c *ui.Context) {
 				Transform(ui.Translation(0, EntranceToast.OffsetYAt(toastEntrance))).
 				Children(func() {
 					// The tinted pill: the tone at 16% over the page, with the same tone at
-					// 30% as its inset hairline (app.css:2241).
+					// 30% as its inset hairline.
 					ui.Text(c, message).
 						FontSize(ToastFontSize).FontWeight(500).
 						MaxWidth(ToastMaxWidth).

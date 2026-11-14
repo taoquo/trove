@@ -22,8 +22,8 @@ import (
 // TagMode: the table's page and this one are mutually exclusive, and it is drawn only when
 // the reader chooses it.
 //
-// The page is drawn in the settings page's grammar: cards of preference rows, a --muted
-// uppercase label over each part, and one button (.text.action). The previous version was a
+// The page is drawn in the settings page's grammar: cards of preference rows, a muted
+// uppercase label over each part, and one button (a text action). The previous version was a
 // stack of form groups -- labels above native checkboxes, number fields with their own minus
 // and plus, and a card per heading -- which read as a form to fill in rather than as a set of
 // switches and values.

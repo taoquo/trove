@@ -28,10 +28,9 @@ const (
 	TagChipHeight = 25
 	TagChipPadX   = 10
 	TagChipFont   = 12
-	// The table follows magpie's list: a row is 48 high with 7/12/7/14 of padding and a 12
-	// gap, its name is the page's 13 at weight 500, and its metadata is the 11.5px sub line
-	// (`body.window .row`, `.row .name`, `.row .sub`, app.css:639-649). The head is the
-	// 11px/600 uppercase label (` .label`, app.css:2152) on a 26-point strip.
+	// The table follows the list: a row is 48 high with 7/12/7/14 of padding and a 12
+	// gap, its name is the page's 13 at weight 500, and its metadata is the 11.5px sub line.
+	// The head is the 11px/600 uppercase label on a 26-point strip.
 	TagTableShellRadius = 12
 	TagTableShellPad    = 0
 	TagTableHeadHeight  = 26
@@ -337,7 +336,7 @@ func (s *Shell) clearTagLibraryFilters() {
 
 // tagSortSelect is the order control: one drop-down rather than four buttons.
 //
-// It is magpie's `.proto.pick` -- the pill the settings page's rows use -- rather than a
+// It is the pick the settings page's rows use rather than a
 // bordered box around a native select: one pick looks and opens the same everywhere in the
 // shell, and the toolbar loses the second outline it used to carry.
 func (s *Shell) tagSortSelect(c *ui.Context, theme *ui.Theme, rail RailTokens) {
@@ -385,9 +384,9 @@ func (s *Shell) tagLibraryChip(c *ui.Context, theme *ui.Theme, rail RailTokens, 
 	}
 	chip := ui.Row(c).MinHeight(TagChipHeight).Padding(0, TagChipPadX).GapX(SpaceSmall).
 		Radius(RadiusPill).AlignItems(ui.Center).Focusable().Label(name)
-	// magpie's `.chip` and its on state: a white pill with one hairline and --ctl-fg ink;
+	// A chip and its on state: a white pill with one hairline and the quiet-control ink;
 	// on (or hovered) it takes the accent's edge, the accent's ink and the accent-soft
-	// ground (app.css:2165-2175, :2204). The old active state was a translucent accent wash
+	// ground. The old active state was a translucent accent wash
 	// on the page, which read as a highlighted row rather than as a chosen filter.
 	switch {
 	case active:

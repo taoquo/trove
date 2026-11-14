@@ -2,13 +2,13 @@ package ui
 
 import "github.com/egoist/mygo/ui"
 
-// The sidebar's selection shape, as magpie draws it (`.nav-hl`, app.css:478-484).
+// The sidebar's selection shape, as it is drawn here.
 //
 // The shape belongs to the list, not to the row: it is one element that slides from row to
 // row, so a change of selection reads as the ground moving rather than one row lighting up
 // as another goes dark. That is also why a sub-row paints no ground of its own in any
 // state -- "the selection is the only shape in the list: a row hovered or pressed has no
-// ground of its own" (app.css:449-451).
+// ground of its own".
 //
 // MyGo has no z-index, and an absolute child paints over the flow, so the shape cannot be a
 // child of the list. It is painted by the list column itself, before its children -- the
@@ -16,19 +16,19 @@ import "github.com/egoist/mygo/ui"
 // and of the selected row, the equivalent of offsetTop: both carry the scroll's translation,
 // so the difference is the row's place in the list whether or not the list has been scrolled.
 const (
-	// NavHighlightRadius is `.nav-hl`'s 6-point radius, the row's own (app.css:482).
+	// NavHighlightRadius is the 6-point radius of the row it marks.
 	NavHighlightRadius = 6
-	// NavHighlightTint is `color-mix(in srgb, var(--fg) 6.5%, transparent)` (app.css:482).
+	// NavHighlightTint is the row ink at 6.5% over transparent.
 	NavHighlightTint = 0.065
 )
 
 // navHighlight attaches the list's selection shape, marking row.
 //
-// The shape spans the row it marks. `.nav-hl` asks for `left: 8px; right: 0` (app.css:482),
-// but left is measured from `.nav-sub`'s padding box and the list carries the matching
-// `padding-left: 8px` (app.css:438), so the shape starts exactly at a row's left edge and
-// ends at its right. This list has no such padding -- the column's inset is the list's own --
-// so the shape is the row's own width.
+// The shape spans the row it marks. The row highlight starts 8 points in from the list's
+// left edge and reaches its right, with the list carrying a matching 8-point left padding,
+// so the shape starts exactly at a row's left edge and ends at its right. This list has no
+// such padding -- the column's inset is the list's own -- so the shape is the row's own
+// width.
 //
 // A list with nothing chosen draws no shape. The list's first frame has no committed boxes
 // yet, and a window at rest asks for no second frame, so the shape cannot wait for one: the

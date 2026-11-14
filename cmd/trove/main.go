@@ -326,8 +326,8 @@ func start() error {
 		MinHeight: 620,
 		// The window's chrome is the app's own.
 		//
-		// magpie draws its header instead of taking the system's title bar, and this is the
-		// MyGo equivalent: the system bar is hidden, the traffic lights stay, and the view's
+		// The app draws its header instead of taking the system's title bar, and this is how
+		// MyGo does it: the system bar is hidden, the traffic lights stay, and the view's
 		// first row is a 50-point header that clears them and drags the window. HiddenInset
 		// rather than Hidden keeps the window's rounded corners and its usual shadow, which
 		// are what make a Mac window look like one.
@@ -554,7 +554,7 @@ func buildMenu(shell *appui.Shell) *mygo.Menu {
 				},
 				{Type: mygo.MenuItemSeparator},
 				{
-					// magpie's own binding for the sidebar: Control-Command-S (sideToggle).
+					// The app's own binding for the sidebar: Control-Command-S.
 					// The item is where the shortcut is discoverable, and a
 					// menu key equivalent is dispatched before the window sees the key.
 					ID: "toggle-sidebar", Label: shell.T(i18n.ActionToggleSidebar),

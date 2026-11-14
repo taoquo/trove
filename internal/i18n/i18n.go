@@ -243,7 +243,7 @@ const (
 	ConfirmDeleteBookmarksBody  Key = "confirm.deleteBookmarks.body"
 
 	SettingsTitle Key = "settings.title"
-	// SettingsSearchPlaceholder and SettingsNoMatch are magpie's "Find a setting" and its
+	// SettingsSearchPlaceholder and SettingsNoMatch are the "Find a setting" prompt and its
 	// no-hit line.
 	SettingsSearchPlaceholder       Key = "settings.searchPlaceholder"
 	SettingsNoMatch                 Key = "settings.noMatch"
@@ -421,7 +421,7 @@ const (
 	// both catalogues hold the same character.
 	SettingsRuleArrow        Key = "settingsRuleArrow"
 	SettingsClearBlockedTags Key = "settingsClearBlockedTags"
-	// Each preference row carries its own line, the way magpie's `.row.pref` does: what
+	// Each preference row carries its own line: what
 	// the setting does, before the control that changes it.
 	SettingsLanguageHint     Key = "settingsLanguageHint"
 	LanguageSwitch           Key = "sidebarLanguageSwitch"
@@ -490,8 +490,8 @@ const (
 
 	SettingsSyncOnLaunch    Key = "settingsSyncOnLaunch"
 	SettingsSaveRawPayloads Key = "settingsSaveRawPayloads"
-	// SettingsOff and SettingsOn are the two halves of a settings switch, magpie's
-	// Off/On (.opt). The words are magpie's own Chinese: 关闭 / 开启.
+	// SettingsOff and SettingsOn are the two halves of a settings switch,
+	// Off/On. The words are Chinese: 关闭 / 开启.
 	SettingsOff Key = "settingsOff"
 	SettingsOn  Key = "settingsOn"
 	// SettingsNewList and SettingsNewView name the two rows that create one.
@@ -591,7 +591,7 @@ const (
 	// ActionCopied is the copy chip's own confirmation, shown in its place for a moment
 	// after the link is on the clipboard.
 	ActionCopied Key = "copied"
-	// The row menu's own words, from magpie's openAgentMenu / openRowMenu.
+	// The row menu's own words.
 	ActionOpenBookmark   Key = "action.openBookmark"
 	ActionCopyText       Key = "action.copyText"
 	ActionAddToSelection Key = "action.addToSelection"

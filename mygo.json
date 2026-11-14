@@ -1,7 +1,7 @@
 {
   "name": "trove",
   "identifier": "com.taoquo.trove",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "out": "build",
   "macos": {
     "minimumSystemVersion": "12.0"

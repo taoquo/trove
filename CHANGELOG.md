@@ -2,7 +2,14 @@
 
 `mygo build` takes the section of the version it builds as the release notes of the
 update it signs, so the heading below must exist before a tag is pushed. Keep the
-heading plain (`## 0.3.1`) or Keep a Changelog's (`## [0.3.1] - 2026-11-14`).
+heading plain (`## 0.3.2`) or Keep a Changelog's (`## [0.3.2] - 2026-11-14`).
+
+## 0.3.2
+
+### Changed
+
+- The source and the design documents no longer cite another app's stylesheet or
+  commit. Every rule states its value and its reason in this repository's own words.
 
 ## 0.3.1
 

@@ -21,8 +21,8 @@ import (
 //
 // The search, "+" and manage buttons were drawn on a row of their own under the tabs at
 // every width, 26 points below the chips they act on, with a band of empty chrome between
-// the two. magpie puts a section's tabs and its controls on one line and wraps them only
-// when the row runs out (app.css:930-933, :2478-2480).
+// the two. A section's tabs and its controls sit on one line and wrap them only
+// when the row runs out.
 func TestTheFacetControlsSitBesideTheirTabs(t *testing.T) {
 	shell, db := newShell(t)
 	seed(t, db, "1", "ada", "a post", clockBase)
@@ -59,10 +59,9 @@ func TestTheFacetControlsSitBesideTheirTabs(t *testing.T) {
 //
 // The count sat before an empty 56-point band: the two hover actions kept their 22-point
 // boxes whether or not anything was drawn in them, which at
-// magpie's 212-point column is a third of the row. Names were cut short beside a gap with
+// the 212-point column is a third of the row. Names were cut short beside a gap with
 // nothing in it, and the count stopped well short of the edge the eye reads as the
-// column's. magpie's own row puts the count at that edge (`em { margin-left: auto }`,
-// app.css:446).
+// column's. The row puts the count at that edge with `margin-left: auto`.
 func TestATagRowsCountReachesTheRowsEdge(t *testing.T) {
 	shell, db := newShell(t)
 	seed(t, db, "1", "ada", "a post", clockBase)

@@ -30,8 +30,8 @@ func TestTheSettingsPanelDrawsItsSections(t *testing.T) {
 	texts := tester.Texts()
 
 	// The section names are the tabs, so all of them are on screen whatever tab is chosen. The
-	// labels are uppercase in magpie's tab row, which is why the comparison is against the
-	// uppercased copy (app.css:415-449).
+	// labels are uppercase in the tab row, which is why the comparison is against the
+	// uppercased copy.
 	for _, key := range []i18n.Key{
 		i18n.SettingsSectionGeneral,
 		i18n.SettingsSectionSync,
@@ -49,7 +49,7 @@ func TestTheSettingsPanelDrawsItsSections(t *testing.T) {
 	}
 
 	// The page names itself beside its tabs. The way back is an icon control now, as
-	// magpie's heads carry their tools; its words live in the control's tooltip and
+	// the heads carry their tools; its words live in the control's tooltip and
 	// accessible name, which Tester's text list does not report (it lists text runs).
 	if !containsText(texts, shell.t().T(i18n.SettingsTitle)) {
 		t.Errorf("the page has no title; texts: %q", texts)
@@ -188,18 +188,18 @@ func TestTheSuggestionsPanelDrawsItsTitle(t *testing.T) {
 	}
 }
 
-// TestTheSettingsPageKeepsMagpiesPagePadding pins the settings page's own top and bottom
+// TestTheSettingsPageKeepsItsPagePadding pins the settings page's own top and bottom
 // padding: 8.
 //
-// magpie's settings view takes 8 at the top (the side-nav override, app.css:511) and its
-// bottom is the 8 every .view has (app.css:602). A page that adds 24 under its last card
+// The settings view takes 8 at the top and its
+// bottom is the 8 every page has. A page that adds 24 under its last card
 // ends in a band of empty ground no other page has, which is exactly the kind of drift a
 // screenshot review keeps finding late.
-func TestTheSettingsPageKeepsMagpiesPagePadding(t *testing.T) {
+func TestTheSettingsPageKeepsItsPagePadding(t *testing.T) {
 	if SettingsPagePadTop != 8 {
-		t.Errorf("SettingsPagePadTop = %v, want 8 (magpie #view-settings padding-top, app.css:511)", SettingsPagePadTop)
+		t.Errorf("SettingsPagePadTop = %v, want 8 (the settings page's padding-top)", SettingsPagePadTop)
 	}
 	if SettingsPagePadBottom != 8 {
-		t.Errorf("SettingsPagePadBottom = %v, want 8 (magpie .view padding-bottom, app.css:602)", SettingsPagePadBottom)
+		t.Errorf("SettingsPagePadBottom = %v, want 8 (the page's padding-bottom)", SettingsPagePadBottom)
 	}
 }

@@ -297,7 +297,7 @@ func (s *Shell) reconcileMiddleWidth() {
 
 // ToggleSidebar hides or restores the sidebar.
 //
-// magpie hides the column rather than folding it to an icon rail; the header's button
+// The column is hidden rather than folded to an icon rail; the header's button
 // brings it back. The width is remembered, so showing it again returns the column the
 // reader dragged to rather than the default.
 //
@@ -313,11 +313,11 @@ func (s *Shell) ToggleSidebar() {
 // sidebarCollapsed reports whether the column is hidden.
 //
 // A reader's own choice wins at every width. Until there is one, the window decides, as
-// magpie's `(min-width: 1024px)` does: the sidebar is there when there is room
-// and goes when there is not, which is what gives a narrow window its page back. magpie puts
-// its page tabs in the header at that width; this build has no page tabs to move -- its
-// navigation is the facet library the column holds, and the header already carries the
-// sidebar's button and the page's crumb -- so the shell applies the rule itself.
+// the 1024-point breakpoint does: the sidebar is there when there is room
+// and goes when there is not, which is what gives a narrow window its page back. The usual
+// layout puts its page tabs in the header at that width; this build has no page tabs to
+// move -- its navigation is the facet library the column holds, and the header already
+// carries the sidebar's button and the page's crumb -- so the shell applies the rule itself.
 func (s *Shell) sidebarCollapsed() bool {
 	if s.state.SidebarChosen {
 		return s.state.SidebarCollapsed
@@ -412,7 +412,7 @@ func (s *Shell) invalidate() {
 //
 // Every navigation calls it: another scope, a tag or an author, the other layout, the
 // settings page, the tag library, the graph. It is not called for a new query or a new
-// sort, because the page is the same page and magpie's `view-in` is per view, not per
+// sort, because the page is the same page and the page entrance is per view, not per
 // keystroke.
 func (s *Shell) markPageChange() {
 	s.state.PageChangedAt = time.Now()
@@ -431,7 +431,7 @@ func (s *Shell) reportErr(err error) {
 	s.ShowStatus(ToastError, err.Error())
 }
 
-// The status line's three tones, magpie's `ok` / `warn` / `err`.
+// The status line's three tones: ok / warn / err.
 const (
 	ToastOK    = "ok"
 	ToastWarn  = "warn"
@@ -457,9 +457,9 @@ func toastTone(kind string, theme *ui.Theme) ui.Color {
 
 // ShowStatus shows a transient line at the foot of the window.
 //
-// magpie keeps one status line for every outcome and sets its life by how long the
+// One status line serves every outcome and its life is set by how long the
 // sentence takes to read: 3.5s for a success, 8s for a failure, never more than 15s.
-// The hover pause its version has is not reproduced here: MyGo reports
+// The hover pause is not reproduced here: MyGo reports
 // hover as a read (Element.Hovered) and this view must not write state, so there is no
 // place to record "the pointer is on it".
 func (s *Shell) ShowStatus(kind, message string) {

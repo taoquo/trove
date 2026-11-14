@@ -24,12 +24,12 @@ func TestTheTypeScaleMatchesTheStylesheet(t *testing.T) {
 		value float32
 		from  string
 	}{
-		{"overline", FontOverline, 11, ".label font-size (app.css:2140)"},
-		{"sidebar title", FontSidebarTitle, 14, "the sidebar wordmark: 13.5 raised to the toolkit's grid (app.css:366)"},
-		{"display title", FontDisplayTitle, 16, ".action-confirm h2 font-size (app.css:4038)"},
+		{"overline", FontOverline, 11, "the overline label"},
+		{"sidebar title", FontSidebarTitle, 14, "the sidebar wordmark: 13.5 raised to the toolkit's grid"},
+		{"display title", FontDisplayTitle, 16, "the dialog's title"},
 		{"results value", FontResultsValue, 22, "a page's standing total; the scale's one display size"},
-		{"overline tracking", OverlineTracking, 0.05, ".label letter-spacing (app.css:2140)"},
-		{"display tracking", DisplayTracking, -0.01, "tight display tracking, as magpie's headings use"},
+		{"overline tracking", OverlineTracking, 0.05, "the overline label's letter-spacing"},
+		{"display tracking", DisplayTracking, -0.01, "tight display tracking for headings"},
 	}
 	for _, item := range want {
 		if item.got != item.value {
@@ -38,22 +38,22 @@ func TestTheTypeScaleMatchesTheStylesheet(t *testing.T) {
 	}
 }
 
-// TestTheRadiiFollowMagpiesScale pins the six radii the restyle uses.
+// TestTheRadiiFollowTheScale pins the six radii the restyle uses.
 //
-// magpie's own scale is smaller and visible in its component rules: 6 for a field or a switch
+// The scale is smaller and visible in the component rules: 6 for a field or a switch
 // button, 7 for a sidebar
 // row and a field, 8 for a switch track, 12 for every card and list, 14 for a dialog and 999 for
-// a pill/avatar. Each value below is quoted from app.css; a seventh radius fails here.
+// a pill/avatar. Each value below is from that scale; a seventh radius fails here.
 //
 // The mapping is the point: a control, a row, a card and a dialog each have one radius and a new
 // component has to pick one of them rather than invent a near value.
-func TestTheRadiiFollowMagpiesScale(t *testing.T) {
+func TestTheRadiiFollowTheScale(t *testing.T) {
 	scale := map[float32]string{
-		6:   "controls: .text.action, .field, .seg button (app.css:260-271, :869-878, :2151)",
-		7:   "rows and fields: the sidebar's nav row, .find, an editor input (app.css:3191, :3309)",
-		8:   "switch tracks: .seg (app.css:260-266)",
-		12:  "cards and lists: .list (app.css:633)",
-		14:  "dialogs: .action-confirm, .modal .dialog (app.css:4038, :4063)",
+		6:   "controls: a text action, a field, a segmented button",
+		7:   "rows and fields: the sidebar's nav row, a find field, an editor input",
+		8:   "switch tracks: a segmented control",
+		12:  "cards and lists",
+		14:  "dialogs: a confirm action, a modal",
 		999: "pills and avatars",
 	}
 	for _, item := range []struct {
@@ -69,7 +69,7 @@ func TestTheRadiiFollowMagpiesScale(t *testing.T) {
 		{"pill", RadiusPill},
 	} {
 		if item.got != 0 && scale[item.got] == "" {
-			t.Errorf("%s radius is %v, which is not one of magpie's levels (6/7/8/12/14/999)", item.name, item.got)
+			t.Errorf("%s radius is %v, which is not one of the scale's levels (6/7/8/12/14/999)", item.name, item.got)
 		}
 	}
 	for _, item := range []struct {
@@ -85,15 +85,15 @@ func TestTheRadiiFollowMagpiesScale(t *testing.T) {
 		{"inspector", RadiusInspector, 12},
 	} {
 		if item.got != item.want {
-			t.Errorf("%s radius = %v, want %v (magpie's scale)", item.name, item.got, item.want)
+			t.Errorf("%s radius = %v, want %v (the scale)", item.name, item.got, item.want)
 		}
 	}
 }
 
 // TestTheControlHeightsMatchTheStylesheet pins the four control heights.
 //
-// magpie's controls are compact: 30 for a sidebar row, 28 for a field/action, 27 for the toolbar's
-// action, 25 for a chip (app.css:419, :2151, :2165).
+// Controls are compact: 30 for a sidebar row, 28 for a field/action, 27 for the toolbar's
+// action, 25 for a chip.
 func TestTheControlHeightsMatchTheStylesheet(t *testing.T) {
 	want := []struct {
 		name  string
@@ -115,8 +115,8 @@ func TestTheControlHeightsMatchTheStylesheet(t *testing.T) {
 
 // TestTheCardMatchesTheStylesheet pins the card's own type and box.
 //
-// magpie's card is a white 12-point box with one hairline and 14 points of body inset; its rows
-// set names at 13/500, body copy at 12-13 and metadata at 11.5 (app.css:633-647).
+// The card is a white 12-point box with one hairline and 14 points of body inset; its rows
+// set names at 13/500, body copy at 12-13 and metadata at 11.5.
 func TestTheCardMatchesTheStylesheet(t *testing.T) {
 	want := []struct {
 		name  string
@@ -125,13 +125,13 @@ func TestTheCardMatchesTheStylesheet(t *testing.T) {
 		from  string
 	}{
 		{"body padding", CardBodyPadding, 14, "a card's body inset, between a row's 12 and a panel's 16"},
-		{"avatar", CardAvatarSize, 28, "a card avatar; magpie's in-row mark is 22 (app.css:638)"},
+		{"avatar", CardAvatarSize, 28, "a card avatar; the in-row mark is 22"},
 		{"avatar font", CardAvatarFont, 10, "the initial inside it"},
-		{"author font", CardAuthorFont, 13, ".row .name font-size (app.css:641)"},
-		{"copy font", CardCopyFont, 13, "the page's body size (app.css:41)"},
-		{"stat font", CardStatFont, 11.5, ".row .sub font-size (app.css:646)"},
+		{"author font", CardAuthorFont, 13, "the row name's font-size"},
+		{"copy font", CardCopyFont, 13, "the page's body size"},
+		{"stat font", CardStatFont, 11.5, "the row sub-line's font-size"},
 		{"handle font", CardHandleFont, 11.5, "a card's @handle, the same sub-line"},
-		{"tag floor", CardTagMinHeight, 24, "magpie's .mchip height (app.css:3540)"},
+		{"tag floor", CardTagMinHeight, 24, "the chip height"},
 		{"action size", CardActionSize, 32, "a 28-32 point hit area for a bare icon"},
 		{"grid floor", CardMinHeight, 200, "a card with a picture keeps its height"},
 		{"copy wrap factor", CardCopyWrapLines, 2.6, "the copy wrap reserves 2.6 lines"},
@@ -142,7 +142,7 @@ func TestTheCardMatchesTheStylesheet(t *testing.T) {
 		}
 	}
 	if CardCopyLineHeight != 1.45 {
-		t.Errorf("copy line height = %v, want 1.45 (a tight body measure, app.css:641-646)", CardCopyLineHeight)
+		t.Errorf("copy line height = %v, want 1.45 (a tight body measure)", CardCopyLineHeight)
 	}
 }
 
@@ -228,7 +228,7 @@ func TestTheListCardMatchesTheStylesheet(t *testing.T) {
 	}{
 		{"list copy", CardListCopyFont, 13, "the page's body size, as on the grid"},
 		{"list author", CardListAuthorFont, 13, "a list row's name"},
-		{"list meta", CardListMetaFont, 11.5, "a list row's metadata (app.css:646)"},
+		{"list meta", CardListMetaFont, 11.5, "a list row's metadata"},
 		{"list avatar", CardListAvatarSize, 26, "a list row's avatar"},
 		{"list avatar font", CardListAvatarFont, 10, "the initial inside it"},
 		{"list side", CardListSideWidth, 148, "the list card's layout grid"},
@@ -269,7 +269,7 @@ func TestTheCardPicksTheRightScale(t *testing.T) {
 		t.Errorf("the list scale is %+v, want the list's values", list)
 	}
 
-	// They must actually differ, or "picks one" is not a decision. magpie's list rows are
+	// They must actually differ, or "picks one" is not a decision. The list rows are
 	// denser than the grid's cards, which shows in the avatar and the copy.
 	if list.copyFont > grid.copyFont {
 		t.Errorf("the list copy (%v) is larger than the grid's (%v)", list.copyFont, grid.copyFont)
@@ -290,11 +290,11 @@ func TestTheLoadingStateMatchesTheStylesheet(t *testing.T) {
 		value float32
 		from  string
 	}{
-		{"shell radius", SkeletonShellRadius, 12, "a panel's radius (app.css:633)"},
+		{"shell radius", SkeletonShellRadius, 12, "a panel's radius"},
 		{"shell gap", SkeletonShellGap, 24, "the skeleton shell gap"},
 		{"shell padding", SkeletonShellPad, 24, "the skeleton shell padding"},
 		{"grid gap", SkeletonGridGap, 16, "the skeleton grid gap"},
-		{"card radius", SkeletonCardRadius, 12, "a card's radius (app.css:633)"},
+		{"card radius", SkeletonCardRadius, 12, "a card's radius"},
 		{"card padding", SkeletonCardPad, 20, "the skeleton card padding"},
 		{"min card width", SkeletonMinCardW, 220, "repeat(auto-fit, minmax(220px, 1fr))"},
 		{"avatar", SkeletonAvatarSize, 44, "h-11 w-11"},
@@ -329,17 +329,17 @@ func TestTheLoadingStateRendersCards(t *testing.T) {
 	}
 }
 
-// TestTheEmptyStateMatchesMagpie pins the empty state's two type sizes.
+// TestTheEmptyStateMatchesTheTypeScale pins the empty state's two type sizes.
 //
-// magpie's empty state is words only -- a title in the page's ink at weight 500 and advice in
-// --muted (app.css:651-653) -- so what remains to pin is the pair of sizes and the absence of
+// The empty state is words only -- a title in the page's ink at weight 500 and advice in
+// the muted ink -- so what remains to pin is the pair of sizes and the absence of
 // the plate's constants from the drawing code.
-func TestTheEmptyStateMatchesMagpie(t *testing.T) {
+func TestTheEmptyStateMatchesTheTypeScale(t *testing.T) {
 	if EmptyStateTitleFont != 13 {
-		t.Errorf("empty-state title = %v, want 13 (the page's body size, app.css:41)", EmptyStateTitleFont)
+		t.Errorf("empty-state title = %v, want 13 (the page's body size)", EmptyStateTitleFont)
 	}
 	if EmptyStateCopyFont != 12 {
-		t.Errorf("empty-state copy = %v, want 12 (.empty-state inherits 12, app.css:651)", EmptyStateCopyFont)
+		t.Errorf("empty-state copy = %v, want 12 (inherited from the page)", EmptyStateCopyFont)
 	}
 }
 
@@ -394,37 +394,37 @@ func TestTheDetailHeroMatchesTheStylesheet(t *testing.T) {
 		{"hero padding side", DetailHeroPadSide, 26, "the hero padding"},
 		{"hero padding bottom", DetailHeroPadBottom, 18, "the hero padding"},
 		{"main gap", DetailHeroMainGap, 16, "the hero main gap"},
-		{"avatar", DetailHeroAvatarSize, 30, "the stylesheet's hero avatar is 48; 30 keeps the header to one line"},
-		{"name", DetailHeroNameFont, 16, "a dialog title, app.css:4038"},
+		{"avatar", DetailHeroAvatarSize, 30, "the intended hero avatar is 48; 30 keeps the header to one line"},
+		{"name", DetailHeroNameFont, 16, "a dialog title"},
 		{"handle", DetailHeroHandleFont, 12, "the handle under it, --muted"},
 		{"action gap", DetailHeroActionGap, 10, "the hero action gap"},
 		{"divider gap", InspectorDividerGap, 24, "the inspector divider spacing"},
 		{"section overline", DetailOverlineFont, 12, "the detail section overline size"},
-		{"post copy", DetailBodyFont, 13, "the page's body size (app.css:128-129)"},
-		{"post line", DetailBodyLine, 1.6, "long-form leading (app.css:4074)"},
+		{"post copy", DetailBodyFont, 13, "the page's body size"},
+		{"post line", DetailBodyLine, 1.6, "long-form leading"},
 		{"post gap", DetailPostGap, 14, "a paragraph's gap, not a section's"},
 		{"media grid gap", DetailMediaGridGap, 6, "a tweet's gallery gap"},
-		{"settings row height", SettingsRowHeight, 48, ".row.pref min-height (app.css:3785)"},
-		{"settings row inset", SettingsRowPadLeft, 14, ".row.pref padding 12px 12px 12px 14px"},
-		{"settings row gap", SettingsRowGap, 14, ".row.pref gap (app.css:3785)"},
+		{"settings row height", SettingsRowHeight, 48, "a preference row's min-height"},
+		{"settings row inset", SettingsRowPadLeft, 14, "a preference row's padding 12px 12px 12px 14px"},
+		{"settings row gap", SettingsRowGap, 14, "a preference row's gap"},
 		{"settings row name", SettingsRowNameFont, 13, "the body size, weight 500"},
-		{"settings row sub", SettingsRowSubFont, 11.5, ".row .sub font-size (app.css:649)"},
-		{"settings number width", SettingsNumberWidth, 72, ".row.pref .set-field[type=number] (app.css:3751)"},
-		{"settings number height", SettingsNumberHeight, 24, ".row.pref .set-field height (app.css:3750)"},
-		{"settings card radius", RadiusPanel, 12, ".list border-radius (app.css:632)"},
-		{"settings section title", SettingsGroupTitle, 11, ".label font-size (app.css:2136)"},
-		{"settings tracking", SettingsGroupTrack, 0.05, ".label letter-spacing (app.css:2136)"},
-		{"settings tab height", SettingsTabHeight, 22, ".warm-tabs button height (app.css:3633)"},
-		{"settings pick height", SettingsPickHeight, 24, ".row.pref .proto.pick height (app.css:3016)"},
+		{"settings row sub", SettingsRowSubFont, 11.5, "a preference row's sub-line font-size"},
+		{"settings number width", SettingsNumberWidth, 72, "a preference row's number field width"},
+		{"settings number height", SettingsNumberHeight, 24, "a preference row's number field height"},
+		{"settings card radius", RadiusPanel, 12, "a list card's radius"},
+		{"settings section title", SettingsGroupTitle, 11, "a section label's font-size"},
+		{"settings tracking", SettingsGroupTrack, 0.05, "a section label's letter-spacing"},
+		{"settings tab height", SettingsTabHeight, 22, "a tab's height"},
+		{"settings pick height", SettingsPickHeight, 24, "a pick's height"},
 		{"tag table head height", TagTableHeadHeight, 26, "the 26-point label strip"},
-		{"tag table head font", TagTableHeadFont, 11, ".label font-size (app.css:2152)"},
-		{"tag table row", TagTableRowMin, 48, "body.window .row min-height (app.css:640)"},
-		{"tag table row pad", TagTablePadY, 12, "body.window .row padding (app.css:640)"},
+		{"tag table head font", TagTableHeadFont, 11, "a section label's font-size"},
+		{"tag table row", TagTableRowMin, 48, "a list row's min-height"},
+		{"tag table row pad", TagTablePadY, 12, "a list row's padding"},
 		{"tag table name", TagTableNameFont, 13, "the body size, weight 500"},
-		{"tag table meta", TagTableMetaFont, 11.5, ".row .sub font-size (app.css:649)"},
-		{"settings seg option", SettingsSegOptionHeight, 22, ".opt height (app.css:3374)"},
-		{"settings action height", SettingsActionHeight, 27, ".text.action height (app.css:2163)"},
-		{"settings find height", SettingsFindHeight, 26, ".sess-filter height (app.css:1654)"},
+		{"tag table meta", TagTableMetaFont, 11.5, "a list row's sub-line font-size"},
+		{"settings seg option", SettingsSegOptionHeight, 22, "a segmented option's height"},
+		{"settings action height", SettingsActionHeight, 27, "a text action's height"},
+		{"settings find height", SettingsFindHeight, 26, "a find field's height"},
 	} {
 		if item.got != item.value {
 			t.Errorf("%s = %v, want %v (from %s)", item.name, item.got, item.value, item.from)
@@ -453,21 +453,21 @@ func TestTheDetailHeroDrawsItsParts(t *testing.T) {
 	}
 }
 
-// TestTheCardTagUsesMagpiesChip pins the tag chip's shape.
+// TestTheCardTagUsesTheChip pins the tag chip's shape.
 //
-// A tag on a card is magpie's `.mchip`: 24 high, `padding: 0 9px`, an 11.5px label
-// (app.css:3539-3543). One chip vocabulary means a tag keeps the same height when the view
+// A tag on a card is a chip: 24 high, `padding: 0 9px`, an 11.5px label.
+// One chip vocabulary means a tag keeps the same height when the view
 // switches.
-func TestTheCardTagUsesMagpiesChip(t *testing.T) {
+func TestTheCardTagUsesTheChip(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		got  float32
 		want float32
 		from string
 	}{
-		{"font", CardTagFont, 11.5, ".mchip font-size (app.css:3540)"},
-		{"padding", CardTagPadX, 9, ".mchip padding: 0 9px (app.css:3540)"},
-		{"floor", CardTagMinHeight, 24, ".mchip height (app.css:3540)"},
+		{"font", CardTagFont, 11.5, "the chip's font-size"},
+		{"padding", CardTagPadX, 9, "the chip's padding: 0 9px"},
+		{"floor", CardTagMinHeight, 24, "the chip's height"},
 	} {
 		if tc.got != tc.want {
 			t.Errorf("%s = %v, want %v (%s)", tc.name, tc.got, tc.want, tc.from)
@@ -639,7 +639,7 @@ func TestTheInspectorOwnsAScrollRegion(t *testing.T) {
 // the values a reader will check the layout against. Two table values do not hold in this build,
 // and the constants record why:
 //
-//	SidebarWidth 256 -- the default follows magpie's drag state; the floor is 260 as magpie
+//	SidebarWidth 256 -- the default follows the drag state; the floor is 260 as it
 //	                    clamps it, not the table's 232
 //	BookmarkCardHeight 184 -- not used: the grid's row height comes from CardMinHeight of 240,
 //	                    because a slot shorter than its content clips
@@ -655,11 +655,11 @@ func TestTheSpecSizeTableIsPinned(t *testing.T) {
 	}{
 		{"MainMinWidth", MainMinWidth, 560, "the main column's minimum width"},
 		{"InspectorWidth", InspectorWidth, 304, "the inspector's width"},
-		{"ControlHeight", IconButtonSize, 26, "magpie's .icon (app.css:276)"},
-		{"NavRowMinHeight", NavRowMinHeight, 30, "magpie's sidebar row (app.css:419)"},
-		{"SearchFieldHeight", SearchFieldHeight, 26, "magpie's field height (app.css:1654)"},
-		{"ToolbarActionHeight", HeightControl, 27, ".text.action (app.css:2151)"},
-		{"ChipMinHeight", ChipMinHeight, 25, ".chip (app.css:2165)"},
+		{"ControlHeight", IconButtonSize, 26, "the one square for icon buttons"},
+		{"NavRowMinHeight", NavRowMinHeight, 30, "a sidebar row"},
+		{"SearchFieldHeight", SearchFieldHeight, 26, "the find field's height"},
+		{"ToolbarActionHeight", HeightControl, 27, "a text action"},
+		{"ChipMinHeight", ChipMinHeight, 25, "a chip"},
 		{"ThreeColumnMinWidth", ThreeColumnMinWidth, 1400, "the three-column band"},
 	} {
 		if tc.got != tc.want {
@@ -675,8 +675,8 @@ func TestTheSpecSizeTableIsPinned(t *testing.T) {
 // dragged to, and WidthSidebarDef and WidthInspectorDef, which hold the stored defaults, were
 // read by nothing at all.
 //
-// The values are magpie's `--side-w: 212px` for the left column (app.css:370) and 360 for the
-// inspector, which magpie does not have.
+// The values are 212 for the left column and 360 for the
+// inspector, which this shell adds.
 func TestNoStoredWidthMeansTheDefaultNotTheFloor(t *testing.T) {
 	if got := NormalizeSidebarWidth(0); got != WidthSidebarDef {
 		t.Errorf("a missing sidebar width becomes %v, want the default %v", got, WidthSidebarDef)
@@ -685,7 +685,7 @@ func TestNoStoredWidthMeansTheDefaultNotTheFloor(t *testing.T) {
 		t.Errorf("a missing inspector width becomes %v, want the default %v", got, WidthInspectorDef)
 	}
 	if WidthSidebarDef != 212 {
-		t.Errorf("WidthSidebarDef is %v; magpie's --side-w is 212", WidthSidebarDef)
+		t.Errorf("WidthSidebarDef is %v; the default is 212", WidthSidebarDef)
 	}
 	if WidthInspectorDef != 360 {
 		t.Errorf("WidthInspectorDef is %v; the inspector's default is 360", WidthInspectorDef)
@@ -829,8 +829,8 @@ func TestAToastShowsWithoutTheDetailOpen(t *testing.T) {
 	}
 }
 
-// TestThePageColumnKeepsAReadingMeasure pins magpie's `max(16px, calc(50% - 600px))`
-// (app.css:609): a narrow window pads 16, a wide one centres a 1200-point column, and the
+// TestThePageColumnKeepsAReadingMeasure pins the `max(16px, calc(50% - 600px))` measure:
+// a narrow window pads 16, a wide one centres a 1200-point column, and the
 // centring is of the pane the page owns, not of the window.
 func TestThePageColumnKeepsAReadingMeasure(t *testing.T) {
 	cases := []struct {

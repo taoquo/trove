@@ -4,7 +4,7 @@ import "testing"
 
 // TestTheLayoutMatchesTheSource pins the widths and bounds to the shell's layout.
 //
-// The left column is magpie's: `--side-w: 212px`, dragged inside
+// The left column is 212px, dragged inside
 // `Math.min(320, Math.max(168, x))` and capped at 36% of the window. The inspector is this
 // app's own, so its default 360 and bounds 320/520 are the app's.
 func TestTheLayoutMatchesTheSource(t *testing.T) {

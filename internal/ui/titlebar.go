@@ -7,18 +7,17 @@ import (
 
 // The window's own title bar.
 //
-// magpie draws its chrome rather than taking the system's: the window has no title bar of
+// The app draws its chrome rather than taking the system's: the window has no title bar of
 // its own, the header is 50 points tall and starts at the traffic lights, and the sidebar
-// owns the left end of that band (`body.window.mac .top { height: 50px; padding-left: 96px }`,
-// app.css:210; `body.window.mac .side-top`, app.css:391). The sidebar's button is the first
-// thing in the row, then the brand, so the button is in one place whether the sidebar shows
-// or not -- as Finder's and Notes' are (index.html:54-58).
+// owns the left end of that band (`height: 50px; padding-left: 96px`). The sidebar's button
+// is the first thing in the row, then the brand, so the button is in one place whether the
+// sidebar shows or not -- as Finder's and Notes' are.
 //
 // This is the same structure in MyGo's terms. The bar is one row, split at the sidebar's
 // edge: the left segment is the sidebar's own top band (its ground, its edge carried to the
 // window's top), the right segment is the header over the results. When the column is hidden,
 // the left segment goes with it, and the button, the brand and the page's crumb all start
-// from the bar's own inset -- magpie moves the same node between the two hosts for this
+// from the bar's own inset -- the same node moves between the two hosts for this
 // reason. Both segments drag the window, which is what makes the band feel like a title bar;
 // a double click zooms it (MyGo's DragWindow handles both).
 //
@@ -32,7 +31,7 @@ func (s *Shell) titleBar(c *ui.Context, theme *ui.Theme, collapsed bool, track f
 	}
 
 	// Where the row's content starts. The traffic lights take the first 72 points on a Mac
-	// and magpie puts the button 24 past them, which is its 96 (app.css:210). A window with
+	// and the button sits 24 past them, which is 96. A window with
 	// no controls -- full screen, a capture, the tests -- has nothing to keep clear of, so it
 	// keeps only the bar's own inset, and the button sits there in both sidebar states.
 	inset := bar.Left + TitleBarLightsGap
@@ -49,17 +48,17 @@ func (s *Shell) titleBar(c *ui.Context, theme *ui.Theme, collapsed bool, track f
 	// column.
 	edge := track
 
-	// Shown, the right segment starts at the column's edge and its crumb is 20 in from it
-	// (`body.side-nav .top`, app.css:522-524). Hidden, the results own the whole width and
-	// the row's content starts at the bar's own inset, clear of the window's controls.
+	// Shown, the right segment starts at the column's edge and its crumb is 20 in from it.
+	// Hidden, the results own the whole width and the row's content starts at the bar's own
+	// inset, clear of the window's controls.
 	foldedPad := float32(TitleBarCrumbPad)
 	if collapsed {
 		foldedPad = inset
 	}
 
 	row := ui.Row(c).FillWidth().Height(height)
-	// The button's pane fades over 300ms as the column folds -- `.side-toggle .st-pane`'s
-	// `transition: opacity .3s` (app.css:525-526). The value is animated here, on the bar's
+	// The button's pane fades over 300ms as the column folds. The value is animated here, on
+	// the bar's
 	// own row, and not on the button: the button moves from the left segment into the right
 	// one when the column folds, so it is a different element on the two sides of the change
 	// and an animation started on it would snap to its target. The row is in the same place
@@ -100,8 +99,8 @@ func (s *Shell) titleBar(c *ui.Context, theme *ui.Theme, collapsed bool, track f
 
 // sidebarToggle is the sidebar's button, in the title bar where a Mac app has it.
 //
-// Its glyph is magpie's: an outer rounded rectangle, the divider, and the left pane filled
-// while the sidebar shows (`#sideToggle`, index.html:58; `.side-toggle .st-pane`, app.css:525).
+// Its glyph is an outer rounded rectangle, the divider, and the left pane filled
+// while the sidebar shows.
 // It used to be a back arrow in the footer between export and reset, which read as "go back"
 // among the file commands; here it says what it does -- the column -- and stays put while the
 // column comes and goes.
@@ -114,7 +113,7 @@ func (s *Shell) sidebarToggle(c *ui.Context, theme *ui.Theme, pane float32) {
 	box := ui.Box(c).Width(TitleBarButton).Height(TitleBarButton).
 		Radius(RadiusMedium).Focusable()
 	box = box.Background(hoverColor(c, box, "toggle-bg", ui.Transparent, theme.SurfaceHover, box.Hovered()))
-	// An icon control, so `.icon:active`'s .9 (app.css:4053).
+	// An icon control, so a pressed one shrinks to .9.
 	box = pressScale(box, "press", PressScaleIcon, MotionPress)
 	// Label is the accessible name and Tooltip the same words on hover: a glyph-only control
 	// needs both, and the name is also what a test can find the button by.
@@ -125,7 +124,7 @@ func (s *Shell) sidebarToggle(c *ui.Context, theme *ui.Theme, pane float32) {
 
 // drawSidebarGlyph draws the sidebar's shape: a rounded frame on a 16-point grid, the divider
 // at 6.75, and the left pane filled at pane's alpha -- 32% when the column is open, zero when
-// it is folded, and partway between while it moves (index.html:58).
+// it is folded, and partway between while it moves.
 func drawSidebarGlyph(p *ui.Painter, r ui.Rect, ink ui.Color, pane float32) {
 	size := min32(r.W, r.H) * 0.6
 	scale := size / 16
@@ -146,7 +145,7 @@ func drawSidebarGlyph(p *ui.Painter, r ui.Rect, ink ui.Color, pane float32) {
 
 // brandLockup is the mark and the name, the pair the title bar starts with in either layout.
 // maxWidth is what the row has left for the words; a narrow column keeps the mark and drops
-// the name, as magpie's fitTop does (`.side-top.tight .brand`, app.css:388).
+// the name, as a tight sidebar does.
 func (s *Shell) brandLockup(c *ui.Context, theme *ui.Theme, maxWidth float32) {
 	brandLogoElement(c)
 	if maxWidth < TitleBarBrandMinText {
@@ -161,7 +160,7 @@ func (s *Shell) brandLockup(c *ui.Context, theme *ui.Theme, maxWidth float32) {
 
 // pageCrumb names the page the reader is on, in the title bar beside the brand.
 //
-// magpie's `.crumb` is where the window says "Work / Library / MCP servers" (app.css:520-527):
+// The crumb is where the window says "Work / Library / MCP servers":
 // the pages have no headings of their own, so the reader's place lives in the chrome. This
 // build draws the current page's name alone at 13.5/600 -- the path prefix would name a
 // hierarchy the sidebar already shows.

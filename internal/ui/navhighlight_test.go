@@ -10,10 +10,10 @@ import (
 
 // The sidebar's selection shape, as behaviour.
 //
-// magpie's list has one shape that slides from row to row, and a row has no ground of its
-// own in any state (app.css:449-453, :482). These pin where the shape is painted and that
-// it follows the row picked; the slide itself is MyGo's AnimateTo, along the --ease-out
-// curve over .24s.
+// The list has one shape that slides from row to row, and a row has no ground of its
+// own in any state. These pin where the shape is painted and that
+// it follows the row picked; the slide itself is MyGo's AnimateTo, along the settle curve
+// over .24s.
 
 // navHighlightInk reads the grey level of one point of the current frame.
 func navHighlightInk(tester *ui.Tester, x, y float32) uint8 {

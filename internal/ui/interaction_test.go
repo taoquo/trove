@@ -185,7 +185,7 @@ func TestTheSidebarHides(t *testing.T) {
 
 	tester.Frame()
 	texts := tester.Texts()
-	// magpie hides the column outright rather than folding it to a 56-point rail, so nothing of
+	// The column hides outright rather than folding it to a 56-point rail, so nothing of
 	// it is left to read.
 	if containsText(texts, shell.t().T(i18n.SidebarTags)) {
 		t.Error("the hidden column still draws the facet tabs")
@@ -427,9 +427,9 @@ func TestTheSidebarButtonKeepsItsPlaceWhenTheColumnFolds(t *testing.T) {
 	}
 }
 
-// TestTheSidebarFoldsOnMaggiesShortcut pins the binding: magpie answers Control-Command-S,
+// TestTheSidebarFoldsOnItsShortcut pins the binding: the sidebar answers Control-Command-S,
 // not the Cmd-\ this shell used to require.
-func TestTheSidebarFoldsOnMaggiesShortcut(t *testing.T) {
+func TestTheSidebarFoldsOnItsShortcut(t *testing.T) {
 	shell, db := newShell(t)
 	seed(t, db, "1", "ada", "a post", clockBase)
 	shell.Reload(context.Background())

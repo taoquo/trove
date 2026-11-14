@@ -19,8 +19,8 @@ import (
 // The label is the only text. The stored value -- a tag uuid, an author handle -- never
 // reaches the window, because a chip reading "tag:3f2a…" tells the reader nothing.
 func (s *Shell) conditionChip(c *ui.Context, rail RailTokens, chip filterCondition) {
-	// magpie's `.chip`: 25 high, radius 999, one hairline, the card ground, a 12px label
-	// and a 5/10 inset; hover takes the accent's edge and soft ground (app.css:2165-2175).
+	// A chip: 25 high, radius 999, one hairline, the card ground, a 12px label
+	// and a 5/10 inset; hover takes the accent's edge and soft ground.
 	// The chip stands in the search's 28-point row without making it taller.
 	label, edge, ground := rail.ChipText, rail.ChipBorder, rail.ChipBg
 	// The whole chip is the button: one control wraps the label and the x, and pressing it
@@ -33,11 +33,11 @@ func (s *Shell) conditionChip(c *ui.Context, rail RailTokens, chip filterConditi
 		Tooltip(s.t().T(i18n.ActionRemove)).
 		OnClick(chip.Remove)
 	if row.Hovered() {
-		// --accent-soft is the badge ground in this rail.
+		// The accent-soft ground is the badge ground in this rail.
 		label, ground, edge = rail.Accent, rail.BadgeBg, rail.Accent
 	}
-	// The chip has a 120ms transition (` .chip`, app.css:2165-2175), so it
-	// warms under the pointer instead of flipping to the accent at once.
+	// The chip has a 120ms transition, so it warms under the pointer instead of flipping to
+	// the accent at once.
 	row = row.Background(animateColor(c, row, "chip-ground", ground, MotionFast)).
 		Border(1, animateColor(c, row, "chip-edge", edge, MotionFast))
 	label = animateColor(c, row, "chip-ink", label, MotionFast)

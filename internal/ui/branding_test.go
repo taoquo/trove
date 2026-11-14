@@ -53,12 +53,11 @@ func TestSidebarShowsTheBrandRow(t *testing.T) {
 	}
 }
 
-// TestBrandLogoSizeMatchesMagpie pins the restyle's two values.
+// TestBrandLogoSizeMatchesTheWordmark pins the restyle's two values.
 //
-// magpie's own mark is an 18px glyph in a 46px sidebar top (index.html:62, app.css:366-374).
-// This app's mark is a filled square rather than a line bird, so it sits at 22 with a 6-point
-// radius: the size at which it reads level with the 13.5px wordmark beside it.
-func TestBrandLogoSizeMatchesMagpie(t *testing.T) {
+// This app's mark is a filled square rather than a line bird, so it sits at 22 with a
+// 6-point radius: the size at which it reads level with the 13.5px wordmark beside it.
+func TestBrandLogoSizeMatchesTheWordmark(t *testing.T) {
 	if BrandLogoSize != 22 {
 		t.Errorf("the mark is %d DIPs, want 22 beside the 13.5px wordmark", BrandLogoSize)
 	}
@@ -100,7 +99,7 @@ func TestIconChipKeepsItsLabel(t *testing.T) {
 		t.Error("IconOnly drops the name it is given, so no icon-only button is labelled")
 	}
 	// The sync command is an icon beside the state it changes now, so there is no word to
-	// find; what the foot prints is the last sync itself (app.css:513-517).
+	// find; what the foot prints is the last sync itself.
 	if !tester.HasText(shell.t().T(i18n.LastSyncNever)) {
 		t.Errorf("the sidebar foot has no last-sync line; texts: %q", tester.Texts())
 	}

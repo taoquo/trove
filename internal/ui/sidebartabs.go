@@ -51,14 +51,14 @@ func (s *Shell) sidebarFacetTabs(c *ui.Context, theme *ui.Theme, rail RailTokens
 	// One row, wrapping only when it has to: the tabs at the left, the tab's controls at the
 	// right, level with each other.
 	//
-	// magpie puts a section's tabs and its controls on one line -- `.usage-head` is 34 high
-	// with the refresh beside the tabs (app.css:930-933) -- and wraps them under one another
-	// only when the row runs out (`flex-wrap: wrap`, `.gw-share`, app.css:2478-2480, whose
+	// A section's tabs and its controls sit on one line -- the head is 34 high
+	// with the refresh beside the tabs -- and wrap under one another
+	// only when the row runs out (`flex-wrap: wrap`, whose
 	// wrapped line keeps a 4-point row gap). Drawing the controls on a second row of their own
 	// at every width would leave a band of empty chrome between the tabs and the list and put
 	// the three buttons 26 points below the chips they belong to: at the 168 minimum the tabs
 	// and the controls cannot both fit, and MyGo would stack 标 over 签. Wrapping answers that
-	// case the way the reference does.
+	// case the same way.
 	//
 	// The counts come off the chips below SidebarFacetCountsMin: a chip with its count and
 	// three 26-point controls need 253 points of column, and at the 212 default the choice is
@@ -68,8 +68,8 @@ func (s *Shell) sidebarFacetTabs(c *ui.Context, theme *ui.Theme, rail RailTokens
 		ui.Row(c).FillWidth().MinHeight(SidebarTabRowHeight).
 			AlignItems(ui.Center).GapX(SidebarHeaderGap).GapY(SidebarHeaderWrapGap).
 			Wrap().Justify(ui.End).Children(func() {
-			// magpie's `.segs`: 2 points around the tabs, a 7-point radius and a --pill
-			// track, with the open tab's thumb standing off it (app.css:3370).
+			// The segmented track: 2 points around the tabs, a 7-point radius and a tray
+			// ground, with the open tab's thumb standing off it.
 			ui.Row(c).GapX(2).Padding(2).Radius(SidebarSegRadius).
 				Background(rail.Muted).Children(func() {
 				s.sidebarFacetTab(c, theme, rail, sidebarTabTags)
@@ -134,8 +134,8 @@ func (s *Shell) sidebarFacetTab(c *ui.Context, theme *ui.Theme, rail RailTokens,
 
 	chip := ui.Row(c).MinHeight(SidebarTabHeight).Padding(0, SidebarTabPadX).
 		Radius(SidebarTabRadius).GapX(SidebarTabGap).AlignItems(ui.Center).Focusable()
-	// The thumb crosses the track rather than switching sides: magpie's `.st-pane` fades
-	// over .3s (app.css:526) and its segmented thumb is a background transition like every
+	// The thumb crosses the track rather than switching sides: it fades
+	// over .3s and the segmented thumb is a background transition like every
 	// other. Both colours are animated -- the thumb's ground and the label's ink -- so the
 	// open tab arrives instead of appearing.
 	thumb := ui.Transparent
@@ -288,8 +288,7 @@ func (s *Shell) sidebarSearchField(c *ui.Context, theme *ui.Theme, rail RailToke
 // sidebarListScroll is the sidebar's own scrolling region.
 //
 // Both tabs draw their list through it. It takes the rest of the column and scrolls inside
-// it, and it draws no thumb: magpie's sidebar has none (`scrollbar-width: none`,
-// app.css:402-403), and the overlay MyGo draws on hover sits on top of the counts rather
+// it, and it draws no thumb: the sidebar has none, and the overlay MyGo draws on hover sits on top of the counts rather
 // than beside the rows, because the list is as wide as the column. The bar was also the only
 // thing that moved when the pointer entered the sidebar, which read as the list shifting.
 func sidebarListScroll(c *ui.Context) ui.Element {
@@ -470,9 +469,9 @@ func (s *Shell) authorRow(c *ui.Context, theme *ui.Theme, rail RailTokens, autho
 
 		// Two lines: the name over the handle. The name carries the row grammar's 500 at
 		// 12.5, the handle is the 11px sub-line; choosing an author puts the list's shape
-		// under the row and takes the name to --fg -- no accent in the list (app.css:445-453).
-		// The same rule as a tag's name: `.nav-sub > button > span` is nowrap with an
-		// ellipsis (app.css:445), and the row is what gives way to the count.
+		// under the row and takes the name to the strong ink -- no accent in the list.
+		// The same rule as a tag's name: the label is nowrap with an ellipsis, and the row
+		// is what gives way to the count.
 		ui.Column(c).Grow(1).GapY(1).MinWidth(0).Children(func() {
 			ui.Text(c, label).FontSize(SubRowFont).FontWeight(500).
 				TextColor(ink).MaxLines(1).Shrink(1).MinWidth(0)
@@ -490,12 +489,12 @@ func (s *Shell) authorRow(c *ui.Context, theme *ui.Theme, rail RailTokens, autho
 	return row
 }
 
-// subRowInk is a sub-row's own ink: the quiet control ink at rest, --fg under the pointer or
-// on the chosen row, and 500 on the chosen row (app.css:445-453).
+// subRowInk is a sub-row's own ink: the quiet control ink at rest, the strong ink under the pointer or
+// on the chosen row, and 500 on the chosen row.
 //
 // A sub-row paints no ground in any state. The selection is the list's only shape -- "a row
 // hovered or pressed has no ground of its own, which would show where the finger is before
-// the selection slides there" (app.css:449-451) -- and the shape itself is the list's, not
+// the selection slides there" -- and the shape itself is the list's, not
 // the row's (navhighlight.go). Its colour eases over the sub-row's own .2s so the pointer
 // lights the row instead of switching it.
 func subRowInk(c *ui.Context, row ui.Element, theme *ui.Theme, active bool) ui.Color {

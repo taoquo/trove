@@ -10,26 +10,26 @@ import (
 	"github.com/taoquo/trove/internal/i18n"
 )
 
-// The settings page's controls, in magpie's language.
+// The settings page's controls.
 //
-// magpie draws settings as cards of preference rows rather than as a form:
+// The page is drawn as cards of preference rows rather than as a form:
 //
-//	.list            { background: var(--card); border: 1px solid var(--line); border-radius: 12px }
-//	.row.pref        { min-height: 48px; padding: 12px 12px 12px 14px; gap: 14px }
-//	.row .name       { font-weight: 500 }                                       (13px, the body size)
-//	.row.pref .sub   { font-size: 11.5px; color: var(--fg-2); margin-top: 2px; white-space: normal }
-//	.row + .row      { border-top: 1px solid var(--line-2) }
-//	.row-head .label { font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase }
-//	.proto.pick      { height: 24px; padding: 0 6px 0 9px; border-radius: 7px; background: var(--pill); font-size: 12px }
-//	.segs / .opt     { padding: 2px; border-radius: 7px; background: var(--pill);
-//	                   .opt 22 high, padding 0 10px, border-radius 5px, font-size 12px }
-//	.text.action     { height: 27px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px;
-//	                   background: var(--card); color: var(--fg-2); font-size: 12px }
-//	.set-field       { height: 24px; padding: 0 8px; border: 1px solid var(--line); border-radius: 7px }
-//	                   a number is 72 wide, its value to the right
-//	.sess-filter     { height: 26px; padding: 0 9px; border-radius: 7px; font-size: 12px }
+//	list card       a card ground, one hairline, a 12 radius
+//	preference row  48 high, 12/12/12/14 inset, 14 gap
+//	the row name    weight 500, 13px, the body size
+//	the sub-line    11.5px, the muted ink, 2 above, wrapping
+//	row + row       one subtle hairline above
+//	row head label  11px, 600, .05em, uppercase
+//	the pick        24 high, 0 6 0 9 inset, a 7 radius, the tray ground, 12px
+//	the segments    2 inset, a 7 radius, the tray ground;
+//	                each option 22 high, 0 10 inset, a 5 radius, 12px
+//	the text action 27 high, 0 10 inset, one hairline, a 6 radius,
+//	                a card ground, the muted ink, 12px
+//	the number field 24 high, 0 8 inset, one hairline, a 7 radius;
+//	                a number is 72 wide, its value to the right
+//	the find field  26 high, 0 9 inset, a 7 radius, 12px
 //
-// (app.css:632-646, 2135-2140, 3013-3023, 3368-3378, 3750-3751, 3785-3791, 1654.) The page
+// The page
 // before this file was a stack of labelled form fields, which reads as a form to fill in; a
 // settings list is a set of switches and values, and the row is the unit.
 
@@ -39,7 +39,7 @@ import (
 // carry a list's own name as easily as a catalog key.
 type settingsItem struct {
 	// keys are the rows' own words for the find field. A row is found by its
-	// name and its explanation, which is what magpie matches on.
+	// name and its explanation, which is what the find field matches on.
 	keys []i18n.Key
 	name string
 	sub  string
@@ -106,8 +106,8 @@ func (s *Shell) settingsRow(c *ui.Context, theme *ui.Theme, rail RailTokens, ite
 
 // settingsRowLine is the name and its line of explanation.
 //
-// The sub-line is --fg-2 and wraps: a setting's explanation is read whole,
-// and one cut with an ellipsis hides what the setting does (app.css:3788-3791).
+// The sub-line is the muted ink and wraps: a setting's explanation is read whole,
+// and one cut with an ellipsis hides what the setting does.
 func (s *Shell) settingsRowLine(c *ui.Context, theme *ui.Theme, item settingsItem) {
 	ui.Column(c).Grow(1).MinWidth(0).GapY(2).Children(func() {
 		// A row may be body-only, with the sub-line as its whole text (a caption over a
@@ -130,27 +130,27 @@ func (s *Shell) settingsRowLine(c *ui.Context, theme *ui.Theme, item settingsIte
 	}
 }
 
-// settingsSectionLabel is the .label that names a group of cards: 11px, 600,
-// .05em, uppercase, --muted, and no rule of its own.
+// settingsSectionLabel is the label that names a group of cards: 11px, 600,
+// .05em, uppercase, the muted ink, and no rule of its own.
 func settingsSectionLabel(c *ui.Context, theme *ui.Theme, rail RailTokens, label string) {
 	ui.Text(c, strings.ToUpper(label)).FontSize(SettingsGroupTitle).FontWeight(600).
 		LetterSpacing(trackingEm(SettingsGroupTrack, SettingsGroupTitle)).
 		TextColor(rail.TextTertiary).Padding(0, 2)
 }
 
-// settingsNote is the sentence a group of rows says about itself before them,
-// magpie's .feat-say: 12px in --muted over the card, not in it.
+// settingsNote is the sentence a group of rows says about itself before them:
+// 12px in the muted ink over the card, not in it.
 func settingsNote(c *ui.Context, theme *ui.Theme, rail RailTokens, text string) {
 	ui.Text(c, text).FontSize(FontSmall).TextColor(rail.TextTertiary).Padding(0, 4)
 }
 
-// settingsPick is the .proto.pick of a preference row: a pill with the current
+// settingsPick is the pick of a preference row: a pill with the current
 // value and a caret, which opens the choice.
 //
 // ui.Select is the control rather than a hand-drawn one because it already
 // carries the part a hand-drawn pill cannot: the menu marks the value in
 // force and the arrows move through it. Its trigger is re-styled here; its
-// menu is the toolkit's own panel, which is magpie's pop card.
+// menu is the toolkit's own panel, the pop card.
 func settingsPick(c *ui.Context, theme *ui.Theme, rail RailTokens,
 	label string, value *string, options []string, onChange func()) {
 	pick := ui.Select(c, value, options).Height(SettingsPickHeight).
@@ -160,9 +160,9 @@ func settingsPick(c *ui.Context, theme *ui.Theme, rail RailTokens,
 	pick.OnChange(onChange)
 }
 
-// warmTab is one `.warm-tabs button`: 22 high, `padding: 0 7px`, a 6 radius,
-// an 11px 600 .05em uppercase label in --muted, and the open one on the --pill
-// ground (app.css:3632-3635). mark puts a dot after the label, for a page the
+// warmTab is one tab: 22 high, 7-point side padding, a 6 radius,
+// an 11px 600 .05em uppercase label in the muted ink, and the open one on the tray
+// ground. mark puts a dot after the label, for a page the
 // reader has a reason to notice without opening it.
 func warmTab(c *ui.Context, theme *ui.Theme, rail RailTokens,
 	label string, active, mark bool, onClick func()) {
@@ -189,7 +189,7 @@ func warmTab(c *ui.Context, theme *ui.Theme, rail RailTokens,
 	})
 }
 
-// settingsSwitch is the .segs of a preference row: an Off/On pair in a --pill
+// settingsSwitch is the segment pair of a preference row: an Off/On pair in a tray-ground
 // track, the chosen half on a card-coloured thumb.
 func settingsSwitch(c *ui.Context, theme *ui.Theme, rail RailTokens,
 	offLabel, onLabel, label string, on *bool, onChange func()) {
@@ -210,18 +210,18 @@ func settingsSwitch(c *ui.Context, theme *ui.Theme, rail RailTokens,
 	})
 }
 
-// settingsSegment is one .opt of a switch.
+// settingsSegment is one option of a switch.
 func settingsSegment(c *ui.Context, theme *ui.Theme, rail RailTokens, label string, on bool, choose func()) {
 	seg := ui.Row(c).Height(SettingsSegOptionHeight).Padding(0, SettingsSegOptionPadX).
 		Radius(SettingsSegOptionRadius).Center().Focusable().Label(label).OnClick(choose)
 	if on {
-		// The thumb is --card over --pill with --seg-edge's drop; the track is a pill,
-		// not the header's deeper --seg-track.
+		// The thumb is the card colour over the tray ground with the segmented edge's drop;
+		// the track is a pill, not the header's deeper track.
 		seg = seg.Background(segThumbFor(theme.Dark)).
 			Shadow(0, 1, 2, 0, segShadowFor(theme.Dark))
 	}
-	// .opt is --muted, the chosen one --fg, and hover only darkens the word to
-	// --fg-2: no ground appears (app.css:3374-3396).
+	// An unselected option is the tertiary ink, the chosen one the strong ink, and hover
+	// only darkens the word one step to the muted ink: no ground appears.
 	ink := rail.TextTertiary
 	switch {
 	case on:
@@ -246,7 +246,7 @@ type textActionSpec struct {
 	active   bool
 	disabled bool
 	// busy marks an action whose work is in flight: the label stays and a spinner turns
-	// where the glyph would be, as magpie's `.busy` controls do (app.css:306, :3456).
+	// where the glyph would be, as busy controls do.
 	busy   bool
 	danger bool
 	// fill stretches the button across its row, for the one action a narrow
@@ -258,16 +258,16 @@ type textActionSpec struct {
 	onClick func()
 }
 
-// textAction is magpie's `.text.action`, the one labelled button in this
-// shell: 27 high, `padding: 0 10px`, a 6 radius, one --line edge, the --card
-// ground, a 12px --fg-2 label and a breath of shadow (app.css:2163-2165).
+// textAction is the one labelled button in this
+// shell: 27 high, 10-point side padding, a 6 radius, one hairline edge, the card
+// ground, a 12px muted-ink label and a breath of shadow.
 //
-//	.text.action:hover { border-color: var(--muted); background: var(--card-2); color: var(--fg) }
-//	.text.danger:hover { color: var(--red); background: var(--red-soft) }
-//	.text.primary     { color: var(--accent-fg); background: var(--accent); font-weight: 500 }
+//	hover          a hairline at the muted ink, a raised row ground, the strong ink
+//	danger hover   the danger ink on the danger-soft ground
+//	primary        the accent's foreground on the accent, weight 500
 //
-// It is the settings rows', the toolbars' and the dialogs' button, because
-// magpie draws one button and changes its ground, not a family of them.
+// It is the settings rows', the toolbars' and the dialogs' button: one button
+// whose ground changes, not a family of them.
 func textAction(c *ui.Context, theme *ui.Theme, rail RailTokens, spec textActionSpec) {
 	height := float32(SettingsActionHeight)
 	if spec.height > 0 {
@@ -283,8 +283,8 @@ func textAction(c *ui.Context, theme *ui.Theme, rail RailTokens, spec textAction
 	} else {
 		button = button.Shrink(0)
 	}
-	// `.busy { opacity: .55; pointer-events: none }` (app.css:3456): the work is running, so
-	// the control cannot be pressed again while it does.
+	// A busy control dims to .55 and takes no pointer: the work is running, so the control
+	// cannot be pressed again while it does.
 	if spec.busy {
 		button = button.Disabled(true).Opacity(0.55)
 	}
@@ -302,7 +302,7 @@ func textAction(c *ui.Context, theme *ui.Theme, rail RailTokens, spec textAction
 		button = button.Background(surfaceAltFor(theme.Dark)).Border(1, theme.TextMuted)
 		ink = theme.Text
 	case button.Hovered() && spec.danger:
-		// .text.danger:hover: --red on --red-soft.
+		// The danger action under the pointer: the danger ink on the danger-soft ground.
 		button = button.Background(hoverColor(c, button, "settings-action-bg", theme.Surface, dangerSoftFor(theme.Dark), true)).
 			Border(1, theme.Danger)
 		ink = theme.Danger
@@ -314,12 +314,12 @@ func textAction(c *ui.Context, theme *ui.Theme, rail RailTokens, spec textAction
 	if !spec.disabled && spec.onClick != nil {
 		button.OnClick(spec.onClick)
 	}
-	// `.text:active` gives to .96 over .16s (app.css:4052, :4048-4052); a disabled button is
-	// not pressed, so it stays still.
+	// A pressed text action gives to .96 over .16s; a disabled button is not pressed, so it
+	// stays still.
 	button = pressScale(button, "press", PressScaleText, MotionPress)
 	button.Children(func() {
 		if spec.busy {
-			// `.busy` takes the pointer and dims the control while the work runs; the
+			// A busy control takes the pointer and dims the control while the work runs; the
 			// spinner takes the glyph's place and the label stays, so the button says what
 			// it is doing rather than changing into a different control.
 			ui.Spinner(c).Size(SettingsActionIcon, SettingsActionIcon).TextColor(ink)
@@ -348,7 +348,7 @@ func settingsAction(c *ui.Context, theme *ui.Theme, rail RailTokens,
 }
 
 // settingsActionBusy is settingsAction while its work is in flight: the label stays and a
-// spinner turns in the glyph's place, as magpie's `.busy` controls do (app.css:306, :3456).
+// spinner turns in the glyph's place, as busy controls do.
 func settingsActionBusy(c *ui.Context, theme *ui.Theme, rail RailTokens,
 	label string, busy bool, onClick func()) {
 	textAction(c, theme, rail, textActionSpec{
@@ -357,8 +357,8 @@ func settingsActionBusy(c *ui.Context, theme *ui.Theme, rail RailTokens,
 }
 
 // settingsIcon is a row's quiet icon action, for the lists and saved views
-// that carry two or three of them: a 28-point square, a --muted glyph, and
-// the --pill ground under the pointer, as every icon control in the shell.
+// that carry two or three of them: a 28-point square, a muted glyph, and
+// the tray ground under the pointer, as every icon control in the shell.
 func settingsIcon(c *ui.Context, theme *ui.Theme, rail RailTokens,
 	name, label string, onClick func()) {
 	// Label as well as Tooltip: a management row carries the same icon once per row, so the
@@ -378,9 +378,8 @@ func settingsIcon(c *ui.Context, theme *ui.Theme, rail RailTokens,
 	})
 }
 
-// settingsNumber is a preference row's numeric value: one compact field, the
-// way magpie's .warm-at draws a number (64 wide, right aligned, 27 high),
-// with Up and Down stepping it.
+// settingsNumber is a preference row's numeric value: one compact field,
+// 64 wide, right aligned and 27 high, with Up and Down stepping it.
 //
 // The field keeps its own text so a half-typed number stays on screen; the
 // value in the row is only adopted once what was typed is a number in range.
@@ -452,7 +451,7 @@ func formatSettingsNumber(v float64) string {
 	return strconv.FormatFloat(v, 'f', -1, 64)
 }
 
-// settingsField is the text field of a preference row: `.row.pref .set-field`, 27 high,
+// settingsField is the text field of a preference row: 27 high,
 // a 7 radius, 0 9 inset and a 12.5px label. width 0 lets it take the rest of the row,
 // which is what a row's one long value does; anything else is a fixed measure.
 func settingsField(c *ui.Context, theme *ui.Theme, rail RailTokens,
@@ -483,7 +482,7 @@ func settingsQuiet(c *ui.Context, theme *ui.Theme, text string) {
 	ui.Text(c, text).FontSize(SettingsRowSubFont).TextColor(theme.TextMuted).SingleLine()
 }
 
-// settingsFindField is the page's search: magpie's .sess-filter, a plain
+// settingsFindField is the page's search: a plain
 // bordered field 26 high, with no magnifier glyph.
 //
 // It returns its own element rather than growing or shrinking itself: the
@@ -509,7 +508,7 @@ func settingsStatus(c *ui.Context, theme *ui.Theme, rail RailTokens, label strin
 	})
 }
 
-// dangerSoftFor is --red-soft: the ground behind a destructive hover.
+// dangerSoftFor is the danger-soft ground: the ground behind a destructive hover.
 func dangerSoftFor(dark bool) ui.Color {
 	if dark {
 		return darkDangerFill

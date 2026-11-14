@@ -9,8 +9,8 @@ import (
 
 // TestATagNameThatDoesNotFitEndsInOneLine covers the sidebar's tag names.
 //
-// magpie's grouped row is `white-space: nowrap` with `overflow: hidden; text-overflow:
-// ellipsis` on the name (app.css:444-445), so a name that does not fit is cut, not wrapped.
+// The grouped row is `white-space: nowrap` with `overflow: hidden; text-overflow:
+// ellipsis` on the name, so a name that does not fit is cut, not wrapped.
 // This build let the text take a second line, which moved the count to the first line and
 // made one row twice as tall as its neighbours.
 func TestATagNameThatDoesNotFitEndsInOneLine(t *testing.T) {

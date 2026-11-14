@@ -54,7 +54,7 @@ func TestTheAutoTagPageIsReachedFromTheTable(t *testing.T) {
 			t.Errorf("the auto-tagging page is missing %q; texts: %q", shell.t().T(key), tester.Texts())
 		}
 	}
-	// The three parts of the page, each under its --muted uppercase label, and their
+	// The three parts of the page, each under its muted uppercase label, and their
 	// one-line explanations under the label.
 	for _, key := range []i18n.Key{
 		i18n.SettingsGroupAutoTagBasics,

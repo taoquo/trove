@@ -12,9 +12,9 @@
 
 | 方法 | 文件:行 | 何时出现 |
 |---|---|---|
-| `viewEnds` | `viewends.go:51` | 网格/列表能滚动时挂载，读者越过一屏后在页面右下角淡入（`.view-ends`，`app.css:2255-2266`）。无右侧留白时在最后「托盘高 + 24」处让位；有留白（`inset >= 42`）时居中放进留白，不隐藏。两个 26×24 箭头分别 `ScrollTo(0)` / `ScrollTo(MaxFloat32)`；`MotionBase` 同时驱动透明度与 4pt 上浮 |
-| `viewEndsButton` | `viewends.go:123` | `viewEnds` 的一半：一个 26×24 的圆角箭头，`toTop` 决定符号与目标端，禁用端用 `--faint`（`.view-ends button:disabled`，`app.css:2262-2263`）；两端的 14 点分隔线由 `viewEnds` 画 |
-| `pageInset` | `results.go:41` | **不是表面**，是页面的横向内边距：`max(16, (窗格 − 1200)/2)`（`app.css:609`）。结果页、设置页、标签管理共用；因为第一个参数是 `*ui.Context`，`tools/surfaces.py` 要求在这里登记 |
+| `viewEnds` | `viewends.go:51` | 网格/列表能滚动时挂载，读者越过一屏后在页面右下角淡入（`.view-ends`）。无右侧留白时在最后「托盘高 + 24」处让位；有留白（`inset >= 42`）时居中放进留白，不隐藏。两个 26×24 箭头分别 `ScrollTo(0)` / `ScrollTo(MaxFloat32)`；`MotionBase` 同时驱动透明度与 4pt 上浮 |
+| `viewEndsButton` | `viewends.go:123` | `viewEnds` 的一半：一个 26×24 的圆角箭头，`toTop` 决定符号与目标端，禁用端用 `--faint`（`.view-ends button:disabled`）；两端的 14 点分隔线由 `viewEnds` 画 |
+| `pageInset` | `results.go:41` | **不是表面**，是页面的横向内边距：`max(16, (窗格 − 1200)/2)`。结果页、设置页、标签管理共用；因为第一个参数是 `*ui.Context`，`tools/surfaces.py` 要求在这里登记 |
 | `addRow` | `toolbar.go:150` | 常驻。URL 输入 + 正文输入 + Add |
 | `toolbar` | `toolbar.go:330` | 常驻。搜索 / Filters / Sort，一行；视图开关 + Graph + Manage tags，一行 |
 | `conditionChip` | `chips.go:21` | 每一个生效条件的芯片：名称 + ×。**两处共用**——工具栏搜索行右侧（结果非空时）与空态的按条件列表（结果为空时）。名字永远来自 facet 的 `name`，不是存储值 |
@@ -39,9 +39,9 @@
 | `cardSuggestionChip` | `card.go:366` | 待确认建议的虚线 chip，结果卡片与详情标签行共用；高度/字号/横向 padding 由调用方给（栅格与列表不同） |
 | `pendingSuggestionsBar` | `toolbar.go:551` | `.options-bulk-actions-bar`：待确认标签计数 + `接受全部建议`。**与 `batchBar` 不同**：那个是选中后的批量操作，这个与选择无关（是应用在请你处理） |
 | `listsAndViewsSettings` | `listsviews.go:199` | 设置 › **列表与视图**页签里的「列表」与「保存视图」两段（`state.SettingsOpen`）。侧栏只列标签与作者，这两项的入口在这里；用偏好行语法；Unclassified 与 Inbox 各带一句说明，其余列表只有名字；行内图标带对象名 |
-| `settingsPage` | `settingsview.go:36` | `state.SettingsOpen`。**整页**：占据结果列，侧栏保留；页头 + 顶部标签 + 可滚动分区。分区内容是 magpie 的 `.list` / `.row.pref` 卡 |
+| `settingsPage` | `settingsview.go:36` | `state.SettingsOpen`。**整页**：占据结果列，侧栏保留；页头 + 顶部标签 + 可滚动分区。分区内容是按偏好行组织的卡片 |
 | `settingsPageHeader` | `settingsview.go:78` | 页头一行：图标返回、页名、五个分区标签、右端 `Find a setting` 输入框；查找有字时标签让位、输入框占满（`.set-searching`） |
-| `settingsTabs` | `settingsview.go:125` | 顶部五个分区标签：`.warm-tabs`，11/600/.05em 大写、22 高、6 圆角，选中用 --pill 底（`app.css:3632-3635`）；`Wrap()`，1180 点窗里一行放得下 |
+| `settingsTabs` | `settingsview.go:125` | 顶部五个分区标签：`.warm-tabs`，11/600/.05em 大写、22 高、6 圆角，选中用 --pill 底；`Wrap()`，1180 点窗里一行放得下 |
 | `warmTab`（`settingsTabs` / `tagLibraryTabs` 共用） | `settingsui.go:167` | 一片 `.warm-tabs` 按钮；`mark` 在字后带 6pt 圆点 |
 | `settingsFilteredSections` | `settingsview.go:216` | `SettingsQuery` 非空时：命中分区名 + 该分区内命中的行，全不命中显示 `SettingsNoMatch` |
 | `settingsCard` | `settingsui.go:60` | 一张 `.list`：--card 底、1px --line、12 圆角，行与行之间 1px --line-2；返回通过查找的行数，供分区决定是否画分组标题 |
@@ -52,7 +52,7 @@
 | `settingsAutoTagSection` | `settingsview.go:432` | 自动标签：**只剩一行指路牌**（名字是「管理标签」，避免与标签页同名）；控件在标签管理页，按钮打开 `TagMode` 的自动标签页 |
 | `settingsDataSafetySection` | `settingsview.go:449` | 数据安全：DATA 标签 + 一句说明；导出、兼容备份、恢复、重置四行（各带一句说明，危险操作用 `.text.danger`）；卡片下方一行回执（`LastBundleOK` 为真时用成功色，进度与拒绝仍是 muted 的 `settingsNote`） |
 | `settingsListsViewsSection` | `listsviews.go:188` | 列表与视图：`listsAndViewsSettings` 的两个卡片，只在 `SettingsSectionListsViews` 页签下画 |
-| `settingsSectionLabel` / `settingsNote` | `settingsui.go:135` | `.label`：11px/600/.05em/**大写**/--muted 的分组标题（`app.css:2136`）；`settingsNote` 是它下面的一句说明（`.feat-say`：12px、--muted、在卡外）。设置页与自动标签页共用 |
+| `settingsSectionLabel` / `settingsNote` | `settingsui.go:135` | `.label`：11px/600/.05em/**大写**/--muted 的分组标题；`settingsNote` 是它下面的一句说明（`.feat-say`：12px、--muted、在卡外）。设置页与自动标签页共用 |
 | `settingsField` / `settingsInput` / `settingsQuiet` | `settingsui.go:458` | 偏好行里的文本框：27 高、7 圆角、0 9 内边距、12.5px；`settingsInput` 是可继续链式设置 placeholder / Bind 的底层字段，`settingsQuiet` 是行尾的只读值（11.5px --muted，不画按钮框） |
 | `textAction` / `settingsAction` / `IconChip` | `settingsui.go:271` | 全壳唯一的带字按钮 `.text.action`：27 高、6 圆角、--card 底、12px --fg-2；primary / active / danger / disabled / fill / height 变体。`IconChip` 是带图标的同一按钮 |
 
@@ -114,10 +114,10 @@
 
 | 方法 | 文件:行 | 何时出现 |
 |---|---|---|
-| `titleBar` | `titlebar.go:27` | 常驻，窗口第一行。自己画的 50pt 标题栏：系统标题栏隐藏、红绿灯保留；左段是侧栏自己的顶带（同样的底色 + 侧栏边缘延伸到窗口顶端），右段是结果上方的头部。两段都能拖动窗口，双击缩放。开关的图形画在 `drawSidebarGlyph`：16 格上的圆角框 12.5×10.5 r2.25 stroke1.25，分隔线 6.75，左窗格 4×9 r1、展开时 32%（`app.css:525`） |
-| `sidebarToggle` | `titlebar.go:108` | 常驻，标题栏里。侧栏开关：magpie 的方框 + 分隔线 + 左侧填充（展开时 32%），**两种布局都在窗口同一个 x**——展开时在左段，折叠时搬进右段 |
-| `brandLockup` | `titlebar.go:150` | 常驻，紧接开关。标记 + 13.5/600 名称；宽度不足时只留标记（magpie 的 `fitTop` tight 态） |
-| `pageCrumb` | `titlebar.go:168` | 常驻，品牌之后。当前页名 13.5/600：设置 / 管理标签 / 标签图 / 作用域名。**页名只在这里**（magpie 的 `.crumb`，app.css:522） |
+| `titleBar` | `titlebar.go:27` | 常驻，窗口第一行。自己画的 50pt 标题栏：系统标题栏隐藏、红绿灯保留；左段是侧栏自己的顶带（同样的底色 + 侧栏边缘延伸到窗口顶端），右段是结果上方的头部。两段都能拖动窗口，双击缩放。开关的图形画在 `drawSidebarGlyph`：16 格上的圆角框 12.5×10.5 r2.25 stroke1.25，分隔线 6.75，左窗格 4×9 r1、展开时 32% |
+| `sidebarToggle` | `titlebar.go:108` | 常驻，标题栏里。侧栏开关：方框 + 分隔线 + 左侧填充（展开时 32%），**两种布局都在窗口同一个 x**——展开时在左段，折叠时搬进右段 |
+| `brandLockup` | `titlebar.go:150` | 常驻，紧接开关。标记 + 13.5/600 名称；宽度不足时只留标记（tight 态） |
+| `pageCrumb` | `titlebar.go:168` | 常驻，品牌之后。当前页名 13.5/600：设置 / 管理标签 / 标签图 / 作用域名。**页名只在这里** |
 
 ## 侧栏
 
@@ -127,7 +127,7 @@
 | `bookmarkContextMenu` | `contextmenus.go:31` | 每张结果卡右键：打开、在 X 中打开、复制正文、复制链接、加入/移出选择 |
 | `authorContextMenu` | `contextmenus.go:129` | 侧栏作者行右键：按此作者筛选、只看此作者、复制 @handle |
 | `sidebarHero` | `sidebar.go:92` | **只在有运行时内容时画**：同步进行中（进度 + 取消）、同步失败（原因 + 重连）、可续传（句子 + 立即同步）、自动标签运行中。没有这些时整块和其下分隔线都不画 |
-| `sidebarFooter` | `sidebar.go:232` | 常驻。`.side-foot`：状态行（7 点圆点 + 末次同步时间，11.5）+ 一排 26 图标（语言 / 主题 / 同步 / 设置），`8 10 10` 内边距、1 间距（`app.css:397`、`:513-517`）。导出/恢复/重置在设置的数据安全段与文件菜单里 |
+| `sidebarFooter` | `sidebar.go:232` | 常驻。`.side-foot`：状态行（7 点圆点 + 末次同步时间，11.5）+ 一排 26 图标（语言 / 主题 / 同步 / 设置），`8 10 10` 内边距、1 间距。导出/恢复/重置在设置的数据安全段与文件菜单里 |
 | `sidebarFacetTabs` | `sidebartabs.go:50` | 常驻。分段控件的两片 + 当前页签自己的控件（标签页签上是新建与标签库） |
 | `sidebarFacetTab` | `sidebartabs.go:123` | 分段控件的一片：名称 + 当前条件下的行数。**非当前页签有筛选时画一个小点**——一个槽位里显示两个维度的唯一办法。`Focusable`，Tab 可达、Enter/Space 切换 |
 | `sidebarSearchToggle` | `sidebartabs.go:196` | 页签行里的放大镜：开/关搜索框。**两个页签共用同一个入口**，打开时底色是 accent 10% |
@@ -135,7 +135,7 @@
 | `sidebarTagsBody` | `sidebartabs.go:307` | 标签页签：新建行 / 标签行，列表自己滚动。**搜索框默认不画**；**不画导航行** |
 | `sidebarAuthorsBody` | `sidebartabs.go:386` | 作者页签：全部作者行，列表自己滚动。**不分页、不设上限**；搜索框同样默认不画 |
 | `authorRow` | `sidebartabs.go:428` | 作者页签里的每一行：30 高（两行）、头像、名字 12.5/500 在 11 号 handle 上、条件生效下的 11 号计数。**行本身任何状态都不画底色**：选中是列表那一个滑块（`navHighlight`，`navhighlight.go`），行只在悬停/选中时把名字提到 `--fg`。**顺序永远来自服务，选中不会把行提到顶部** |
-| `tagRow` | `tags.go:702` | 标签页签的每一行，也是标签库的行来源：26 高、`0 10`、6 圆角、6 间距、12.5/500 名称、11 号计数（`app.css:440-449`）。**行本身不画底色**；选中同样由列表的滑块标记（多个标签同时生效时标第一个），行只把名称提到 `--fg`（悬停 200ms 过渡） |
+| `tagRow` | `tags.go:702` | 标签页签的每一行，也是标签库的行来源：26 高、`0 10`、6 圆角、6 间距、12.5/500 名称、11 号计数。**行本身不画底色**；选中同样由列表的滑块标记（多个标签同时生效时标第一个），行只把名称提到 `--fg`（悬停 200ms 过渡） |
 
 ## ⚠️ 哪些表面能用截图验，哪些不能
 

@@ -7,13 +7,13 @@ import (
 	"github.com/taoquo/trove/internal/i18n"
 )
 
-// The scroll-ends capsule: `.view-ends` (app.css:2255-2266).
+// The scroll-ends capsule.
 //
 // A 26-wide tray at the page's lower right with a 24-high chevron above and below, a 14-point
 // hairline between them, and a 9-point radius over a 2-point inset. It appears once the page
-// is a screen down, as Safari's does, and its two controls jump to either end. The stylesheet
-// gives the tray `--pop-bg` and a 20px backdrop blur; MyGo has no blur, so the tray is the
-// card colour with the same edge and drop.
+// is a screen down, as Safari's does, and its two controls jump to either end. The tray wants
+// the popover ground and a 20px backdrop blur; MyGo has no blur, so the tray is the card
+// colour with the same edge and drop.
 const (
 	ViewEndsWidth        = 26
 	ViewEndsButtonHeight = 24
@@ -21,16 +21,14 @@ const (
 	ViewEndsRadius       = 9
 	ViewEndsButtonRadius = 7
 	ViewEndsGlyph        = 14
-	// ViewEndsSeparator is the `.ve-sep` hairline between the two controls.
+	// ViewEndsSeparator is the hairline between the two controls.
 	ViewEndsSeparator = 14
-	// ViewEndsInset is the tray's distance from the page's right edge. The stylesheet's
-	// `right: 16px` is overridden at runtime, which places the tray 10 points inside the open
-	// view's right edge.
+	// ViewEndsInset is the tray's distance from the page's right edge. A 16-point inset is
+	// overridden at runtime, which places the tray 10 points inside the open view's right edge.
 	ViewEndsInset = 10
 	// ViewEndsBottomInset is the 16-point gap above the view's bottom.
 	ViewEndsBottomInset = 16
-	// ViewEndsRise is the 4-point drop the tray lifts from as it arrives
-	// (`.view-ends { transform: translateY(4px) }`, app.css:2257).
+	// ViewEndsRise is the 4-point drop the tray lifts from as it arrives.
 	ViewEndsRise = 4
 	// ViewEndsHeight is the tray's own height: two controls, the hairline between them and
 	// its two margins, inside the tray's padding. It decides when the tray has to stand down

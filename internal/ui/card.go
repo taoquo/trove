@@ -41,9 +41,9 @@ func (s *Shell) bookmarkCard(c *ui.Context, theme *ui.Theme, rail RailTokens, in
 	// and four cards sharing a column's height were compressed to about 340 points each,
 	// with the copy cut mid-line.
 	card := ui.Column(c).FillWidth()
-	// The card: a 1px border of --theme-elevated-border, a 16px radius, and Clip.
+	// The card: a 1px raised-card hairline, a 16px radius, and Clip.
 	//
-	// Clip is what makes the card's `overflow: hidden` real, and it is why the body padding
+	// Clip is what makes the card's overflow hidden real, and it is why the body padding
 	// sits on the body rather than on this element: with padding here, the media could never
 	// run to the card's edges.
 	//
@@ -58,8 +58,8 @@ func (s *Shell) bookmarkCard(c *ui.Context, theme *ui.Theme, rail RailTokens, in
 		card = card.MinHeight(domain.ListCardMinHeight(hasMedia, hasTagChips, lines))
 	}
 	if selected {
-		// magpie keeps the accent for what acts: a chosen card is the same hairline and a
-		// warmer ground, not an accent ring (app.css:366-375).
+		// The accent is kept for what acts: a chosen card is the same hairline and a
+		// warmer ground, not an accent ring.
 		card = card.Border(1, rail.CardBorder).Background(rail.SelectedBg)
 	}
 	// The list layout is denser, and the stylesheet gives it its own values rather than a
@@ -271,8 +271,8 @@ func (s *Shell) bookmarkCard(c *ui.Context, theme *ui.Theme, rail RailTokens, in
 							}
 							visible := domain.VisibleCardTagNames(names, s.state.ViewMode)
 
-							// A tag on a card is magpie's `.mchip`: one height, one inset and
-							// one size in both layouts (app.css:3539-3543), so the same tag no
+							// A tag on a card is a chip: one height, one inset and
+							// one size in both layouts, so the same tag no
 							// longer changes shape when the view switches.
 							ui.Row(c).FillWidth().GapX(8).Children(func() {
 								for _, name := range visible {
@@ -428,8 +428,8 @@ func (s *Shell) cardSelectToggle(c *ui.Context, theme *ui.Theme, rail RailTokens
 	// Label as well as Tooltip: the box needs an accessible name, and MyGo's Label is what a
 	// reader of the accessibility tree -- and ui.Tester's Find, which is how the test reaches
 	// this 20-point box -- sees.
-	// The tick arrives rather than appearing: magpie's `copy-pop` overshoots from .55
-	// through 1.16 to 1 (app.css:2550), and a spring is the same gesture with the same
+	// The tick arrives rather than appearing: its spring overshoots from .55
+	// through 1.16 to 1, and a spring is the same gesture with the same
 	// shape. The value lives on the box, which every card has whether it is ticked or not,
 	// so the 0 it animates from exists before the reader ticks it; under reduce motion it
 	// jumps to 1 and the tick is simply there.
@@ -531,7 +531,7 @@ func cardActionButton(c *ui.Context, theme *ui.Theme, rail RailTokens, name, too
 	// was pointer-only and had no accessible name.
 	box := ui.Box(c).Width(size).Height(size).Focusable().Label(tooltip).Radius(RadiusPill)
 	box = box.Background(hoverColor(c, box, "action-bg", ui.Transparent, theme.SurfaceHover, box.Hovered()))
-	// An icon control, so `.icon:active`'s .9 (app.css:4053).
+	// An icon control, so a pressed one shrinks to .9.
 	box = pressScale(box, "press", PressScaleIcon, MotionPress)
 	box.Draw(func(p *ui.Painter, r ui.Rect) {
 		size := float32(CardActionIcon)

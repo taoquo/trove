@@ -13,8 +13,7 @@ import (
 // The reader's report of 2026-11-10: "这种滚动条呢，感觉没有必要，把它移除掉吧". It was MyGo's
 // overlay thumb, which appears as soon as the pointer is anywhere over the list and sits on
 // top of the counts, because the list is as wide as the column -- there is no gutter for it.
-// magpie's sidebar has none either (`.side-scroll { scrollbar-width: none }`,
-// app.css:402-403); macOS itself shows scrollbars only while scrolling.
+// The sidebar has none either; macOS itself shows scrollbars only while scrolling.
 //
 // The check is a pair of frames: nothing about the list changes between a pointer in the gap
 // between two rows and a pointer outside the list, so any pixel that differs in the list's

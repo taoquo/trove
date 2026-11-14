@@ -12,7 +12,7 @@ import (
 
 // The context menus, one per kind of row.
 //
-// magpie puts the actions for a thing on the thing itself: a row's menu answers "what can
+// The actions for a thing sit on the thing itself: a row's menu answers "what can
 // I do with this unit" without moving the reader to a toolbar first, and the list's own
 // menu is short because everything rare lives in a page. The right button is a second
 // pointer for what the card's controls already do, which is why every item here calls an

@@ -11,48 +11,46 @@ package ui
 // to make the app look wrong.
 
 const (
-	// Radii, from magpie's app.css.
+	// Radii.
 	//
-	// magpie's scale is flat: a page is a 12px card, a control is 6-8px, and only pills and
-	// avatars go fully round. The counts below are of literal `border-radius` declarations in
-	// app.css: 6 (41), 7 (37), 8 (34), 5 (32), 10 (21),
-	// 999 (20), 4 (19), 12 (13).
+	// The scale is flat: a page is a 12px card, a control is 6-8px, and only pills and
+	// avatars go fully round.
 	//
-	//   .list, cards           12px  (app.css:633)
-	//   .field (a picker)       6px  (app.css:869-877)
-	//   .icon                  7px  (app.css:273-278)
-	//   .seg button             6px  (app.css:265-267)
-	//   .nav-sub > button       6px  (app.css:440)
-	//   sidebar nav row         7px  (app.css:409-419)
-	//   .chip, .badge pillary 999px  (app.css:2165-2174)
-	//   .action-confirm        14px  (app.css:4038)
+	//   list cards             12px
+	//   a picker                6px
+	//   an icon button          7px
+	//   a segmented button      6px
+	//   a grouped sub-row       6px
+	//   a sidebar nav row       7px
+	//   a chip or badge       999px
+	//   a confirm action       14px
 	RadiusPanel  = 12
 	RadiusMedium = 8
 	// RadiusSmall is the 6px of a field, a segmented button and a small nav row.
 	RadiusSmall = 6
-	// RadiusPill is 999px in the stylesheet, which is "as round as it goes". A
+	// RadiusPill is 999px, which is "as round as it goes". A
 	// fixed large value is used because a native radius is not clamped by a box.
 	RadiusPill = 999
 
 	// The component radii.
 	RadiusSidebarRow  = 7  // sidebar nav rows
-	RadiusResultCard  = 12 // .list / a page's card
+	RadiusResultCard  = 12 // a page's card
 	RadiusToolbar     = 12 // the toolbar's panel
 	RadiusToolbarItem = 8  // a control in the toolbar
-	RadiusDialog      = 14 // .action-confirm
+	RadiusDialog      = 14 // a confirm action
 	RadiusInspector   = 12
 )
 
 const (
-	// Control heights, from magpie's app.css.
+	// Control heights.
 	//
-	// magpie's controls are desktop-compact: a picker is 25px, a text action 27, an icon
+	// Controls are desktop-compact: a picker is 25px, a text action 27, an icon
 	// button 26, a list row 48 in the window and 40 in the tray panel.
 	//
-	//   .field, .chip, .seg button   24-25px
-	//   .text.action, inputs         27px
-	//   .icon                        26px
-	//   .row (window)                48px  (app.css:636)
+	//   a field, a chip, a segmented button   24-25px
+	//   a text action, an input               27px
+	//   an icon button                        26px
+	//   a list row (window)                   48px
 	HeightPrimary = 30
 	HeightLarge   = 28
 	HeightControl = 27
@@ -60,21 +58,21 @@ const (
 	// HeightIndicator is the 20px dot-and-label row used by the status badges.
 	HeightIndicator = 20
 
-	// IconButtonSize is magpie's `.icon`: 26 square (app.css:276). One square for every bare
-	// control in the window -- the toolbar's labelled actions keep their own .text.action
-	// height -- so the search row, the footer and the detail header all agree.
+	// IconButtonSize is the one square every bare control uses: 26 points. The toolbar's
+	// labelled actions keep their own text-action height, so the search row, the footer
+	// and the detail header all agree.
 	IconButtonSize = 26
 	// FooterIconSize is the same 26 in the sidebar's foot.
 	FooterIconSize = 26
 	// The footer chip's `padding: 0 7px` for the locale character.
 	FooterChipPadX = 7
-	// The foot: `.side-foot { padding: 8px 10px 10px; gap: 1px }` (app.css:397).
+	// The foot's padding and gap.
 	FooterPadTop    = 8
 	FooterPadBottom = 10
 	FooterPadX      = 10
 	FooterGap       = 1
-	// `.side-gw` is the state row: 26 high, `padding: 0 9px`, 11.5px, and a 7-point dot 8
-	// from the words (app.css:513-515).
+	// The state row: 26 high, `padding: 0 9px`, 11.5px, and a 7-point dot 8
+	// from the words.
 	SideFooterStatusHeight = 26
 	SideFooterStatusPadX   = 9
 	SideFooterStatusGap    = 8
@@ -86,7 +84,7 @@ const (
 )
 
 const (
-	// Type sizes, by role. 12px appears most often in the stylesheet and is the
+	// Type sizes, by role. 12px appears most often and is the
 	// body size for secondary text; 13px is primary body; 14px is emphasised body;
 	// 15px is a section title.
 	FontMicro     = 10
@@ -95,39 +93,38 @@ const (
 	FontBody      = 13
 	FontBodyLarge = 14
 	FontTitle     = 15
-	// The page's own type, from magpie's app.css.
+	// The page's own type.
 	//
-	// magpie is a compact desktop UI with no display heading: body text is 13px
-	// (app.css:125-126), a section label is 11px/600/.05em uppercase (app.css:2140), a row's
-	// name inherits the 13px and sets 500, a sub-line is 11.5px (app.css:643-646), and the
-	// one large number on a page -- a usage total -- is 22px.
+	// This is a compact desktop UI with no display heading: body text is 13px,
+	// a section label is 11px/600/.05em uppercase, a row's name inherits the 13px and
+	// sets 500, a sub-line is 11.5px, and the one large number on a page -- a usage
+	// total -- is 22px.
 	//
 	// FontOverline is the section label: 11, not 10, because at 10 the uppercase label was
-	// smaller than magpie's own by a point and the tracking made it read as a different scale.
+	// smaller than the intended 11 by a point and the tracking made it read as a different scale.
 	FontOverline = 11
-	// The brand is `.side-top .brand { font-size: 13.5px }` (app.css:386) at weight 600.
+	// The brand is 13.5px at weight 600.
 	FontSidebarTitle        = 14
 	FontSidebarTitleCompact = 13.5
-	// There is no 34px display title in magpie's window. A page names itself in the title
-	// bar's crumb at 13.5/600 (`.crumb`, app.css:522), so no page heading is drawn in the
+	// There is no 34px display title in this window. A page names itself in the title
+	// bar's crumb at 13.5/600, so no page heading is drawn in the
 	// content at all. FontDisplayTitle stays for the pages that still draw one.
 	FontDisplayTitle = 16
 	FontPageCrumb    = 13.5
-	// FontResultsValue is the large number magpie draws for a total (22px,
-	// app.css:1310-1320's `.sub b` family of rules).
+	// FontResultsValue is the large number drawn for a total: 22px.
 	FontResultsValue = 22
-	// DisplayTracking is the tight tracking magpie applies to its large numerals.
+	// DisplayTracking is the tight tracking applied to the large numerals.
 	ResultsValueTracking = -0.01
 
-	// Sidebar rows: magpie's nav buttons are 30 high with a 7 radius and 13px text
-	// (app.css:409-419), and its grouped sub-rows are 26 high (app.css:440).
+	// Sidebar rows: nav buttons are 30 high with a 7 radius and 13px text,
+	// and grouped sub-rows are 26 high.
 	NavRowMinHeight = 30
 	NavRowRadius    = 7
 	NavRowPadY      = 0
 	NavRowPadX      = 9
 	NavRowFont      = 13
-	// The list card: magpie's `.row` is 48 high with 7/12/7/14 padding, a 22px icon, a 13px
-	// name and an 11.5px sub (app.css:635-646). The result card's own body is 14.
+	// The list card: 48 high with 7/12/7/14 padding, a 22px icon, a 13px
+	// name and an 11.5px sub. The result card's own body is 14.
 	CardBodyPadding = 14
 
 	// The bulk actions bar: flex, space-between, a 10 gap, 1px border, a 12 radius and 10 of
@@ -148,9 +145,9 @@ const (
 	// SettingsAction*.
 	SecondaryButtonIcon = 14
 
-	// The sidebar's facet tabs are magpie's `.segs`: a 2-point inset in a 7 radius track,
-	// each `.opt` 22 high with `padding: 0 10px`, a 5 radius and 12px text -- --muted for the
-	// closed tab, --fg for the open one (app.css:3370-3375).
+	// The sidebar's facet tabs: a 2-point inset in a 7 radius track,
+	// each tab 22 high with 10-point side padding, a 5 radius and 12px text -- the muted
+	// ink for the closed tab, the strong ink for the open one.
 	SidebarTabRowHeight = 26
 	SidebarSegRadius    = 7
 	SidebarTabHeight    = 22
@@ -158,13 +155,13 @@ const (
 	SidebarTabPadX      = 10
 	SidebarTabGap       = 6
 	SidebarTabDot       = 6
-	// The "+" and the tag-library control on the tab row are magpie's `.icon`: 26 square with
-	// a 15px glyph (app.css:276).
+	// The "+" and the tag-library control on the tab row are 26 square with
+	// a 15px glyph.
 	SidebarHeadControl = 26
 	SidebarHeadGlyph   = 15
 	// The gap between the tabs and the controls beside them, and the row gap when the two do
-	// not fit and the controls wrap under the tabs. 4 is magpie's `.gw-share` row gap for a
-	// head that wraps (app.css:2478), so a wrapped head still reads as one block.
+	// not fit and the controls wrap under the tabs. 4 is the row gap for a head that
+	// wraps, so a wrapped head still reads as one block.
 	SidebarHeaderGap     = 4
 	SidebarHeaderWrapGap = 4
 	// SidebarFacetCountsMin is the column width at which a chip's count fits beside the three
@@ -190,9 +187,9 @@ const (
 	NavRowTrailingGap = 6
 	NavRowCountFont   = 12
 	NavRowAction      = 22
-	// A grouped sub-row is what the tag list is: magpie's `.nav-sub > button` is 26 high,
-	// `padding: 0 10px`, a 6 radius, 12.5px text, a 6 gap, and an 11px count at the far end
-	// (app.css:440-449). The open row is --fg at weight 500; there is no accent in the list.
+	// A grouped sub-row is what the tag list is: 26 high,
+	// `padding: 0 10px`, a 6 radius, 12.5px text, a 6 gap, and an 11px count at the far end.
+	// The open row is the strong ink at weight 500; there is no accent in the list.
 	SubRowMinHeight = 26
 	SubRowRadius    = 6
 	SubRowPadX      = 10
@@ -202,19 +199,19 @@ const (
 	// AuthorAvatarSize is the avatar's square, and it doubles as the nav row's icon, which is
 	// why the author rows look taller than the plain ones.
 	AuthorAvatarSize = 22
-	// The sidebar's find field is `.sess-filter`: 26 high, a 7 radius, a `0 9` inset and a
-	// 12px label (app.css:1654).
+	// The sidebar's find field: 26 high, a 7 radius, a `0 9` inset and a
+	// 12px label.
 	SidebarSearchHeight = 26
 	SidebarSearchRadius = 7
 	SidebarSearchPadX   = 9
-	// The glyph inside it, and on the magnifier that opens it: magpie's `.set-q` glyph is 15.
+	// The glyph inside it, and on the magnifier that opens it, is 15.
 	SidebarSearchGlyph = 15
 	// FieldBlock wraps its input in `space-y-2` under an sr-only label, so the field carries
 	// 8 points above it that no label accounts for.
 	SidebarFieldLabelGap = 8
 
-	// The toolbar's find field: magpie's `.set-q` / `.sess-filter` is 26 high with a `0 9`
-	// inset and a 7 radius (app.css:1654, :3750), and its magnifier is a 15px glyph.
+	// The toolbar's find field: 26 high with a `0 9` inset and a 7 radius,
+	// and its magnifier is a 15px glyph.
 	SearchFieldHeight = 26
 	SearchFieldGlyph  = 15
 	SearchFieldPadX   = 9
@@ -260,9 +257,8 @@ const (
 	// The list layout's own body padding: 12px 14px.
 	CardListBodyPadV = 12
 	CardListBodyPadH = 14
-	// The card's type scale is magpie's row: the name at the page's 13 and weight 500, and
-	// everything that qualifies it -- handle, timestamp, counts -- on the 11.5px sub line
-	// (`.row .name`, `.row .sub`, app.css:646-649).
+	// The card's type scale follows the list row: the name at the page's 13 and weight 500,
+	// and everything that qualifies it -- handle, timestamp, counts -- on the 11.5px sub line.
 	CardAvatarSize     = 28
 	CardAvatarFont     = 10
 	CardAuthorFont     = 13
@@ -272,13 +268,13 @@ const (
 	CardStatFont       = 11.5
 	// The list's stat row keeps its own spacing -- a 4px inner gap, an 8px gap between
 	// stats, and a bare 14px glyph rather than the grid's button -- but reads at the same
-	// 11.5px as every other sub line (app.css:649).
+	// 11.5px as every other sub line.
 	CardListStatIcon     = 14
 	CardListStatFont     = 11.5
 	CardListStatGap      = 8 // between one stat and the next
 	CardListStatInnerGap = 4 // between a stat's glyph and its count
-	// A tag on a card is magpie's `.mchip`: 24 high, `padding: 0 9px`, an 11.5px label
-	// (app.css:3539-3543). Two different rules -- 22/10 in the grid and 20/8 in the list --
+	// A tag on a card is a chip: 24 high, `padding: 0 9px`, an 11.5px label.
+	// Two different rules -- 22/10 in the grid and 20/8 in the list --
 	// would leave every card's tags short of the chip vocabulary the rest of the shell draws,
 	// and make the same tag change height when the view switched.
 	CardTagMinHeight = 24
@@ -350,7 +346,7 @@ const (
 
 	// The list layout is denser than the grid by its arrangement -- a side media column and
 	// a 26px avatar against 28 -- not by type: both read 13 for copy and names and 11.5 for
-	// metadata (app.css:646-649).
+	// metadata.
 	CardListCopyFont       = 13
 	CardListCopyLineHeight = 1.45
 	CardListAuthorFont     = 13
@@ -431,8 +427,8 @@ const (
 	SidebarBrandGap       = 8
 	SyncLabelTracking     = 0.12
 
-	// OverlineTracking, DisplayTracking are letter-spacing values, in em as magpie writes
-	// them (`letter-spacing: 0.14em`). They are NOT DIPs: see trackingEm, which every
+	// OverlineTracking, DisplayTracking are letter-spacing values, in em
+	// (`letter-spacing: 0.14em`). They are NOT DIPs: see trackingEm, which every
 	// LetterSpacing call has to go through.
 	OverlineTracking = 0.05
 	DisplayTracking  = -0.01
@@ -469,12 +465,12 @@ const (
 	ResultsPadX      = 16
 	ResultsPadTop    = 2
 	ResultsPadBottom = 8
-	// ContentMaxWidth is the column every page centres itself in: magpie's
-	// `padding-left: max(16px, calc(50% - 600px))` (app.css:609) holds the reading
+	// ContentMaxWidth is the column every page centres itself in: the
+	// `padding-left: max(16px, calc(50% - 600px))` inset holds the reading
 	// measure at 1200 points however wide the window is.
 	ContentMaxWidth = 1200
-	// The space between the toolbar's control row and the feed. magpie draws its controls
-	// straight on the page ground and leaves 8 to the first row under them.
+	// The space between the toolbar's control row and the feed. The controls sit
+	// straight on the page ground, leaving 8 to the first row under them.
 	ResultsHeaderPadBottom = 8
 	// The view toggle: an 8-radius button carrying its glyph.
 	ViewToggleSize  = 24
@@ -486,8 +482,8 @@ const (
 	PaddingControl        = 12
 	// SidebarScrollbarHidden pushes a scroll thumb past the window's right edge.
 	//
-	// magpie draws its sidebar without a scrollbar: `.side-scroll { scrollbar-width: none }`
-	// (app.css:402-403). MyGo 0.4.6 has no per-container switch -- the thumb's colour is the
+	// The sidebar is drawn without a scrollbar. MyGo 0.4.6 has no per-container switch --
+	// the thumb's colour is the
 	// window theme's -- and `ScrollbarInsets` is the one lever that moves it. A right inset of
 	// this size puts it outside the window; the track is unchanged, so the list still scrolls
 	// by wheel, trackpad and keyboard, and only the 9-point overlay that appeared whenever the
@@ -502,9 +498,9 @@ const (
 // inlined because "the app feels wrong" is usually one of these being off by a factor of
 // two, or a control given the wrong neighbour's number.
 const (
-	// MotionWidthMs is the auto-tag progress fill's `transition: width 200ms ease-out`. It
-	// does not drive the sidebar's collapse, which is a different animation (`.st-pane`'s
-	// 0.3s fade, MotionSlow). The transition itself is not implemented: the bar is drawn at
+	// MotionWidthMs is the auto-tag progress fill's 200ms width transition on the ease-out
+	// curve. It does not drive the sidebar's collapse, which is a different animation (the
+	// sidebar pane's 0.3s fade, MotionSlow). The transition itself is not implemented: the bar is drawn at
 	// its exact fraction, so a batch moves it in a step rather than a glide.
 	MotionWidthMs = 200
 	// MotionTransformMs drives panels appearing, on a decelerating curve.
@@ -524,7 +520,7 @@ const (
 	// SettingsRowMax is the settings toggle row's max-width, 520px. The row also sets
 	// align-items: flex-start, because its label can carry a hint beneath and the box should
 	// line up with the first line rather than the middle of the pair. The settings page no
-	// longer uses it (its rows run the card's full width, as magpie's do); the auto-tagging
+	// longer uses it (its rows run the card's full width); the auto-tagging
 	// view keeps it for the one switch it draws on its own.
 	SettingsRowMax = 520
 
@@ -538,9 +534,8 @@ const (
 	// set from eating the search and the actions. Two fifths leaves the field the widest
 	// control in the row, which is why it is the one the chips were moved beside.
 	ToolbarChipsMaxPercent = 40
-	// FilterPopoverWidth is magpie's `.pop.proto-menu` width (app.css:3024), the panel shape
-	// this popover takes: 262 wide, an 11-point radius (`.pop`, app.css:2270-2280) and a
-	// 4-point inset (app.css:3024).
+	// FilterPopoverWidth is the width of this popover's panel shape: 262 wide,
+	// an 11-point radius and a 4-point inset.
 	FilterPopoverWidth  = 262
 	FilterPopoverRadius = 11
 	FilterPopoverPad    = 4
@@ -553,7 +548,7 @@ const (
 	DetailMetaValueFont = 14
 	DetailMetaValueLine = 1.45
 
-	// The settings section label: magpie's `.label`, 11px/600/.05em uppercase. The settings
+	// The settings section label: 11px/600/.05em uppercase. The settings
 	// page's own numbers live in metrics_interaction.go, beside the rest of that page.
 	SettingsGroupTitle = 11
 	SettingsGroupTrack = 0.05
@@ -598,16 +593,16 @@ const (
 //
 // Draggable rails persist their widths; these are the defaults a first run starts with.
 const (
-	// magpie's drag clamps to 168-320 and the settings layer validates the same pair, so a
+	// The drag clamps to 168-320 and the settings layer validates the same pair, so a
 	// stored width and a dragged one agree.
 	WidthSidebarMin = 168
 	WidthSidebarMax = 320
-	// 212, magpie's `--side-w` (app.css:370); its drag clamps to 168-320 and to 36% of the
+	// 212 is the default sidebar width; the drag clamps to 168-320 and to 36% of the
 	// window.
 	WidthSidebarDef = 212
 	// MaxSidebarShare is the window share a dragged sidebar may take (`innerWidth * 0.36`).
 	MaxSidebarShare = 0.36
-	// NavSideWidth is where magpie gives the sidebar up on its own: `SIDE_AT = 1024`, with
+	// NavSideWidth is where the sidebar gives way on its own: 1024, with
 	// `(min-width: 1024px)` choosing the sidebar and anything narrower the header layout. A
 	// reader who has picked a layout keeps it at every width.
 	NavSideWidth = 1024
@@ -630,8 +625,9 @@ const (
 // and WidthInspectorDef, and the clamping functions below must leave zero to them.
 // trackingEm converts a letter-spacing in em to the DIPs ui.LetterSpacing wants.
 //
-// magpie writes `letter-spacing: 0.14em` and MyGo writes `LetterSpacing(v)` in DIPs added
-// after every character, so the constant cannot be passed through: 0.14 em at 10px is
+// Letter-spacing is written in em (`letter-spacing: 0.14em`) and MyGo writes
+// `LetterSpacing(v)` in DIPs added after every character, so the constant cannot be
+// passed through: 0.14 em at 10px is
 // 1.4 points, and the bare 0.14 draws the overline at a tenth of the intended width. The
 // mismatch is invisible on short Latin labels and makes "工作区" 30 wide where 34 is right.
 func trackingEm(em, fontSize float32) float32 { return em * fontSize }
@@ -643,7 +639,7 @@ func NormalizeSidebarWidth(width float32) float32 {
 	return min(max(width, WidthSidebarMin), WidthSidebarMax)
 }
 
-// ClampSidebarWidth applies magpie's window share on top of the stored bounds:
+// ClampSidebarWidth applies the window share on top of the stored bounds:
 // `Math.max(SIDE_MIN, Math.min(w, SIDE_MAX, innerWidth * 0.36))`.
 //
 // Zero means "no window measured yet" (a tester, the first frame), in which case the

@@ -708,19 +708,19 @@ func (s *Shell) tagRow(c *ui.Context, theme *ui.Theme, rail RailTokens, id, labe
 		}
 	}
 
-	// A tag is a grouped sub-row: `.nav-sub > button` is 26 high, `padding: 0 10px`, a 6
-	// radius, a 6 gap and 12.5px text (app.css:440-449). It used to take the top-level row's
+	// A tag is a grouped sub-row: 26 high, 10-point side padding, a 6 radius, a 6 gap
+	// and 12.5px text. It used to take the top-level row's
 	// 30/9/7/13, which is the row a page gets, not the row a tag under it gets.
 	row := ui.Row(c).FillWidth().Padding(0, SubRowPadX).Radius(SubRowRadius).
 		GapX(NavRowGap).MinHeight(SubRowMinHeight).Border(1, ui.Transparent).Focusable()
 	row.Key(id).OnClick(func() { s.toggleTagFilter(context.Background(), tagID) }).
 		ContextMenu(func(m *ui.Menu) { s.tagContextMenu(m, tagID, label) })
 	// No ground of its own in any state: the list's selection shape is the list's only
-	// shape, and the pointer's answer is ink (navhighlight.go, app.css:449-453).
+	// shape, and the pointer's answer is ink (navhighlight.go).
 	ink := subRowInk(c, row, theme, active)
 	row.Children(func() {
 		// The hash and the name, 6 apart, at 12.5px. The open tag is the page's ink at
-		// weight 500 -- no accent in the list (app.css:449).
+		// weight 500 -- no accent in the list.
 		renaming := s.state.RenameTagID == tagID
 		ui.Row(c).Grow(1).GapX(SubRowGap).Children(func() {
 			ui.Box(c).Width(NavRowIcon).Height(NavRowIcon).
@@ -739,8 +739,8 @@ func (s *Shell) tagRow(c *ui.Context, theme *ui.Theme, rail RailTokens, id, labe
 				}
 				return
 			}
-			// magpie's grouped row is `white-space: nowrap` with `overflow: hidden;
-			// text-overflow: ellipsis` on the name (app.css:444-445). Without SingleLine the
+			// The grouped row is `white-space: nowrap` with `overflow: hidden;
+			// text-overflow: ellipsis` on the name. Without SingleLine the
 			// name took a second line and pushed the count up beside its first half; Shrink
 			// and MinWidth(0) are what let it give way to the count instead of the row.
 			//
@@ -753,12 +753,12 @@ func (s *Shell) tagRow(c *ui.Context, theme *ui.Theme, rail RailTokens, id, labe
 				text = text.FontWeight(500)
 			}
 		})
-		// The count is the row's last thing and its right edge is the row's, as magpie's
-		// `em { margin-left: auto }` puts it (app.css:446).
+		// The count is the row's last thing and its right edge is the row's, with
+		// `margin-left: auto`.
 		//
 		// The two row actions come after the count in a trailing cell that keeps their
 		// 22-point boxes only while the row is under the pointer. At a 280-point column that
-		// reserved band was a fifth of the row; at magpie's 212 it was a third, so names
+		// reserved band was a fifth of the row; at 212 it was a third, so names
 		// were cut -- "ai image genera…" -- while the space beside them sat empty, and the
 		// count stopped 56 points short of the edge the eye reads as the column's. Laid out
 		// only while hovered, the space goes back to the name at rest, and nothing moves but

@@ -140,12 +140,12 @@ const (
 type LayoutPreferences struct {
 	LeftSidebarWidth  float32 `json:"leftSidebarWidth"`
 	RightSidebarWidth float32 `json:"rightSidebarWidth"`
-	// SidebarCollapsed hides the left column. magpie keeps the choice across launches, so a
+	// SidebarCollapsed hides the left column. The choice is kept across launches, so a
 	// reader who put the sidebar away does not find it back on every start.
 	SidebarCollapsed bool `json:"sidebarCollapsed,omitempty"`
 	// SidebarChosen records that the reader picked the layout themselves. Without it the
 	// window's width decides -- the sidebar is shown from 1024 points up, hidden below,
-	// following magpie's `navPick` breakpoint. A stored SidebarCollapsed from before this
+	// following the 1024-point breakpoint. A stored SidebarCollapsed from before this
 	// field means the press that hid the column was a pick, so the shell treats it as one
 	// when it loads.
 	SidebarChosen bool `json:"sidebarChosen,omitempty"`
@@ -153,8 +153,8 @@ type LayoutPreferences struct {
 
 // The widths the shell lays out with, and the bounds it clamps to.
 //
-// The left column is magpie's `--side-w: 212px`, dragged between 168 and 320 and never past
-// 36% of the window. The inspector is not magpie's -- this app's shell is the only
+// The left column is 212px, dragged between 168 and 320 and never past
+// 36% of the window. The inspector is this app's own -- this shell is the only
 // implementation with a third column -- so its 360/320/520 defaults and bounds are the
 // app's own.
 const (

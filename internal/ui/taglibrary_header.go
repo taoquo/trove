@@ -17,7 +17,7 @@ import (
 // nothing the table or the toolbar uses.
 
 // tagLibraryHeader is the page heading, in the settings page's grammar: one 34-point
-// row with the back square, the screen's name and the two pages as `.warm-tabs`, then the
+// row with the back square, the screen's name and the two pages as the tab strip, then the
 // library's health as the one quiet line under it.
 //
 // The screen's name is 管理标签 on both pages; the tabs say which page is open. Naming the
@@ -75,7 +75,7 @@ func (s *Shell) tagLibraryStatsLine(all []domain.TagLibraryItem) string {
 	}, " · ")
 }
 
-// tagLibraryTabs is the 标签 / 自动标签 switch: `.warm-tabs`, the same control the settings
+// tagLibraryTabs is the 标签 / 自动标签 switch: the tab strip, the same control the settings
 // page's sections use.
 //
 // The dot on 自动标签 is the only status the tags page spends on the other page: a run in

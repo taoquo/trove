@@ -6,12 +6,12 @@ import (
 	"github.com/egoist/mygo/ui"
 )
 
-// The motion language, taken from magpie's stylesheet.
+// The motion language.
 //
-// magpie moves in three sizes: what the pointer touches changes over 120-180ms, a page
+// The interface moves in three sizes: what the pointer touches changes over 120-180ms, a page
 // enters over 240ms, and a change of layout -- the sidebar's fold, the toggle's pane --
-// takes 300ms. There is one curve, `--ease: cubic-bezier(.2,.8,.2,1)` (app.css:4017),
-// and one slower, spring-like curve for the nav highlight.
+// takes 300ms. There is one curve, cubic-bezier(.2,.8,.2,1), and one slower, spring-like
+// curve for the nav highlight.
 //
 // Nothing here decorates. Every use belongs to a state that changed: a control under the
 // pointer, a row becoming selected, a page being replaced. The intensity is deliberately
@@ -21,17 +21,17 @@ const (
 	MotionFastMs = 120
 	MotionBaseMs = 180
 	MotionSlowMs = 300
-	// MotionPageMs is `view-in`'s 0.24s (app.css:584).
+	// MotionPageMs is the page entrance's 0.24s.
 	MotionPageMs = 240
-	// PageEnterOffset is `view-in`'s translateY(5px) (app.css:596).
+	// PageEnterOffset is the page entrance's translateY(5px).
 	PageEnterOffset = 5
-	// MotionPressMs is a pressed control's give: the global `.text, .icon, ...` rule
-	// transitions transform over .16s (app.css:4048-4052).
+	// MotionPressMs is a pressed control's give: the global control rules
+	// transition transform over .16s.
 	MotionPressMs = 160
-	// MotionPressSegMs is `.seg button`'s quicker .14s (app.css:273).
+	// MotionPressSegMs is a segmented button's quicker .14s.
 	MotionPressSegMs = 140
-	// MotionInkMs is a sub-row's colour changing under the pointer: `.nav-sub > button`
-	// transitions color over .2s (app.css:444).
+	// MotionInkMs is a sub-row's colour changing under the pointer: a sub-row
+	// transitions color over .2s.
 	MotionInkMs = 200
 )
 
@@ -39,45 +39,42 @@ const (
 // seen, short enough that it is gone before the reader wants to copy again.
 const CopiedFeedbackFor = 900 * time.Millisecond
 
-// MotionEase is magpie's --ease.
+// MotionEase is the standard curve.
 var MotionEase = ui.CubicBezier(0.2, 0.8, 0.2, 1)
 
-// MotionEaseOut is magpie's --ease-out, the curve its selection glides along
-// (app.css:4047, :482).
+// MotionEaseOut is the slower settle curve, the one the selection glides along.
 var MotionEaseOut = ui.CubicBezier(0.23, 1, 0.32, 1)
 
 var (
-	// MotionFast is a control's colour changing under the pointer: `.nav-row` and
-	// `.icon` both use 120-150ms (app.css:277, :297).
+	// MotionFast is a control's colour changing under the pointer: nav rows and
+	// icon buttons both use 120-150ms.
 	MotionFast = ui.Animation{Duration: MotionFastMs * time.Millisecond, Ease: MotionEase}
 	// MotionBase is a row arriving at its selected state.
 	MotionBase = ui.Animation{Duration: MotionBaseMs * time.Millisecond, Ease: MotionEase}
-	// MotionSlow is the sidebar's button filling its left pane: `.st-pane`'s .3s
-	// (app.css:526).
+	// MotionSlow is the sidebar's button filling its left pane: .3s.
 	MotionSlow = ui.Animation{Duration: MotionSlowMs * time.Millisecond, Ease: MotionEase}
-	// MotionPop is the overshoot of `copy-pop`, a scale from .55 through 1.16 to 1
-	// (app.css:2550).
+	// MotionPop is the overshoot of the copy pop, a scale from .55 through 1.16 to 1.
 	MotionPop = ui.Snappy
-	// MotionPress is a `.text`-family control's give (app.css:4052).
+	// MotionPress is a text-family control's give.
 	MotionPress = ui.Animation{Duration: MotionPressMs * time.Millisecond, Ease: MotionEase}
-	// MotionPressSeg is the quicker give of `.seg button` (app.css:273).
+	// MotionPressSeg is the quicker give of a segmented button.
 	MotionPressSeg = ui.Animation{Duration: MotionPressSegMs * time.Millisecond, Ease: MotionEase}
-	// MotionInk is a sub-row's ink changing under the pointer (app.css:444).
+	// MotionInk is a sub-row's ink changing under the pointer.
 	MotionInk = ui.Animation{Duration: MotionInkMs * time.Millisecond, Ease: MotionEase}
-	// MotionGlide is the sidebar's selection sliding to the row picked: `.nav-hl`
-	// transitions transform and height over .24s along --ease-out (app.css:482).
+	// MotionGlide is the sidebar's selection sliding to the row picked:
+	// transform and height transition over .24s along the settle curve.
 	MotionGlide = ui.Animation{Duration: MotionPageMs * time.Millisecond, Ease: MotionEaseOut}
 )
 
-// The two scales a press gives a control (app.css:4052-4053): the `.text` family (buttons,
-// tiles, chips, the segmented control) goes to .96, and `.icon` goes to .9.
+// The two scales a press gives a control: the text family (buttons,
+// tiles, chips, the segmented control) goes to .96, and icon buttons go to .9.
 const (
 	PressScaleText = 0.96
 	PressScaleIcon = 0.9
 )
 
-// pressScale is magpie's `:active` transform: while the pointer holds the control it scales
-// down, and lets go over magpie's own duration.
+// pressScale is the active transform: while the pointer holds the control it scales
+// down, and lets go over its own duration.
 //
 // MyGo has no pointer-down event, but Pressed is the same question asked of the toolkit --
 // it is true from the press until the pointer leaves or lifts -- so the factor is 1 except
@@ -99,8 +96,8 @@ func pressScale(e ui.Element, key string, to float32, a ui.Animation) ui.Element
 //
 // MyGo's AnimateColor deliberately does not read it (only Animate, Keyframes and a
 // Transition's movement do; mygo's motion.go), so a reader who asked the system for less
-// motion would still get 120ms of colour sliding under the pointer. magpie's
-// `prefers-reduced-motion` blocks switch those transitions off, so under ReduceMotion the
+// motion would still get 120ms of colour sliding under the pointer. The
+// reduced-motion preference switches those transitions off, so under ReduceMotion the
 // value must simply be the target.
 func animateColor(c *ui.Context, e ui.Element, key string, target ui.Color, a ui.Animation) ui.Color {
 	if c.Preferences().ReduceMotion {
@@ -110,9 +107,9 @@ func animateColor(c *ui.Context, e ui.Element, key string, target ui.Color, a ui
 }
 
 // hoverColor is the ground a control shows this frame, easing to its hover fill instead of
-// switching: magpie gives every control a `transition` on background and colour, and this is
-// the MyGo equivalent of that one line. Under ReduceMotion it switches, as magpie's
-// media query does.
+// switching: every control gets a `transition` on background and colour, and this is
+// the MyGo equivalent of that one line. Under ReduceMotion it switches, as the
+// reduced-motion media query does.
 func hoverColor(c *ui.Context, e ui.Element, key string, base, hover ui.Color, hovered bool) ui.Color {
 	if hovered {
 		return animateColor(c, e, key, hover, MotionFast)
@@ -122,9 +119,9 @@ func hoverColor(c *ui.Context, e ui.Element, key string, base, hover ui.Color, h
 
 // resultsEntrance is the results pane's partway-in state after a page change.
 //
-// magpie gives every view `animation: view-in .24s var(--ease)` -- a fade from nothing and a
-// 5-point lift (app.css:584, :596) -- and, when the desktop asks for less motion, `fade-in`,
-// which keeps the fade and drops the lift (app.css:598). That is exactly the pair returned
+// Every view animates in over .24s -- a fade from nothing and a 5-point lift -- and, when
+// the desktop asks for less motion, the fade alone, which keeps the fade and drops the
+// lift. That is exactly the pair returned
 // here. While the pane is still moving it asks for the next frame, which is what makes the
 // value advance; MyGo's own Animate cannot be used because a fresh channel starts at its
 // first target and the pane is rebuilt as the page changes.
@@ -154,20 +151,15 @@ func pageEntrance(elapsed time.Duration, reduceMotion bool) (opacity, offset flo
 	progress := MotionEase(float32(elapsed) / float32(duration))
 	offset = PageEnterOffset * (1 - progress)
 	if reduceMotion {
-		// The fade stays, the movement goes: magpie's reduced-motion rule names fade-in.
+		// The fade stays, the movement goes: the reduced-motion rule names fade-in.
 		offset = 0
 	}
 	return progress, offset
 }
 
-// `.pop`'s entrance, from app.css:2282-2287:
-//
-//	animation: pop-fade .14s ease-out, pop-in .24s var(--ease-out);
-//	@keyframes pop-fade { from { opacity: 0; } }
-//	@keyframes pop-in  { from { transform: translateY(var(--pop-dy, -6px)) scale(.94); } }
-//
-// and, for a reader who asked for less motion, `animation: pop-fade .12s ease-out` alone
-// (app.css:2288): the fade stays and the rise and the scale go.
+// The popover's entrance: a fade over .14s on the ease-out keyword and a rise over .24s
+// from 6 points above at .94, and, for a reader who asked for less motion, the .12s fade
+// alone: the fade stays and the rise and the scale go.
 const (
 	PopFadeMs      = 140
 	PopFadeReduced = 120
@@ -178,11 +170,10 @@ const (
 	PopInScale = 0.94
 )
 
-// popFadeEase is CSS's `ease-out`, which pop-fade names as a keyword -- not magpie's
-// --ease-out, which is the slower settle pop-in names (app.css:4047).
+// popFadeEase is the ease-out keyword -- not the slower settle curve the rise uses.
 var popFadeEase = ui.CubicBezier(0, 0, 0.58, 1)
 
-// popoverEntrance is `.pop`'s entrance at an elapsed time: the panel's opacity, how far above
+// popoverEntrance is the popover's entrance at an elapsed time: the panel's opacity, how far above
 // its place it still is, and its scale. It is arithmetic apart from the clock so a test can
 // ask it questions without a window, as pageEntrance is.
 func popoverEntrance(elapsed time.Duration, reduceMotion bool) (opacity, rise, scale float32) {

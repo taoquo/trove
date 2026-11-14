@@ -13,7 +13,7 @@ import (
 // The sidebar's brand mark.
 //
 // The logo is logo-128.png, drawn at 22 points with a 6-point radius in the same row as the
-// wordmark (app.css:366-374): the app's logo is a filled square rather than a line bird, and
+// wordmark: the app's logo is a filled square rather than a line bird, and
 // 22 is the size at which the two read as one row. The asset is a small-size cut of the app
 // icon, kept to the tile, the book and its ribbon: the icon's inner matte and its seal dot
 // close up below 32 points and turn into noise. The asset is embedded from
@@ -23,8 +23,8 @@ import (
 // BrandLogoSize is the size the sidebar asks for.
 const BrandLogoSize = 22
 
-// BrandLogoRadius rounds the mark to the sidebar's row radius, as magpie's
-// 18px bird sits in its 30px rows (app.css:366-374).
+// BrandLogoRadius rounds the mark to the sidebar's row radius: a 6-point corner
+// on a mark drawn at 22 points in a 30-point row.
 const BrandLogoRadius = 6
 
 //go:embed testdata/branding/logo-128.png

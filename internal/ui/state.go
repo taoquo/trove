@@ -228,8 +228,8 @@ type State struct {
 	// built, so an idle app is not repainted just to expire a message nobody is looking at.
 	ToastMessage string
 	ToastUntil   time.Time
-	// ToastKind is the message's tone: ok, warn or err. magpie's status line carries the
-	// same three and colours the pill from them (app.css:2233-2242).
+	// ToastKind is the message's tone: ok, warn or err. The status line carries the
+	// same three and colours the pill from them.
 	ToastKind string
 
 	// PageChangedAt is when the results pane was last replaced by a different page:
@@ -379,7 +379,7 @@ type State struct {
 
 	// FilterPopoverOpen shows the toolbar's filter popover.
 	FilterPopoverOpen bool
-	// FilterPopoverOpenedAt is when it was opened, for `.pop`'s entrance (app.css:2283-2286).
+	// FilterPopoverOpenedAt is when it was opened, for the popover's entrance.
 	// Zero means at rest -- a restored state or a capture does not animate.
 	FilterPopoverOpenedAt time.Time
 	// UnavailableFilter backs the two condition rows drawn disabled. It is never read: the
@@ -453,14 +453,14 @@ type State struct {
 	XTestResult  string
 	XTestRoute   string
 
-	// SettingsQuery is the settings page's "find a setting" field. magpie filters every
+	// SettingsQuery is the settings page's "find a setting" field. The page filters every
 	// tab's rows with one; an empty field shows the open tab alone.
 	SettingsQuery string
 	// SidebarCollapsed is the sidebar hidden. It is the reader's choice once they have made
 	// one; until then the window's width decides.
 	SidebarCollapsed bool
 	// SidebarChosen is whether they have: the title bar's button, the shortcut, or a drag past
-	// the minimum, kept as magpie's `magpie.navLayout` and overriding the width at every width.
+	// the minimum, kept as the stored `navLayout` choice and overriding the width at every width.
 	SidebarChosen bool
 
 	// SettingsSection is which tab the settings sheet shows.

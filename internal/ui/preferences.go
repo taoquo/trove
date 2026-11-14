@@ -377,7 +377,7 @@ func (s *Shell) loadLastAutoTagSummary(ctx context.Context) {
 
 // saveAutoTagSettings writes the panel's fields back.
 //
-// A switch moves before the write, as magpie's do; when the write fails the fields are read
+// A switch moves before the write; when the write fails the fields are read
 // back from storage, so the panel rolls the switch back instead of claiming a setting that
 // is not stored.
 func (s *Shell) saveAutoTagSettings(ctx context.Context) {

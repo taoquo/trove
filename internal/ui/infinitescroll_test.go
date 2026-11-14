@@ -122,7 +122,7 @@ func TestTheListAlsoContinuesAtItsEnd(t *testing.T) {
 	}
 }
 
-// TestThePageNameLivesInTheTitleBar is magpie's crumb: the page has no heading of its own,
+// TestThePageNameLivesInTheTitleBar is the crumb: the page has no heading of its own,
 // so its name sits in the chrome and does not scroll away with the feed.
 //
 // The rectangle is the assertion. Finding the words somewhere is satisfied by a heading in
@@ -190,7 +190,7 @@ func TestTheStandingSyncLineStaysUnderTheToolbar(t *testing.T) {
 	tester.Frame()
 
 	// The toolbar's line names the last sync; the sidebar's foot prints the time alone beside
-	// its status dot (`.side-gw`, app.css:513-517). Both are standing, so both survive the
+	// its status dot. Both are standing, so both survive the
 	// feed scrolling.
 	label := shell.t().T(i18n.LastSyncLabel)
 	for _, y := range []float32{0, 200} {

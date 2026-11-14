@@ -91,7 +91,7 @@ func TestEveryRailTokenComesFromAThemeRole(t *testing.T) {
 
 // TestTheMutedTextIsTheOnlyLiteral records the one exception, so it stays one.
 //
-// mutedTextColour() returns --text-tertiary and --text-quaternary per appearance, deliberately
+// mutedTextColour() returns the tertiary and quaternary text inks per appearance, deliberately
 // not the platform's TextMuted: the card timestamp uses the warmer ink rather than the
 // framework's gray. This pair cannot come from a theme role -- the platform has no role that is
 // this value.

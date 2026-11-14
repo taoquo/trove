@@ -28,9 +28,9 @@ func (s *Shell) detailOverlay(c *ui.Context, theme *ui.Theme, rail RailTokens, e
 	if viewport := float32(s.windowWidth()); viewport > 0 && viewport*DetailDialogMixWidth < width {
 		width = viewport * DetailDialogMixWidth
 	}
-	// magpie's dialog: a 14-point radius, one --line hairline and a deep soft drop
-	// (`.action-confirm`, app.css:4038; `.modal .dialog`, :4063-4072). The gradient stays
-	// flat -- both ends are the same card colour -- because magpie draws panels flat.
+	// The dialog: a 14-point radius, one hairline and a deep soft drop.
+	// The gradient stays flat -- both ends are the same card colour -- because panels are
+	// drawn flat.
 	panel.Width(width).
 		MaxHeight(s.viewportHeight()*DetailDialogMixHigh).
 		Radius(RadiusDialog).
@@ -238,7 +238,7 @@ func (s *Shell) detailActions(c *ui.Context, theme *ui.Theme, rail RailTokens, r
 		copyLink = copyLink.Background(hoverColor(c, copyLink, "copy-bg",
 			ui.Transparent, theme.SurfaceHover, copyLink.Hovered()))
 		pop := copyLink.AnimateTo("copy-pop", popTarget, MotionPop)
-		// `.icon:active`'s .9, under the copy's own pop (app.css:4053).
+		// A pressed icon control's .9, under the copy's own pop.
 		copyLink = pressScale(copyLink, "press", PressScaleIcon, MotionPress)
 		copyLink.OnClick(func() { s.CopySourceLink(c) })
 		copyLink.Children(func() {

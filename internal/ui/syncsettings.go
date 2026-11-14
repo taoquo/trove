@@ -266,14 +266,13 @@ func HealthyTagCeiling() int { return engine.HealthyTagCountMax }
 
 // displayFace is the face headings are drawn in.
 //
-// magpie sets every surface -- headings included -- in the system UI face:
+// Every surface -- headings included -- uses the system UI face:
 //
-//	--font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif
-//	(app.css:41)
+//	-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif
 //
 // so this returns "" and the toolkit uses its own system face. A serif heading would depart
-// from magpie's look, which is what this shell follows. Both locales are the same face here:
-// magpie's Chinese is PingFang, which is what the system stack resolves to.
+// from that look, which is what this shell follows. Both locales are the same face here:
+// the Chinese face is PingFang, which is what the system stack resolves to.
 //
 // The empty string is deliberate, not a fallback: it is the toolkit's "system default".
 func (s *Shell) displayFace() string { return "" }

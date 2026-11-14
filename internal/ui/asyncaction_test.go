@@ -19,9 +19,9 @@ import (
 
 // A busy action, and a switch that fails to save.
 
-// TestABusyActionSpinsInItsGlyphSlotAndTakesNoClick: magpie's `.busy` controls keep their
-// label, turn a spinner where the glyph would be, dim, and take no pointer while the work
-// runs (app.css:289, :306, :3456).
+// TestABusyActionSpinsInItsGlyphSlotAndTakesNoClick: a busy control keeps its
+// label, turns a spinner where the glyph would be, dims, and takes no pointer while the work
+// runs.
 func TestABusyActionSpinsInItsGlyphSlotAndTakesNoClick(t *testing.T) {
 	theme := ui.LightTheme()
 	rail := Rail(AppearanceLight, false, false)
@@ -102,7 +102,7 @@ func (f *failingSettings) Set(ctx context.Context, key, value string, at time.Ti
 	return f.SettingsRepository.Set(ctx, key, value, at)
 }
 
-// TestAFailedSaveRollsTheSwitchBack: the switch moves before the write, as magpie's do, so
+// TestAFailedSaveRollsTheSwitchBack: the switch moves before the write, so
 // a write that fails has to put the panel back on what is stored. A panel that keeps the
 // switch claims a setting that was never saved.
 func TestAFailedSaveRollsTheSwitchBack(t *testing.T) {

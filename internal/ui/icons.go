@@ -65,24 +65,24 @@ func drawIcon(p iconPainter, name string, x, y, size float32, color ui.Color) {
 	p.Icon(svg, ui.Rect{X: x, Y: y, W: size, H: size}, color)
 }
 
-// IconChip draws a labelled action with a glyph: `.text.action`, with its icon slot filled.
+// IconChip draws a labelled action with a glyph: a text action with its icon slot filled.
 //
 // It was a flat glyph and a borderless platform button, which made it the one labelled control
 // in the shell that did not look like the others. The dotted call sites -- the graph's two
 // controls, the batch bar's delete, the suggestions panel's accept and reject -- are all
-// actions, and magpie draws an action one way.
+// actions, and every action is drawn one way.
 func IconChip(c *ui.Context, theme *ui.Theme, rail RailTokens, name, label string, onClick func()) {
 	textAction(c, theme, rail, textActionSpec{icon: name, label: label, onClick: onClick})
 }
 
 // IconToggle draws one of a pair of icon-only toggles, pressed or not.
 //
-// The active one takes the page's ink and the raised thumb, which is how `.seg button.on`
-// reads: colour is the whole state, with the shared thumb under the pair (app.css:265-273).
+// The active one takes the page's ink and the raised thumb: colour is the whole state,
+// with the shared thumb under the pair.
 func IconToggle(c *ui.Context, name, label string, active bool, theme *ui.Theme, onClick func()) {
-	// magpie's `.seg`: a 24-point button in a 6-point radius, the open one carrying the
-	// switch's thumb -- the card colour over the track, with a two-point drop
-	// (app.css:260-271, :2-8). The unselected glyph is --ctl-fg, the quiet control ink.
+	// The segmented control: a 24-point button in a 6-point radius, the open one carrying the
+	// switch's thumb -- the card colour over the track, with a two-point drop.
+	// The unselected glyph is the quiet control ink.
 	background, glyph := ui.Transparent, controlTextColour(theme.Dark)
 	if active {
 		background = segThumbFor(theme.Dark)
@@ -99,7 +99,7 @@ func IconToggle(c *ui.Context, name, label string, active bool, theme *ui.Theme,
 	} else if toggle.Hovered() {
 		toggle = toggle.Background(theme.SurfaceHover)
 	}
-	// `.seg button:active` gives to .96 over `.14s` (app.css:4052, :273).
+	// A segmented button gives to .96 over .14s when pressed.
 	toggle = pressScale(toggle, "press", PressScaleText, MotionPressSeg)
 	toggle.
 		Draw(func(p *ui.Painter, r ui.Rect) {
@@ -119,9 +119,8 @@ func min32(a, b float32) float32 {
 // SecondaryButton is a labelled action with an optional glyph: textAction with
 // its icon slot filled.
 //
-// magpie has one labelled button (.text.action, 27 high, 12px), so this is
-// that button; the name stays because its call sites are the ones that want
-// the glyph.
+// There is one labelled button (27 high, 12px), so this is that button;
+// the name stays because its call sites are the ones that want the glyph.
 func SecondaryButton(c *ui.Context, icon, label string, theme *ui.Theme, rail RailTokens, onClick func()) {
 	SecondaryButtonWhen(c, icon, label, theme, rail, true, onClick)
 }
@@ -147,8 +146,8 @@ func SecondaryButtonWhen(c *ui.Context, icon, label string, theme *ui.Theme, rai
 // query, so a new string without a reload leaves the old list on screen -- which
 // is exactly what the toolbar's search did until now.
 func searchField(c *ui.Context, theme *ui.Theme, rail RailTokens, query *string, placeholder, clearLabel string, handle *ui.Handle, onChange, onEscape func()) {
-	// A field in magpie's language: white ground, one hairline, a 7-point radius, a `0 9`
-	// inset and a 12px label (`.sess-filter` / `.set-q`, app.css:1654, :3750). Grow(1), not
+	// A field in the app's language: white ground, one hairline, a 7-point radius, a `0 9`
+	// inset and a 12px label. Grow(1), not
 	// FillWidth: the toolbar is a row, and a child that fills it pushes the controls beside
 	// it out of the way.
 	ui.Row(c).Grow(1).MinHeight(SearchFieldHeight).PaddingX(SearchFieldPadX).PaddingY(0).
@@ -204,7 +203,7 @@ func searchField(c *ui.Context, theme *ui.Theme, rail RailTokens, query *string,
 // ground they disappeared into the toolbar.
 func ToolbarAction(c *ui.Context, theme *ui.Theme, rail RailTokens, icon, label string, badge int, active bool, onClick func()) {
 	// One button for the whole shell: textAction. A toolbar's action may carry a glyph,
-	// a count and an on state; magpie changes that button's ground rather than drawing another.
+	// a count and an on state; the button changes its ground rather than drawing another.
 	textAction(c, theme, rail, textActionSpec{
 		icon: icon, label: label, badge: badge, active: active, onClick: onClick,
 	})
@@ -212,9 +211,9 @@ func ToolbarAction(c *ui.Context, theme *ui.Theme, rail RailTokens, icon, label 
 
 // ViewToggleGroup is the segmented control the two view buttons sit in.
 //
-// magpie's `.seg` is `padding: 2px; border-radius: 8px` with no background: "no grey track
-// behind the tabs: only the open one's thumb" (app.css:260-268). Its buttons are 24 high with
-// a 6 radius, and the open one carries --seg-edge (app.css:270).
+// The segmented control has 2-point padding and an 8-point radius with no background: "no
+// grey track behind the tabs: only the open one's thumb". Its buttons are 24 high with a
+// 6 radius, and the open one carries the segmented edge shadow.
 func ViewToggleGroup(c *ui.Context, children func()) {
 	ui.Row(c).GapX(2).Padding(2).Radius(RadiusMedium).Children(children)
 }
@@ -227,7 +226,7 @@ func ViewToggleGroup(c *ui.Context, children func()) {
 func IconButtonFlat(c *ui.Context, label string, theme *ui.Theme, rail RailTokens, size float32, onClick func()) {
 	button := ui.Box(c).Width(size).Height(size).Radius(6).Center()
 	button = button.Background(hoverColor(c, button, "flat-bg", ui.Transparent, theme.SurfaceHover, button.Hovered()))
-	// An icon control, so `.icon:active`'s .9 (app.css:4053).
+	// An icon control, so a pressed one shrinks to .9.
 	button = pressScale(button, "press", PressScaleIcon, MotionPress)
 	button.OnClick(onClick).Children(func() {
 		ui.Text(c, label).FontSize(SidebarHeadGlyph).TextColor(rail.TextTertiary)

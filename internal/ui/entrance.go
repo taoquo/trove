@@ -138,15 +138,14 @@ const (
 	// ToastDismissAfter is the component's own timeout, which clears the message
 	// whether or not anything else happens.
 	ToastDismissAfter = 2200 * time.Millisecond
-	// The other tones live longer, from magpie's status line: 8s for a failure and
+	// The other tones live longer, as the status line does: 8s for a failure and
 	// 3.5s for a state that is neither success nor failure, with 15s the ceiling for a
 	// long sentence at 80ms a character.
 	ToastWarnAfter   = 6000 * time.Millisecond
 	ToastErrorAfter  = 8000 * time.Millisecond
 	ToastMaxAfter    = 15000 * time.Millisecond
 	ToastReadPerChar = 80 * time.Millisecond
-	// ToastLiftBottom and ToastMaxWidth are the lifted pill's inset and cap
-	// (`.status.lift`, app.css:2242, :2255).
+	// ToastLiftBottom and ToastMaxWidth are the lifted pill's inset and cap.
 	ToastLiftBottom = 18
 	ToastMaxWidth   = 560
 )

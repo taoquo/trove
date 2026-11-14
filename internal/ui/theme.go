@@ -2,126 +2,122 @@ package ui
 
 import "github.com/egoist/mygo/ui"
 
-// The Magpie palette.
+// The palette.
 //
-// magpie's visual language is a cool grey canvas, white cards with a hairline edge, one
+// The visual language is a cool grey canvas, white cards with a hairline edge, one
 // indigo accent, and a compact system-sans type scale.
 //
-// The authority for the values below is magpie's own stylesheet, internal/gui/assets/app.css
-// in github.com/yetone/magpie (read at commit 2df5d40). Each value names the custom property
-// it comes from; the `:root` block is lines 2-47 and `:root[data-theme="dark"]` is
-// lines 49-77.
+// The light and dark palettes below are the two sources.
 //
-// The palette is used as a whole: every surface comes from magpie, because mixing it with
-// another palette would have produced a third thing that is neither.
+// The palette is used as a whole: every surface comes from these tokens, because mixing it
+// with another palette would have produced a third thing that is neither.
 
-// Light tokens, from `:root` in magpie's app.css.
+// Light tokens.
 var (
-	lightPageBg = ui.Hex("#f4f4f6") // --bg
-	// The results ground is the page: magpie puts every page directly on --bg and draws a
-	// card only where there is a panel. lightMainBg is kept as a second name because call
+	lightPageBg = ui.Hex("#f4f4f6") // the page ground
+	// The results ground is the page: every page sits directly on the page ground and draws
+	// a card only where there is a panel. lightMainBg is kept as a second name because call
 	// sites name it.
-	lightMainBg         = ui.Hex("#f4f4f6") // --bg
-	lightSideBg         = ui.Hex("#f4f4f6") // --bg (the sidebar sits on the page)
-	lightSurfaceBg      = ui.Hex("#ffffff") // --card
-	lightSurfaceAlt     = ui.Hex("#f9f9fb") // --card-2 (an expanded editor, a raised row)
-	lightRailBg         = ui.Hex("#f4f4f6") // --bg
-	lightRailBorder     = ui.Hex("#e3e3e8") // --line
-	lightBorderSubtle   = ui.Hex("#ececf0") // --line-2
-	lightSurfaceMuted   = ui.Hex("#f1f1f4") // --pill
-	lightTextStrong     = ui.Hex("#1c1c21") // --fg
-	lightTextMuted      = ui.Hex("#4b4b53") // --fg-2
-	lightTextTertiary   = ui.Hex("#85858d") // --muted
-	lightTextQuater     = ui.Hex("#b9b9c2") // --faint
-	lightBadgeBg        = ui.Hex("#f1f1f4") // --pill
-	lightBadgeFg        = ui.Hex("#4b4b53") // --fg-2
-	lightPanelStrong    = ui.Hex("#ffffff") // --card
-	lightBtnHover       = ui.Hex("#e9e9ee") // --pill-hover
-	lightFieldFocus     = ui.Hex("#ffffff") // --card; a field keeps its ground and gains a ring
-	lightOptionsPage    = ui.Hex("#f4f4f6") // --bg
-	lightOptionsSurf    = ui.Hex("#ffffff") // --card
-	lightOptionsBorder  = ui.Hex("#e3e3e8") // --line
-	lightResultsSurface = ui.Hex("#f4f4f6") // --bg
+	lightMainBg         = ui.Hex("#f4f4f6") // the page ground
+	lightSideBg         = ui.Hex("#f4f4f6") // the page ground (the sidebar sits on the page)
+	lightSurfaceBg      = ui.Hex("#ffffff") // the card ground
+	lightSurfaceAlt     = ui.Hex("#f9f9fb") // an expanded editor or a raised row
+	lightRailBg         = ui.Hex("#f4f4f6") // the page ground
+	lightRailBorder     = ui.Hex("#e3e3e8") // the hairline
+	lightBorderSubtle   = ui.Hex("#ececf0") // the subtle hairline
+	lightSurfaceMuted   = ui.Hex("#f1f1f4") // the tray ground
+	lightTextStrong     = ui.Hex("#1c1c21") // the strong ink
+	lightTextMuted      = ui.Hex("#4b4b53") // the muted ink
+	lightTextTertiary   = ui.Hex("#85858d") // the tertiary ink
+	lightTextQuater     = ui.Hex("#b9b9c2") // the faint ink
+	lightBadgeBg        = ui.Hex("#f1f1f4") // the tray ground
+	lightBadgeFg        = ui.Hex("#4b4b53") // the muted ink
+	lightPanelStrong    = ui.Hex("#ffffff") // the card ground
+	lightBtnHover       = ui.Hex("#e9e9ee") // the pressed ground
+	lightFieldFocus     = ui.Hex("#ffffff") // the card ground; a field keeps its ground and gains a ring
+	lightOptionsPage    = ui.Hex("#f4f4f6") // the page ground
+	lightOptionsSurf    = ui.Hex("#ffffff") // the card ground
+	lightOptionsBorder  = ui.Hex("#e3e3e8") // the hairline
+	lightResultsSurface = ui.Hex("#f4f4f6") // the page ground
 
-	// A selected row is --sel with an accent-tinted edge. magpie has no border on its
-	// selected list rows; the 0.55 mix is this shell's, for a native selection that has to
+	// A selected row is the selection ground with an accent-tinted edge. The selected list rows carry no
+	// border; the 0.55 mix is this shell's, for a native selection that has to
 	// read without a hover state.
-	lightSelectedBg     = ui.Hex("#ecebfb") // --sel
+	lightSelectedBg     = ui.Hex("#ecebfb") // the selection ground
 	lightSelectedBorder = ui.Hex("#a5a0f2") // 55% #4f46e5 over #ffffff
-	lightScrollThumb    = ui.Hex("#b9b9c2") // --faint
+	lightScrollThumb    = ui.Hex("#b9b9c2") // the faint ink
 
-	// A tag is a pill: --pill ground, --muted text. magpie's badges and chips are grey until
+	// A tag is a pill: the tray ground, the muted ink. Badges and chips are grey until
 	// they are interactive.
-	lightTagBg     = ui.Hex("#f1f1f4") // --pill
-	lightCardTagBg = ui.Hex("#f1f1f4") // --pill
+	lightTagBg     = ui.Hex("#f1f1f4") // the tray ground
+	lightCardTagBg = ui.Hex("#f1f1f4") // the tray ground
 
 	// detailDoneWarm is kept for the one reader that names it (the detail's done button) and
 	// points at the accent.
 	detailDoneWarm = ui.Hex("#4f46e5")
 )
 
-// Dark tokens, from `:root[data-theme="dark"]` in magpie's app.css.
+// Dark tokens.
 var (
-	darkPageBg         = ui.Hex("#1a1a1e") // --bg
-	darkMainBg         = ui.Hex("#1a1a1e") // --bg
-	darkSideBg         = ui.Hex("#1a1a1e") // --bg
-	darkSurfaceBg      = ui.Hex("#232327") // --card
-	darkSurfaceAlt     = ui.Hex("#1f1f23") // --card-2
-	darkRailBorder     = ui.Hex("#333339") // --line
-	darkSubtleLine     = ui.Hex("#2c2c32") // --line-2
-	darkSurfaceMuted   = ui.Hex("#2d2d33") // --pill
-	darkTextStrong     = ui.Hex("#ededf1") // --fg
-	darkTextMuted      = ui.Hex("#b9b9c1") // --fg-2
-	darkTextTertiary   = ui.Hex("#8b8b94") // --muted
-	darkTextQuater     = ui.Hex("#56565f") // --faint
-	darkBadgeBg        = ui.Hex("#2d2d33") // --pill
-	darkBadgeFg        = ui.Hex("#b9b9c1") // --fg-2
-	darkPanelStrong    = ui.Hex("#232327") // --card
-	darkBtnHover       = ui.Hex("#36363d") // --pill-hover
-	darkFieldFocus     = ui.Hex("#232327") // --card
-	darkOptionsPage    = ui.Hex("#1a1a1e") // --bg
-	darkOptionsSurf    = ui.Hex("#232327") // --card
-	darkOptionsBorder  = ui.Hex("#333339") // --line
-	darkResultsSurface = ui.Hex("#1a1a1e") // --bg
+	darkPageBg         = ui.Hex("#1a1a1e") // the page ground
+	darkMainBg         = ui.Hex("#1a1a1e") // the page ground
+	darkSideBg         = ui.Hex("#1a1a1e") // the page ground
+	darkSurfaceBg      = ui.Hex("#232327") // the card ground
+	darkSurfaceAlt     = ui.Hex("#1f1f23") // an expanded editor or a raised row
+	darkRailBorder     = ui.Hex("#333339") // the hairline
+	darkSubtleLine     = ui.Hex("#2c2c32") // the subtle hairline
+	darkSurfaceMuted   = ui.Hex("#2d2d33") // the tray ground
+	darkTextStrong     = ui.Hex("#ededf1") // the strong ink
+	darkTextMuted      = ui.Hex("#b9b9c1") // the muted ink
+	darkTextTertiary   = ui.Hex("#8b8b94") // the tertiary ink
+	darkTextQuater     = ui.Hex("#56565f") // the faint ink
+	darkBadgeBg        = ui.Hex("#2d2d33") // the tray ground
+	darkBadgeFg        = ui.Hex("#b9b9c1") // the muted ink
+	darkPanelStrong    = ui.Hex("#232327") // the card ground
+	darkBtnHover       = ui.Hex("#36363d") // the pressed ground
+	darkFieldFocus     = ui.Hex("#232327") // the card ground
+	darkOptionsPage    = ui.Hex("#1a1a1e") // the page ground
+	darkOptionsSurf    = ui.Hex("#232327") // the card ground
+	darkOptionsBorder  = ui.Hex("#333339") // the hairline
+	darkResultsSurface = ui.Hex("#1a1a1e") // the page ground
 
-	darkSelectedBg = ui.Hex("#33345a") // --sel
+	darkSelectedBg = ui.Hex("#33345a") // the selection ground
 	// 55% #a5b4fc over #232327.
 	darkSelectedBorder = ui.Hex("#6c74a6")
-	darkScrollThumb    = ui.Hex("#56565f") // --faint
+	darkScrollThumb    = ui.Hex("#56565f") // the faint ink
 
-	darkTagBg     = ui.Hex("#2d2d33") // --pill
-	darkCardTagBg = ui.Hex("#2d2d33") // --pill
+	darkTagBg     = ui.Hex("#2d2d33") // the tray ground
+	darkCardTagBg = ui.Hex("#2d2d33") // the tray ground
 
 	darkOverlay = ui.RGBA(0, 0, 0, 0.55)
 
-	// --ctl-fg is a control's quiet text: darker than --muted so it clears 4.5:1 on every
+	// The quiet control ink is a control's quiet text: darker than the muted ink so it clears 4.5:1 on every
 	// surface it sits on. The view switch's unselected tabs and the toolbar's labelled
 	// actions use it.
 	lightControlText = ui.Hex("#63636b")
 	darkControlText  = ui.Hex("#a1a1aa")
 )
 
-// The segmented control's thumb, from --seg-thumb.
+// The segmented control's thumb.
 //
-// magpie's view switch has no track behind the tabs: only the open tab's thumb, which is
-// --card in the light theme and a low-alpha white in the dark one (`.seg { padding: 2px;
-// border-radius: 8px }` with no background, app.css:263-268).
+// The view switch has no track behind the tabs: only the open tab's thumb, which is the
+// card ground in the light theme and a low-alpha white in the dark one.
 var (
 	lightSegThumb = ui.Hex("#ffffff")
 	darkSegThumb  = ui.RGBA(255, 255, 255, 0.15)
 )
 
-// Status colours, from the same two blocks.
+// Status colours, from the same two palettes.
 var (
-	lightSuccess = ui.Hex("#189a58") // --green
-	lightWarning = ui.Hex("#b45309") // --amber
-	lightDanger  = ui.Hex("#d64545") // --red
+	lightSuccess = ui.Hex("#189a58") // the success ink
+	lightWarning = ui.Hex("#b45309") // the warning ink
+	lightDanger  = ui.Hex("#d64545") // the danger ink
 
-	darkSuccess = ui.Hex("#6fd99b") // --green
-	darkWarning = ui.Hex("#f2b544") // --amber
-	darkDanger  = ui.Hex("#f28b82") // --red
+	darkSuccess = ui.Hex("#6fd99b") // the success ink
+	darkWarning = ui.Hex("#f2b544") // the warning ink
+	darkDanger  = ui.Hex("#f28b82") // the danger ink
 
-	// The soft grounds a badge sits on: --green-soft / --amber-soft / --red-soft.
+	// The soft grounds a badge sits on: the success, warning and danger soft grounds.
 	lightSuccessFill = ui.Hex("#e4f6ec")
 	lightWarningFill = ui.Hex("#fbf0df")
 	lightDangerFill  = ui.Hex("#fbe9e9")
@@ -130,16 +126,16 @@ var (
 	darkDangerFill   = ui.Hex("#45272a")
 )
 
-// The accent, from --accent / --accent-soft / --accent-fg.
+// The accent, with its soft and foreground steps.
 //
-// magpie has no hover token for the accent: its primary button brightens by 8% and its
+// There is no hover token for the accent: the primary button brightens by 8% and the
 // links do not change. The two hovers below are that 8% adjustment evaluated, so a hovered
-// primary button moves the way magpie's does without inventing a second hue.
+// primary button moves that way without inventing a second hue.
 var (
-	lightAccent      = ui.Hex("#4f46e5") // --accent
-	lightAccentHover = ui.Hex("#4338ca") // --accent at 92% brightness (filter: brightness(1.08) is lighter; this is the pressed step)
-	lightAccentSoft  = ui.Hex("#eeedfd") // --accent-soft
-	lightAccentFg    = ui.Hex("#ffffff") // --accent-fg
+	lightAccent      = ui.Hex("#4f46e5") // the accent
+	lightAccentHover = ui.Hex("#4338ca") // the accent at 92% brightness (a brightness of 1.08 would be lighter; this is the pressed step)
+	lightAccentSoft  = ui.Hex("#eeedfd") // the accent's soft ground
+	lightAccentFg    = ui.Hex("#ffffff") // the accent's foreground
 
 	darkAccent      = ui.Hex("#a5b4fc")
 	darkAccentHover = ui.Hex("#c7d2fe")
@@ -156,8 +152,8 @@ type StatusBadgeTokens struct {
 
 // StatusBadge returns the pill colours for a status.
 //
-// magpie draws a state as a 6px dot plus its word, and a soft ground when the state is the
-// subject of a card (--green-soft and friends). The pill here keeps both: the soft ground,
+// A state is drawn as a 6px dot plus its word, and a soft ground when the state is the
+// subject of a card (the status soft grounds and friends). The pill here keeps both: the soft ground,
 // the dot's colour as its text, and a hairline of the same colour at 30%.
 func StatusBadge(status string, appearance Appearance, systemDark bool, accent ui.Color) StatusBadgeTokens {
 	dark := IsDark(appearance, systemDark)
@@ -189,7 +185,7 @@ func StatusBadge(status string, appearance Appearance, systemDark bool, accent u
 	}
 }
 
-// The status names the stylesheet styles. A sync run's own vocabulary maps onto
+// The status names the interface uses. A sync run's own vocabulary maps onto
 // these at the call site.
 const (
 	StatusIdle    = "idle"
@@ -204,7 +200,7 @@ const (
 // AllStatuses is the whitelist, in display order.
 var AllStatuses = []string{StatusIdle, StatusRunning, StatusSuccess, StatusPartial, StatusError}
 
-// StatusDotSize is the 7px dot magpie puts before a state (`.side-gw > i`, app.css:515).
+// StatusDotSize is the 7px dot before a state.
 const StatusDotSize = 7
 
 // Appearance is the user's theme preference.
@@ -269,11 +265,11 @@ func folioLight() *ui.Theme { return folioTheme(false) }
 
 func folioDark() *ui.Theme { return folioTheme(true) }
 
-// folioTheme maps magpie's tokens onto the toolkit's roles.
+// folioTheme maps the palette's tokens onto the toolkit's roles.
 //
-// The toolkit's roles are coarser than the stylesheet's tokens -- one Surface where magpie
-// has --card and --card-2, one SurfaceHover where it has --pill and --pill-hover -- so the
-// mapping is stated once here rather than at each call site.
+// The toolkit's roles are coarser than the palette's tokens -- one Surface where the palette
+// has the card and raised-row grounds, one SurfaceHover where it has the tray and pressed
+// grounds -- so the mapping is stated once here rather than at each call site.
 func folioTheme(dark bool) *ui.Theme {
 	var theme *ui.Theme
 	if dark {
@@ -331,17 +327,17 @@ type RailTokens struct {
 	// Sidebar, Results and Inspector are the three columns.
 	Sidebar ui.Color
 	Results ui.Color
-	// InspectorTop and InspectorBottom are the detail panel's gradient. magpie draws panels
+	// InspectorTop and InspectorBottom are the detail panel's gradient. The app draws panels
 	// flat, so both ends are the same colour; the fields stay because a gradient call reads
 	// them and a future layout may want one.
 	InspectorTop    ui.Color
 	InspectorBottom ui.Color
 	Inspector       ui.Color
-	// CardTagBg and CardTagText are a tag pill: --pill ground, --muted text.
+	// CardTagBg and CardTagText are a tag pill: the tray ground, the muted ink.
 	CardTagBg   ui.Color
 	CardTagText ui.Color
-	// ChipBg, ChipBorder and ChipText are an interactive chip: --card ground, --line edge,
-	// --fg-2 text, turning accent-soft with accent text when on.
+	// ChipBg, ChipBorder and ChipText are an interactive chip: the card ground, a hairline
+	// edge, the muted ink, turning accent-soft with accent text when on.
 	ChipBg     ui.Color
 	ChipBorder ui.Color
 	ChipText   ui.Color
@@ -351,7 +347,7 @@ type RailTokens struct {
 	PillText     ui.Color
 	CardAvatarBg ui.Color
 	HeroAvatarBg ui.Color
-	// CardBorder is the result card's hairline: --line.
+	// CardBorder is the result card's hairline.
 	CardBorder ui.Color
 	// RailLine separates the columns; SubtleLine separates rows inside them.
 	RailLine   ui.Color
@@ -360,7 +356,7 @@ type RailTokens struct {
 	PanelStrong ui.Color
 	// Muted is the recessed surface: secondary buttons, hovered rows.
 	Muted ui.Color
-	// Accent is --accent, the progress fill and the primary action colour.
+	// Accent is the accent, the progress fill and the primary action colour.
 	Accent ui.Color
 	// Badge is the accent badge.
 	BadgeBg   ui.Color
@@ -379,7 +375,7 @@ type RailTokens struct {
 
 // Rail returns the structural colours for an appearance.
 //
-// The zh locale used to select a serif stack; magpie sets both locales in the system sans,
+// The zh locale used to select a serif stack; both locales use the system sans here,
 // so the argument stays for the call sites and changes nothing.
 func Rail(appearance Appearance, systemDark bool, chineseLocale bool) RailTokens {
 	tokens := railLight()
@@ -427,7 +423,7 @@ func mutedTextColour(dark bool) ui.Color {
 	return lightTextTertiary
 }
 
-// faintTextColour is --faint: the third text tier, for standing facts that must stay
+// faintTextColour is the faint ink: the third text tier, for standing facts that must stay
 // readable. It was mapped to theme.Border, which is a line colour and made the toolbar's
 // last-sync sentence nearly invisible on the page.
 func faintTextColour(dark bool) ui.Color {
@@ -437,7 +433,7 @@ func faintTextColour(dark bool) ui.Color {
 	return lightTextQuater
 }
 
-// controlTextColour is --ctl-fg, the ink a quiet control uses.
+// controlTextColour is the quiet control ink.
 func controlTextColour(dark bool) ui.Color {
 	if dark {
 		return darkControlText
@@ -452,7 +448,7 @@ func segThumbFor(dark bool) ui.Color {
 	return lightSegThumb
 }
 
-// segShadowFor is the drop half of --seg-edge.
+// segShadowFor is the drop half of the segmented edge.
 func segShadowFor(dark bool) ui.Color {
 	if dark {
 		return ui.RGBA(0, 0, 0, 0.30)
@@ -460,11 +456,11 @@ func segShadowFor(dark bool) ui.Color {
 	return ui.RGBA(0, 0, 0, 0.14)
 }
 
-// segEdge is --seg-edge: a one-point drop and a half-point ring, in that order.
+// segEdge is the segmented edge: a one-point drop and a half-point ring, in that order.
 //
 // Light: `0 1px 2px rgba(0,0,0,.14), 0 0 0 .5px rgba(0,0,0,.08)`. Dark: the drop, plus an
 // inset highlight MyGo cannot draw -- an inner shadow would need a blend the painter has no
-// equivalent for, so the dark thumb keeps its drop alone (app.css:12, :57).
+// equivalent for, so the dark thumb keeps its drop alone.
 func segEdge(el ui.Element, dark bool) ui.Element {
 	el = el.Shadow(0, 1, 2, 0, segShadowFor(dark))
 	if !dark {
@@ -473,7 +469,7 @@ func segEdge(el ui.Element, dark bool) ui.Element {
 	return el
 }
 
-// popoverShadow is magpie's --shadow, the drop under `.pop` (app.css:40, :77-78):
+// popoverShadow is the palette's popover shadow, the drop under a popover:
 //
 //	light: 0 16px 44px rgba(20,22,30,.16), 0 2px 8px rgba(20,22,30,.06),
 //	       0 0 0 .5px rgba(20,22,30,.1)

@@ -24,11 +24,11 @@ func IconOnlySized(c *ui.Context, name, tooltip string, theme *ui.Theme, rail Ra
 	// unreachable from the keyboard. A focusable clickable takes Enter and Space.
 	box := ui.Box(c).Width(size).Height(size).Focusable().
 		Radius(RadiusMedium)
-	// The fill eases in and out: magpie gives `.icon` a 150ms background transition
-	// (app.css:297), and a chip that appears the instant the pointer crosses it is the
+	// The fill eases in and out: an icon button gives its background a 150ms transition,
+	// and a chip that appears the instant the pointer crosses it is the
 	// difference between a surface that reacts and a surface that flickers.
 	box = box.Background(hoverColor(c, box, "icon-bg", ui.Transparent, theme.SurfaceHover, box.Hovered()))
-	// `.icon:active` gives to .9 over .16s (app.css:4053, :4048-4052).
+	// An icon button gives to .9 over .16s when pressed.
 	box = pressScale(box, "press", PressScaleIcon, MotionPress)
 	// The name is a Label, not just a tooltip: an accessible name has to sit beside the
 	// hover text. A tooltip alone is a hover hint -- the tester's Find, which answers

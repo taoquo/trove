@@ -23,15 +23,12 @@ HISTORICAL = set()
 # is now.
 #
 # Files this repository does not contain but a doc legitimately cites: MyGo's own sources,
-# which live in the module cache, and magpie's shell, which is the pinned visual and interaction
-# reference (docs/design.md) and lives only in github.com/yetone/magpie. An unresolved
+# which live in the module cache. An unresolved
 # name that is not here is reported, because otherwise "cite a file that does not exist" would
 # pass silently -- exactly what a silent skip buys. For these the trade runs the other way: the
-# line numbers cannot be checked here, so each doc pins the commit instead, and every citation is
-# one line rather than a range the pattern below would silently drop. A `.js`/`.html` citation is
-# admitted for the same reason a `.css` one is: magpie's behaviour is recorded in app.js and its
-# surfaces in index.html, and a doc that could not name them would be citing from memory.
-EXTERNAL = {"api_gen.go", "app.css", "app.js", "base.go", "client.js", "collapsible.go", "element.go", "feedback.go", "index.html", "menu.go", "paint.go", "runtime.go", "scope.go", "window.go"}
+# line numbers cannot be checked here, so every citation is
+# one line rather than a range the pattern below would silently drop.
+EXTERNAL = {"api_gen.go", "base.go", "collapsible.go", "element.go", "feedback.go", "menu.go", "paint.go", "runtime.go", "scope.go", "window.go"}
 # `shell.go:4971`, `metrics.go:24`, `theme.go:175`.
 REF = re.compile(r"`([A-Za-z0-9_./-]+\.go):(\d+)(?:/(\d+))?`")
 # Where a cited source file might live, since a doc names it by basename. These are resolved

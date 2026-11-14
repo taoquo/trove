@@ -152,7 +152,7 @@ func (s *Shell) addRow(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 		return
 	}
 	// The same field-and-action row as the toolbar: 28-point inputs with one hairline and a
-	// compact action, on the page ground (app.css:3309-3316, :2151-2157).
+	// compact action, on the page ground.
 	//
 	// Two blank boxes are not a form: each field says what it takes, the link field takes
 	// the cursor when the row opens, and Enter submits from either one -- the same rule the
@@ -189,7 +189,7 @@ func (s *Shell) addRow(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 	})
 	if s.state.AddProblem != "" {
 		// A refused add is an error, not an accent: the field borders and the settings
-		// page's invalid values use --red.
+		// page's invalid values use the danger ink.
 		ui.Text(c, s.state.AddProblem).FontSize(FontSmall).TextColor(theme.Danger)
 	}
 }
@@ -206,8 +206,8 @@ func (s *Shell) batchBar(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 		return
 	}
 
-	// A card row, as magpie draws every standing bar: white, one hairline, a 12-point
-	// radius (`.list`, app.css:633).
+	// A card row, as every standing bar is drawn: white, one hairline, a 12-point
+	// radius.
 	ui.Column(c).FillWidth().Padding(12, 14).GapY(SpaceBase).
 		Radius(RadiusResultCard).Border(1, rail.CardBorder).Background(theme.Surface).
 		Children(func() {
@@ -332,9 +332,8 @@ func (s *Shell) toolbar(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 	// it, so at 8 the bar sits 2 points high and everything below it rides up with it.
 	ui.Column(c).FillWidth().Padding(0, 0, ResultsHeaderPadBottom, 0).GapY(SpaceBase).
 		Background(rail.Results).Children(func() {
-		// magpie puts the page's controls straight on the page ground: no panel, no
-		// outline -- only the search field and the labelled actions carry an edge
-		// (app.css:869-922, :2135-2154).
+		// The page's controls sit straight on the page ground: no panel, no
+		// outline -- only the search field and the labelled actions carry an edge.
 		ui.Row(c).FillWidth().GapX(SpaceBase).Children(func() {
 			searchField(c, theme, rail, &s.state.Query,
 				s.t().T(i18n.SearchPlaceholder), s.t().T(i18n.ActionClear), &s.searchField,
@@ -375,10 +374,10 @@ func (s *Shell) toolbar(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 			}
 
 			// The toolbar action is an icon and a word, not an icon with a tooltip. The
-			// reference shows "筛选" beside the funnel and "最近保存" beside the arrows; this
+			// intended design shows "筛选" beside the funnel and "最近保存" beside the arrows; this
 			// build drew both as bare glyphs, so the only way to know what they were was to
 			// hover one at a time.
-			// PopoverBase rather than Popover: the panel's look is magpie's `.pop`, and the
+			// PopoverBase rather than Popover: the panel's look is the pop card, and the
 			// toolkit's own panel is a different shape.
 			trigger := ui.Row(c).GapX(SpaceSmall).Children(func() {
 				// The toolbar action, with a badge beside the word when filters are on.

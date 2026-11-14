@@ -1169,7 +1169,7 @@ func TestTheFilterPopover(t *testing.T) {
 	shell.ToggleFilterPopover()
 	tester.Frame()
 
-	// Opening starts `.pop`'s entrance clock; reopening restarts it, so a panel closed and
+	// Opening starts the popover's entrance clock; reopening restarts it, so a panel closed and
 	// opened again is not already at rest.
 	openedAt := shell.state.FilterPopoverOpenedAt
 	if openedAt.IsZero() {
@@ -1198,13 +1198,13 @@ func TestTheFilterPopover(t *testing.T) {
 	}
 }
 
-// TestTheFilterPopoverTakesMagpiePanelShape pins the panel's geometry.
+// TestTheFilterPopoverTakesThePanelShape pins the panel's geometry.
 //
-// magpie's `.pop` is a card with an 11-point radius (app.css:2270-2280) and the filter
-// variant is `.pop.proto-menu`: 262 wide with a 4-point inset (app.css:3024). The shell used
+// The popover is a card with an 11-point radius and the filter
+// variant is 262 wide with a 4-point inset. The shell used
 // to take ui.Popover's defaults instead -- theme.Radius+2 and a min width of the trigger --
 // which made the panel as narrow as the "Filters" button and almost square-cornered.
-func TestTheFilterPopoverTakesMagpiePanelShape(t *testing.T) {
+func TestTheFilterPopoverTakesThePanelShape(t *testing.T) {
 	shell, db := newShell(t)
 	ctx := context.Background()
 	seed(t, db, "1", "ada", "a post", clockBase)
@@ -1367,7 +1367,7 @@ func TestTheSettingsDataSection(t *testing.T) {
 	tester := ui.NewTester(shell.View, 1180, 760)
 	tester.Frame()
 
-	// The section draws as magpie's cards: a --muted label names it, and each row names
+	// The section draws as cards: a muted label names it, and each row names
 	// the thing while its action carries the verb.
 	if !tester.HasText(strings.ToUpper(shell.t().T(i18n.SettingsData))) {
 		t.Errorf("the data section is missing its label; texts: %q", tester.Texts())

@@ -52,11 +52,10 @@ ui        MyGo 工作区，只和 usecase 说话
 
 同步不会把本地已删除的书签带回来：删除会写进 `deleted_bookmarks`，导入时按墓碑跳过。
 
-## 视觉参考
+## 设计契约
 
-视觉与交互目标是 [magpie](https://github.com/yetone/magpie)，pin 在 `docs/design.md`。
-token、组件和状态映射也在那里；新增或改名绘制方法必须在同一个改动里更新
-`docs/ui-surface-index.md`。
+视觉与交互的契约在 `docs/design.md`：token、组件和状态都在那里，且都是本项目的决定。
+新增或改名绘制方法必须在同一个改动里更新 `docs/ui-surface-index.md`。
 
 ## 检查器
 

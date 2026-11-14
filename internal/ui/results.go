@@ -10,7 +10,7 @@ import (
 )
 
 // resultsPage draws the middle column with the page's entrance, which is what makes a
-// navigation read as a change of page rather than a repaint (motion.go, magpie's `view-in`).
+// navigation read as a change of page rather than a repaint (motion.go's page entrance).
 //
 // The wrapper is always there, even at rest: taking it away when the animation ended would
 // move every child up one level in the element tree, which is how a list loses its scroll
@@ -34,8 +34,8 @@ func (s *Shell) resultsPage(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 // pageInset is the page's horizontal padding: 16 points, and more when the window is wide
 // enough to centre a 1200-point column.
 //
-// magpie's rule is `padding-left: max(16px, calc(50% - 600px))` on the view (app.css:609), so
-// the reading measure does not stretch edge to edge on a large display. The 50% is of the
+// The page's inset is `padding-left: max(16px, calc(50% - 600px))`, so the reading measure
+// does not stretch edge to edge on a large display. The 50% is of the
 // pane the page occupies, which is the window minus the sidebar; c.Size() is the window's
 // content, not this pane (mygo's Context.Size).
 func (s *Shell) pageInset(c *ui.Context) float32 {
@@ -66,10 +66,10 @@ func (s *Shell) results(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 		return
 	}
 
-	// One inset for the whole page: `body.window .view { padding: 2px ... 8px 16px }` and the
-	// centred column's `max(16px, calc(50% - 600px))` (app.css:602, :609). The blocks inside
-	// carry none of their own. The page's name is not here: magpie keeps the reader's place in
-	// the title bar's crumb, so the toolbar starts at the top of the page.
+	// One inset for the whole page: 2 top, 8 bottom, 16 sides, and the centred column's
+	// max(16, 50% - 600). The blocks inside
+	// carry none of their own. The page's name is not here: the reader's place lives in the
+	// title bar's crumb, so the toolbar starts at the top of the page.
 	inset := s.pageInset(c)
 	ui.Column(c).Fill().FillHeight().Background(rail.Results).
 		Padding(ResultsPadTop, inset, ResultsPadBottom, inset).Children(func() {
@@ -259,18 +259,17 @@ type stateCard struct {
 // stateCard is where "nothing here" and "that failed" are drawn.
 //
 // "There are no bookmarks" and "the filter matched none" are different states with different
-// advice. magpie's empty state is two lines of words and, at most, one quiet action, drawn in
-// the page's flow (`.empty-state`, app.css:651-653).
+// advice. The empty state is two lines of words and, at most, one quiet action, drawn in the
+// page's flow.
 func (s *Shell) stateCard(c *ui.Context, theme *ui.Theme, rail RailTokens, card stateCard) {
-	// In the flow, directly under the toolbar: magpie's empty state is part of the page, not
+	// In the flow, directly under the toolbar: the empty state is part of the page, not
 	// a block floated to the middle of the viewport, so the advice reads where the list would
 	// have started. The inner column centres its own lines horizontally. With Fill().Center()
 	// on the outer column the three parts spread across the whole viewport, which left the
 	// title and the advice hundreds of points apart.
 	ui.Column(c).FillWidth().Children(func() {
-		// magpie's empty state is words only: padding 36/20, the title in the page's ink at
-		// weight 500, the advice in --muted, no icon plate competing with the copy
-		// (` .empty-state` and ` .empty-state b`, app.css:651-653).
+		// The empty state is words only: padding 36/20, the title in the page's ink at
+		// weight 500, the advice in the muted ink, no icon plate competing with the copy.
 		ui.Column(c).Center().GapY(SpaceSmall).Padding(36, 20).Children(func() {
 			colour := theme.Text
 			if card.failed {

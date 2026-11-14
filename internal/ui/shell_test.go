@@ -362,27 +362,25 @@ func TestShellEmptyStates(t *testing.T) {
 	}
 }
 
-// TestTheThemeUsesMagpiesAccent pins the accent to magpie's indigo.
+// TestTheThemeUsesTheAccent pins the accent to the project's indigo.
 //
-// magpie's accent is one indigo: #4f46e5 on white, #a5b4fc on the dark ground. It is the
+// The accent is one indigo: #4f46e5 on white, #a5b4fc on the dark ground. It is the
 // primary button, every focus ring and every selected row, so it is the single most visible
 // colour in the window.
 //
-//	--accent: #4f46e5;  --accent-soft: #eeedfd;  --accent-fg: #ffffff
-//	:root[data-theme="dark"] { --accent: #a5b4fc }
-//
-// (internal/gui/assets/app.css:23-25, :62-64 of github.com/yetone/magpie at 2df5d40.)
-func TestTheThemeUsesMagpiesAccent(t *testing.T) {
+//	light  accent #4f46e5, soft #eeedfd, foreground #ffffff
+//	dark   accent #a5b4fc
+func TestTheThemeUsesTheAccent(t *testing.T) {
 	light := FolioTheme(AppearanceLight, false)
 	if want := ui.Hex("#4f46e5"); light.Accent != want {
-		t.Errorf("light accent = %v, want magpie's %v", light.Accent, want)
+		t.Errorf("light accent = %v, want the accent %v", light.Accent, want)
 	}
 	if want := ui.Hex("#4338ca"); light.AccentHover != want {
 		t.Errorf("light accent hover = %v, want the pressed step %v", light.AccentHover, want)
 	}
 	dark := FolioTheme(AppearanceDark, false)
 	if want := ui.Hex("#a5b4fc"); dark.Accent != want {
-		t.Errorf("dark accent = %v, want magpie's %v", dark.Accent, want)
+		t.Errorf("dark accent = %v, want the accent %v", dark.Accent, want)
 	}
 
 	// And it is deliberately not the platform's, so the difference is visible rather than asserted
@@ -431,11 +429,10 @@ func TestRailTokensDifferByAppearance(t *testing.T) {
 	}
 
 	// The inspector's separation from the results column is the rail line, not a
-	// fill. The stylesheet gives --main-bg and --surface-bg the same value in the
-	// light block, so a test demanding different fills would be demanding a
-	// deviation from the stylesheet rather than fidelity to it.
+	// fill. The page ground and the card ground have the same value in the light theme,
+	// so a test demanding different fills would be demanding a deviation.
 	if light.Inspector != light.Results {
-		t.Log("the inspector has its own fill; the stylesheet gives it one in this appearance")
+		t.Log("the inspector has its own fill; the palette gives it one in this appearance")
 	}
 	if light.RailLine == light.Results {
 		t.Error("the rail line must be visible against the results surface, " +
@@ -456,13 +453,13 @@ func TestTheRailTokensComeFromTheTheme(t *testing.T) {
 		dark  bool
 		check func(RailTokens, *ui.Theme) error
 	}{
-		// magpie's sidebar is the page ground with one hairline down its edge, not a panel
-		// colour of its own (app.css:347-352).
+		// The sidebar is the page ground with one hairline down its edge, not a panel
+		// colour of its own.
 		{"sidebar is the page", false, func(r RailTokens, th *ui.Theme) error {
 			return sameOrErr("Sidebar", r.Sidebar, th.Background)
 		}},
-		// The results ground is the page too: magpie draws a card only where there is a
-		// panel (`.list`, app.css:633).
+		// The results ground is the page too: a card is drawn only where there is a
+		// panel.
 		{"results is the page", false, func(r RailTokens, th *ui.Theme) error {
 			return sameOrErr("Results", r.Results, th.Background)
 		}},
@@ -478,7 +475,7 @@ func TestTheRailTokensComeFromTheTheme(t *testing.T) {
 			return sameOrErr("Muted", r.Muted, th.SurfaceHover)
 		}},
 		// A focused field keeps its card ground and gains the accent ring; it is not filled
-		// with the accent (app.css:3315-3316).
+		// with the accent.
 		{"focus keeps the card ground", false, func(r RailTokens, th *ui.Theme) error {
 			return sameOrErr("FieldFocus", r.FieldFocus, th.Surface)
 		}},
@@ -507,10 +504,9 @@ func sameOrErr(name string, got, want ui.Color) error {
 
 // TestTheHeadingsUseTheSystemFace pins the restyle's typography decision.
 //
-// magpie sets every surface -- headings included -- in one system stack:
+// Every surface -- headings included -- uses one system stack:
 //
-//	--font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif
-//	(app.css:41)
+//	-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif
 //
 // so displayFace returns the toolkit's "system default" (the empty string) in both locales, and a
 // serif would be the first thing to give the change away.
@@ -525,12 +521,11 @@ func TestTheHeadingsUseTheSystemFace(t *testing.T) {
 	}
 }
 
-// TestBothAppearancesUseMagpiesPalette pins the two token blocks of magpie's palette.
+// TestBothAppearancesUseThePalette pins the two token blocks of the palette.
 //
 // The palette is cool: a #f4f4f6 page, white cards, one #e3e3e8 hairline and #1c1c21 ink in
-// the light theme; #1a1a1e, #232327, #333339 and #ededf1 in the dark one (app.css:2-47,
-// :49-77).
-func TestBothAppearancesUseMagpiesPalette(t *testing.T) {
+// the light theme; #1a1a1e, #232327, #333339 and #ededf1 in the dark one.
+func TestBothAppearancesUseThePalette(t *testing.T) {
 	light := FolioTheme(AppearanceLight, false)
 	dark := FolioTheme(AppearanceDark, false)
 
@@ -781,10 +776,10 @@ func TestPreferencesPersistAcrossRestarts(t *testing.T) {
 	}
 }
 
-// TestANarrowWindowGivesTheSidebarUp is magpie's layout rule: the sidebar from 1024 points up
-// and the page alone below it. magpie moves its page tabs into the header there; this shell
-// has no page tabs to move, so what is ported is the rule -- a narrow window gives the page
-// its room back.
+// TestANarrowWindowGivesTheSidebarUp is the layout rule: the sidebar from 1024 points up
+// and the page alone below it. The usual layout moves its page tabs into the header there;
+// this shell has no page tabs to move, so what is ported is the rule -- a narrow window gives
+// the page its room back.
 func TestANarrowWindowGivesTheSidebarUp(t *testing.T) {
 	shell, db := newShell(t)
 	seed(t, db, "1", "ada", "a post", clockBase)
@@ -792,11 +787,11 @@ func TestANarrowWindowGivesTheSidebarUp(t *testing.T) {
 
 	shell.SetTestedViewportWidth(NavSideWidth)
 	if shell.sidebarCollapsed() {
-		t.Fatal("the sidebar is hidden at the width magpie keeps it")
+		t.Fatal("the sidebar is hidden at the width that keeps it")
 	}
 	shell.SetTestedViewportWidth(NavSideWidth - 1)
 	if !shell.sidebarCollapsed() {
-		t.Error("the sidebar is still there one point below magpie's 1024")
+		t.Error("the sidebar is still there one point below the 1024 breakpoint")
 	}
 	if got := shell.sidebarPaneWidth(); got != 0 {
 		t.Errorf("the sidebar owns %v points at a narrow width, want 0", got)
@@ -1946,11 +1941,11 @@ func TestStatusBadgeMatchesTheStylesheet(t *testing.T) {
 	} {
 		light := StatusBadge(tc.status, AppearanceLight, false, accentForTest)
 		if light.Text != ui.Hex(tc.light) {
-			t.Errorf("light %s text must be %s (--green/--amber/--red, app.css:28-32)", tc.status, tc.light)
+			t.Errorf("light %s text must be %s (--green/--amber/--red)", tc.status, tc.light)
 		}
 		dark := StatusBadge(tc.status, AppearanceDark, false, accentForTest)
 		if dark.Text != ui.Hex(tc.dark) {
-			t.Errorf("dark %s text must be %s (the dark token block, app.css:67-71)", tc.status, tc.dark)
+			t.Errorf("dark %s text must be %s (the dark token block)", tc.status, tc.dark)
 		}
 	}
 
@@ -1968,7 +1963,7 @@ func TestStatusBadgeMatchesTheStylesheet(t *testing.T) {
 		t.Error("an unknown status must fall back to idle")
 	}
 
-	// The dot is 7 DIP: `.side-gw > i { width: 7px; height: 7px }` (app.css:515).
+	// The dot is 7 DIP.
 	if StatusDotSize != 7 {
 		t.Errorf("the status dot must be 7 DIP, got %d", StatusDotSize)
 	}
@@ -2087,12 +2082,11 @@ func TestGraphFocusDimsRatherThanHides(t *testing.T) {
 	}
 }
 
-// TestGraphTokensComeFromTheStylesheet pins the resolved colours to the stylesheet's
-// color-mix expressions.
+// TestGraphTokensComeFromTheStylesheet pins the resolved colours to their mix percentages.
 func TestGraphTokensComeFromTheStylesheet(t *testing.T) {
 	light := GraphCanvasTokensFor(AppearanceLight, false, accentForTest)
 
-	// color-mix(in srgb, var(--text-secondary) 34%, transparent) -> alpha 0.34.
+	// The secondary text at 34% -> alpha 0.34.
 	if alpha := float32(light.EdgeCooccurrence.A) / 255; alpha < 0.33 || alpha > 0.35 {
 		t.Errorf("cooccurrence edge alpha = %v, want 0.34", alpha)
 	}
@@ -3527,14 +3521,14 @@ func TestTheRailTokensAreAllThemeRoles(t *testing.T) {
 	}
 }
 
-// TestTheDetailPanelGradientMatchesTheStylesheet pins the two ends of the detail panel.
+// TestTheDetailPanelIsAFlatSurface pins the two ends of the detail panel.
 //
-// The panel had a flat --surface-bg (#26201d in the dark theme), which happened to sit
+// The panel had a flat surface ground (#26201d in the dark theme), which happened to sit
 // within one step of the gradient's midpoint (#261f1c) -- close enough to look right and
-// wrong in kind: the stylesheet declares a gradient, and "close to the midpoint" is not the
+// wrong in kind: the design declares a gradient, and "close to the midpoint" is not the
 // same as "is the gradient", which is the distinction this project refuses to paper over.
 func TestTheDetailPanelIsAFlatSurface(t *testing.T) {
-	// The stylesheet's inspector was a two-stop gradient with both ends hand-composited. A
+	// The inspector was once a two-stop gradient with both ends hand-composited. A
 	// native detail pane is a flat surface; keeping the two ends equal means the existing
 	// Gradient call is a no-op rather than a colour cast.
 	for _, appearance := range []Appearance{AppearanceLight, AppearanceDark} {
@@ -3605,17 +3599,17 @@ func TestTheActiveFilterChipUsesTheAccent(t *testing.T) {
 	for _, appearance := range []Appearance{AppearanceLight, AppearanceDark} {
 		rail := Rail(appearance, false, false)
 		theme := FolioTheme(appearance, false)
-		// `.chip`: --fg-2 ink on the card ground with one hairline. The accent arrives on
-		// hover and on the chosen state, not at rest (app.css:2165-2175).
+		// A chip is the muted ink on the card ground with one hairline. The accent arrives
+		// on hover and on the chosen state, not at rest.
 		if rail.ChipText != theme.TextMuted {
-			t.Errorf("%s chip label = %v, want --fg-2 %v", appearance, rail.ChipText, theme.TextMuted)
+			t.Errorf("%s chip label = %v, want the muted ink %v", appearance, rail.ChipText, theme.TextMuted)
 		}
 		if rail.ChipBg != theme.Surface {
 			t.Errorf("%s chip fill = %v, want the card ground %v",
 				appearance, rail.ChipBg, theme.Surface)
 		}
 		if rail.ChipBorder != theme.Border {
-			t.Errorf("%s chip border = %v, want --line %v",
+			t.Errorf("%s chip border = %v, want the hairline %v",
 				appearance, rail.ChipBorder, theme.Border)
 		}
 	}
@@ -3627,7 +3621,7 @@ func TestTheFilterChipUsesTheTwelvePixelStep(t *testing.T) {
 	if FontSmall != 12 {
 		t.Errorf("FontSmall = %d, want 12 (the filter chip's size)", FontSmall)
 	}
-	// The two chip rules must not collapse onto one size: `.mchip` is 11.5 (app.css:3540),
+	// The two chip rules must not collapse onto one size: the card tag is 11.5,
 	// the filter chip 12.
 	if CardTagFont == FontSmall {
 		t.Error("the card tag is on the filter chip's size")
@@ -3659,16 +3653,18 @@ func TestTheInspectorPillSitsOnThePanel(t *testing.T) {
 // TestTheThreeChipRulesStayDistinct is the assertion that would have caught the earlier
 // rounds, where one rule's values were applied to another rule's element.
 //
-// magpie has one neutral pill ground (--pill) and one card ground (--card), so the rules are
-// told apart by where they sit and how tall they are, not by three different fills: a card tag
-// is --pill (app.css:2165-2182 uses --card for the interactive chip, and the tag pill in a card
-// is inert), an inspector pill is --pill, and the filter chip, which is interactive, is --card.
+// There is one neutral pill ground and one card ground, so the rules are told apart by
+// where they sit and how tall they are, not by three different fills: a card tag is the
+// neutral pill ground (the interactive chip uses the card ground, and the tag pill in a card
+// is inert), an inspector pill is the neutral pill ground, and the filter chip, which is
+// interactive, is the card ground.
 func TestTheThreeChipRulesStayDistinct(t *testing.T) {
 	light := Rail(AppearanceLight, false, false)
 	if light.ChipBg != light.PillBg {
-		t.Log("the interactive chip and the inert pill differ; magpie's chip is a card on a pill page")
+		t.Log("the interactive chip and the inert pill differ; the chip is a card on a pill page")
 	}
-	// The interactive chip must stand on the card colour, and the inert tags on --pill: if the
+	// The interactive chip must stand on the card colour, and the inert tags on the neutral
+	// pill ground: if the
 	// two collapsed, a removable filter would look like a label.
 	if light.ChipBg == light.CardTagBg {
 		t.Error("the filter chip and the card tag share a fill; one of them is the wrong rule")
@@ -3679,11 +3675,11 @@ func TestTheThreeChipRulesStayDistinct(t *testing.T) {
 	}
 }
 
-// TestTheAvatarsUseThePillGround pins the one avatar fill magpie has.
+// TestTheAvatarsUseThePillGround pins the one avatar fill.
 //
-// The card avatar and the hero avatar share one fill: magpie's placeholder is the pill ground
-// in both places -- a card's avatar is a quiet disc, and the hero's is the same disc larger
-// (`--pill`, app.css:6). The distinction that remains is size.
+// The card avatar and the hero avatar share one fill: the placeholder is the pill ground
+// in both places -- a card's avatar is a quiet disc, and the hero's is the same disc larger.
+// The distinction that remains is size.
 func TestTheAvatarsUseThePillGround(t *testing.T) {
 	for _, appearance := range []Appearance{AppearanceLight, AppearanceDark} {
 		rail := Rail(appearance, false, false)
@@ -3700,8 +3696,8 @@ func TestTheAvatarsUseThePillGround(t *testing.T) {
 
 // TestTheResultsPaneIsThePage pins the background the results pane draws.
 //
-// magpie puts every page directly on --bg and draws a card only where there is a panel
-// (app.css:2-8, :633). The results pane therefore draws the page ground.
+// Every page sits directly on the page ground and a card is drawn only where there is a panel.
+// The results pane therefore draws the page ground.
 func TestTheResultsPaneIsThePage(t *testing.T) {
 	for _, appearance := range []Appearance{AppearanceLight, AppearanceDark} {
 		rail := Rail(appearance, false, false)
@@ -3775,14 +3771,14 @@ func packageSource(t *testing.T) string {
 	return all.String()
 }
 
-// TestTheTextSelectionHighlightIsMagpiesSelection pins the one place text selection is styled.
+// TestTheTextSelectionHighlightIsTheSelection pins the one place text selection is styled.
 //
-// magpie supplies --sel: #ecebfb on white and #33345a in the dark block (app.css:26, :65), and
-// it is what a selected row and a selected run of text share.
-func TestTheTextSelectionHighlightIsMagpiesSelection(t *testing.T) {
+// The selection supplies #ecebfb on white and #33345a in the dark theme, and it is what a
+// selected row and a selected run of text share.
+func TestTheTextSelectionHighlightIsTheSelection(t *testing.T) {
 	light := FolioTheme(AppearanceLight, false)
 	if want := ui.Hex("#ecebfb"); light.Selection != want {
-		t.Errorf("light selection = %v, want --sel %v", light.Selection, want)
+		t.Errorf("light selection = %v, want the selection %v", light.Selection, want)
 	}
 	dark := FolioTheme(AppearanceDark, false)
 	if want := ui.Hex("#33345a"); dark.Selection != want {
@@ -3903,7 +3899,7 @@ func TestApplyBulkTagTagsEverySelectedBookmark(t *testing.T) {
 // Two pairs of the same bounds existed once: internal/usecase/settings validated and persisted
 // against 260..420 and 320..520, and internal/ui clamped against 180..320 and 280..460, so a
 // stored width of 400 was accepted by the layer that wrote it and silently shrunk by the layer
-// that read it. The left column's pair is magpie's 168..320; the inspector's is its own.
+// that read it. The left column's pair is 168..320; the inspector's is its own.
 //
 // The two layers are checked against each other rather than against a literal, so this holds
 // even if the numbers move.
@@ -3918,9 +3914,9 @@ func TestTheWidthBoundsMatchTheSettingsLayer(t *testing.T) {
 	}
 
 	// And the numbers themselves, so a change to both in step is still visible. The left
-	// column is magpie's -- 168..320, capped at 36% of the window.
+	// column is 168..320, capped at 36% of the window.
 	if settings.MinSidebarWidth != 168 || settings.MaxSidebarWidth != 320 {
-		t.Errorf("sidebar bounds are %v..%v; magpie clamps 168..320",
+		t.Errorf("sidebar bounds are %v..%v; the clamp is 168..320",
 			settings.MinSidebarWidth, settings.MaxSidebarWidth)
 	}
 }

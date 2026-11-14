@@ -15,7 +15,7 @@ import (
 // are MyGo's own animations; what belongs to this shell is when they are asked for, and that
 // is what these ask about.
 
-// TestThePageEntranceStartsLowAndSettles is `view-in` (app.css:584, :596): opacity from
+// TestThePageEntranceStartsLowAndSettles is `view-in`: opacity from
 // nothing and a 5-point lift, both gone at 0.24s.
 func TestThePageEntranceStartsLowAndSettles(t *testing.T) {
 	opacity, offset := pageEntrance(0, false)
@@ -43,8 +43,8 @@ func TestThePageEntranceStartsLowAndSettles(t *testing.T) {
 	}
 }
 
-// TestReducedMotionKeepsTheFadeAndDropsTheLift is magpie's own reduced-motion rule: the
-// animation becomes `fade-in`, which is the same fade without the translateY (app.css:598).
+// TestReducedMotionKeepsTheFadeAndDropsTheLift is the reduced-motion rule: the
+// animation becomes `fade-in`, which is the same fade without the translateY.
 func TestReducedMotionKeepsTheFadeAndDropsTheLift(t *testing.T) {
 	opacity, offset := pageEntrance(0, true)
 	if opacity != 0 {
@@ -74,8 +74,8 @@ func TestNavigationStartsThePageEntrance(t *testing.T) {
 	}
 }
 
-// TestAPressedControlGivesUnderThePointer is `.text:active`: a labelled button shrinks to
-// .96 while the pointer holds it, and comes back when it lets go (app.css:4052).
+// TestAPressedControlGivesUnderThePointer is a pressed labelled button: it shrinks to .96
+// while the pointer holds it, and comes back when it lets go.
 func TestAPressedControlGivesUnderThePointer(t *testing.T) {
 	shell, db := newShell(t)
 	seed(t, db, "1", "ada", "a post", clockBase)
@@ -118,9 +118,9 @@ func TestAPressedControlGivesUnderThePointer(t *testing.T) {
 	}
 }
 
-// TestASubRowPaintsNoGroundOfItsOwn: in magpie's list only the selection is a shape. A
+// TestASubRowPaintsNoGroundOfItsOwn: in the list only the selection is a shape. A
 // row hovered or pressed has no ground, "which would show where the finger is before the
-// selection slides there" (app.css:449-451), and the row never shrinks either. Its ground
+// selection slides there", and the row never shrinks either. Its ground
 // at rest, under the pointer and while pressed is the sidebar's own.
 func TestASubRowPaintsNoGroundOfItsOwn(t *testing.T) {
 	shell, db := newShell(t)
@@ -195,7 +195,7 @@ func TestReducedMotionSwitchesAColourAtOnce(t *testing.T) {
 	}
 }
 
-// TestThePopoverGrowsOutOfItsButton is `.pop`'s entrance (app.css:2282-2288): a fade over
+// TestThePopoverGrowsOutOfItsButton is the popover's entrance: a fade over
 // 0.14s, and a rise from 6 points up at .94 over 0.24s, the movement dropped under reduced
 // motion while the fade stays.
 func TestThePopoverGrowsOutOfItsButton(t *testing.T) {

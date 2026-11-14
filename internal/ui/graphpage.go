@@ -26,11 +26,11 @@ const (
 	// GraphCanvasMinHeight is what the map keeps when the focus panel is open: below it the
 	// plot is too small to be a map, and the panel is what a focused reader came for.
 	GraphCanvasMinHeight = 240
-	// The focus panel: `padding: 12px`, `gap: 6px`, radius 14 and a 26% accent border.
+	// The focus panel: 12-point padding, a 6-point gap, radius 14 and a 26% accent border.
 	GraphFocusPad    = 12
 	GraphFocusGap    = 6
 	GraphFocusRadius = 14
-	// GraphFocusBorderAlpha is `color-mix(in srgb, var(--accent-primary) 26%, transparent)`.
+	// GraphFocusBorderAlpha is the accent at 26%.
 	GraphFocusBorderAlpha = 0.26
 	// GraphFocusMinHeight is what the panel's three lines and its action need at these sizes:
 	// 12 of padding twice, 6 between four rows, a 13-point name, two 12-point lines and the
@@ -62,8 +62,8 @@ func (s *Shell) graphPage(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 				})
 				return
 			}
-			// magpie's empty state: the title in the page's ink at weight 500, the advice in
-			// --muted under it (app.css:651-653).
+			// The empty state: the title in the page's ink at weight 500, the advice in
+			// the muted ink under it.
 			ui.Column(c).Fill().Center().Padding(36, 20).GapY(SpaceSmall).Children(func() {
 				ui.Text(c, s.t().T(i18n.GraphEmptyTitle)).
 					FontSize(FontBody).FontWeight(500).TextColor(theme.Text)

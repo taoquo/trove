@@ -110,37 +110,37 @@ func GraphCanvasTokensFor(appearance Appearance, systemDark bool, accent ui.Colo
 	}
 
 	return GraphCanvasTokens{
-		// color-mix(in srgb, var(--text-secondary) 34%, transparent).
+		// The secondary text at 34%.
 		EdgeCooccurrence: ui.RGBA(textSecondary.R, textSecondary.G, textSecondary.B, 0.34),
-		// color-mix(in srgb, var(--accent-primary) 52%, transparent).
+		// The accent at 52%.
 		EdgeHierarchy: ui.RGBA(accent.R, accent.G, accent.B, 0.52),
-		// color-mix(in srgb, var(--text-tertiary) 46%, transparent).
+		// The tertiary text at 46%.
 		EdgeAuthorBridge: ui.RGBA(textTertiary.R, textTertiary.G, textTertiary.B, 0.46),
 		EdgeDimmed:       0.16,
 
-		// color-mix(in srgb, var(--accent-primary) 70%, transparent).
+		// The accent at 70%.
 		NodeFill: ui.RGBA(accent.R, accent.G, accent.B, 0.70),
-		// .is-child: color-mix(in srgb, var(--accent-primary) 38%, transparent).
+		// A child node: the accent at 38%.
 		NodeChildFill: ui.RGBA(accent.R, accent.G, accent.B, 0.38),
 		NodeStroke:    panel,
 
 		NodeFocusedFill: accent,
-		// color-mix(in srgb, var(--accent-primary) 30%, var(--theme-panel-bg)).
+		// The accent at 30% over the panel ground.
 		NodeFocusedStroke: ui.RGBA(accent.R, accent.G, accent.B, 0.30),
 		NodeDimmed:        0.24,
 
 		Label:        textSecondary,
 		LabelFocused: rail.TextTertiary,
 
-		// color-mix(in srgb, var(--surface-muted) 40%, var(--theme-panel-bg)).
+		// The muted surface at 40% over the panel ground.
 		AuthorFill: ui.RGBA(surfaceMuted.R, surfaceMuted.G, surfaceMuted.B, 0.40),
-		// color-mix(in srgb, var(--text-secondary) 48%, transparent).
+		// The secondary text at 48%.
 		AuthorStroke: ui.RGBA(textSecondary.R, textSecondary.G, textSecondary.B, 0.48),
 		AuthorLabel:  textTertiary,
 		AuthorDimmed: 0.2,
 
 		CanvasFill: ui.RGBA(surfaceMuted.R, surfaceMuted.G, surfaceMuted.B, 0.55),
-		// color-mix(in srgb, var(--theme-panel-border) 70%, transparent).
+		// The panel border at 70%.
 		CanvasBorder: ui.RGBA(rail.RailLine.R, rail.RailLine.G, rail.RailLine.B, 0.70),
 	}
 }

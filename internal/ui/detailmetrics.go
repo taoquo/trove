@@ -22,8 +22,8 @@ const (
 
 	// The detail's reading pane: the post as one object.
 	//
-	// The post reads on magpie's page scale: 13px (app.css:128-129), with the leading opened
-	// to 1.6 the way its long-form blocks do (`.action-confirm p`, app.css:4074). The
+	// The post reads on the page scale: 13px, with the leading opened
+	// to 1.6 for long-form blocks. The
 	// section gaps are a paragraph's, keeping the post as one object rather than two. The
 	// media is a grid: four attachments at most, two to a row, 6 apart, which is the shape a
 	// tweet's own gallery has.
@@ -62,9 +62,9 @@ const (
 	// The new-tag input: width clamp(82px, 10vw, 116px), height 28, radius 999.
 	DetailTagInputWidth = 116
 	DetailTagInputH     = 28
-	// The header's icon controls: magpie's 26-point `.icon` squares, 4
+	// The header's icon controls: 26-point squares, 4
 	// apart, so the three of them take less width than the worded buttons they replaced took for
-	// one (app.css:276).
+	// one.
 	DetailIconButton = 26
 	DetailActionGap  = 4
 	// The published date in the hero: a 12-point clock and the date beside it, in the same quiet

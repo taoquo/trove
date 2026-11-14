@@ -61,12 +61,12 @@ func TestOneResultKeepsItsColumn(t *testing.T) {
 	}
 }
 
-// TestTheColumnsSwitchAtMagpiesBreakpoint pins the column count to the window.
+// TestTheColumnsSwitchAtTheBreakpoint pins the column count to the window.
 //
 // The class is `columns-1 lg:columns-2`, and `lg` is a viewport breakpoint: 1024 points of
 // window, whatever the sidebar is doing. Nothing fails if a later change moves that rule -- the
 // single-result test only ever looks at 1400 -- so this pins it at the shipped widths.
-func TestTheColumnsSwitchAtMagpiesBreakpoint(t *testing.T) {
+func TestTheColumnsSwitchAtTheBreakpoint(t *testing.T) {
 	shell, db := newShell(t)
 	seed(t, db, "1", "ada", "a post", clockBase)
 	seed(t, db, "2", "bea", "another post", clockBase)
@@ -92,7 +92,7 @@ func TestTheColumnsSwitchAtMagpiesBreakpoint(t *testing.T) {
 
 // TestTheReadingColumnStopsGrowingAtTwelveHundred pins the other half of the width rule.
 //
-// magpie's view carries `padding-left: max(16px, calc(50% - 600px))` (app.css:609), so the
+// The view carries `padding-left: max(16px, calc(50% - 600px))`, so the
 // page centres a 1200-point column and stops. An 1800-point capture shows the cards spanning
 // 1198 points, which is that rule; this test makes the next widening keep it: a window twice as
 // wide must not widen the text.

@@ -13,7 +13,7 @@ import (
 
 // The settings page.
 //
-// magpie's settings are a page, not a sheet: the sidebar stays, the content
+// Settings are a page, not a sheet: the sidebar stays, the content
 // column becomes the settings surface, and the reader goes back the way they
 // came. The page is one row of tabs with a find field at its right, then the
 // open tab as cards of preference rows (settingsui.go holds the row grammar).
@@ -69,11 +69,10 @@ func (s *Shell) settingsPage(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 // settingsPageHeader is the way back, the page's name, the tabs and the find
 // field, on one line.
 //
-// magpie's head is the tabs with the search at their right (`#view-settings
-// .set-head`, app.css:3636-3662); the name and the way back are this shell's
-// own, because the sidebar is the navigation here and the page is one level
-// deep. While the find field holds words the tabs step aside and the field
-// takes the row, which is exactly what `.set-searching` does (.set-tabs
+// The head is the tabs with the search at their right; the name and the way
+// back are this shell's own, because the sidebar is the navigation here and
+// the page is one level deep. While the find field holds words the tabs step
+// aside and the field takes the row, which is exactly what searching does (.set-tabs
 // display:none, .set-q flex 1 1 100%).
 func (s *Shell) settingsPageHeader(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 	ui.Row(c).FillWidth().MinHeight(SettingsPageHeaderHeight).
@@ -119,9 +118,9 @@ func (s *Shell) settingsPageHeader(c *ui.Context, theme *ui.Theme, rail RailToke
 	})
 }
 
-// settingsTabs is the row of `.warm-tabs`: 22 high, a 6 radius, an 11px
-// 600 .05em uppercase label, and the open one on a --pill ground with no
-// thumb of its own (app.css:3632-3635).
+// settingsTabs is the row of tabs: 22 high, a 6 radius, an 11px
+// 600 .05em uppercase label, and the open one on a tray ground with no
+// thumb of its own.
 func (s *Shell) settingsTabs(c *ui.Context, theme *ui.Theme, rail RailTokens) ui.Element {
 	tabs := ui.Row(c).GapX(SettingsTabGap).Wrap().AlignItems(ui.Center).
 		Label(s.t().T(i18n.SettingsTitle))
@@ -334,7 +333,7 @@ func (s *Shell) settingsSyncSection(c *ui.Context, theme *ui.Theme, rail RailTok
 	// from nowhere, the Keychain would stay empty, and every run would fail with
 	// "credentials: nothing stored (x.auth_token)".
 	//
-	// It is a card of its own. A --muted group label above it was this card's own title word
+	// It is a card of its own. A muted group label above it was this card's own title word
 	// for word: the reader met "X credentials" twice in a row, with nothing between them. The
 	// sync section has no group heading above the cookies block either, and the page's first
 	// half already runs without one, so the card's title is the only name it needs.

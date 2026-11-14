@@ -49,8 +49,8 @@ func (s *Shell) sidebar(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 	// The sidebar is the page ground, and its edge is the split's own line at its right,
 	// not a border here.
 	//
-	// magpie's `.side` is `position: fixed; width: var(--side-w); border-right: .5px solid
-	// var(--line)` (app.css:370-375): one line at the column's edge and no track beside it.
+	// The sidebar carries a half-point right edge: one line at the column's edge and no
+	// track beside it.
 	// ui.Split's one-point divider is that line, so the column carries no edge of its own.
 	ui.Column(c).Width(s.state.LeftSidebarWidth).FillHeight().
 		Background(rail.Sidebar).
@@ -85,8 +85,8 @@ func (s *Shell) sidebar(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 // sidebarHero is the block above the list, and only while something is happening: a running
 // sync, a failed one, a resumable one, or a live auto-tag run.
 //
-// magpie's sidebar has no standing status block: its state line sits in the foot beside the
-// window's commands (`.side-gw`, app.css:513-517). The last-sync line and the sync button
+// The sidebar has no standing status block: its state line sits in the foot beside the
+// window's commands. The last-sync line and the sync button
 // live there too, which leaves this block for work in progress, and takes its rule with it
 // when there is none.
 func (s *Shell) sidebarHero(c *ui.Context, theme *ui.Theme, rail RailTokens) {
@@ -220,10 +220,10 @@ func (s *Shell) sidebarHeroVisible() bool {
 
 // sidebarFooter is the pinned foot: the workspace's state, then the window's commands.
 //
-// magpie's is `.side-foot { padding: 8px 10px 10px; border-top: .5px solid var(--line-2);
-// display: flex; flex-direction: column; gap: 1px }` (app.css:397), with `.side-gw` -- a
-// 26-point row carrying a 7-point dot and 11.5px -- at its head and 26-point `.icon` buttons
-// under it (app.css:273-283, :513-517).
+// The foot is 8 top, 10 sides and 10 bottom, with a half-point subtle hairline above,
+// a 1-point gap, and a
+// 26-point row carrying a 7-point dot and 11.5px at its head and 26-point icon buttons
+// under it.
 //
 // The last-sync line and the sync button sit here rather than leading the sidebar, beside the
 // rest of the window's commands, so the block above the list is only ever work in progress.
@@ -272,8 +272,8 @@ func (s *Shell) sidebarFooter(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 			IconOnlySized(c, "sun", s.t().T(i18n.ThemeLabel)+": "+s.appearanceLabel(), theme, rail, FooterIconSize, func() {
 				s.SetAppearance(NextAppearance(s.state.Appearance, s.resolvedAppearance()))
 			})
-			// The sync command, beside the state it changes. Running, it is the way out: magpie
-			// pairs a run's stop control with the run, and the footer is where this build keeps
+			// The sync command, beside the state it changes. Running, it is the way out: a
+			// run's stop control sits with the run, and the footer is where this build keeps
 			// the start.
 			icon, label := "sync", s.t().T(i18n.ActionSync)
 			if s.state.SyncRunning {
@@ -398,7 +398,7 @@ func (s *Shell) appearanceLabel() string {
 func (s *Shell) ToggleFilterPopover() {
 	s.state.FilterPopoverOpen = !s.state.FilterPopoverOpen
 	if s.state.FilterPopoverOpen {
-		// `.pop` grows out of the button it drops from (app.css:2283-2286); the clock starts
+		// The popover grows out of the button it drops from; the clock starts
 		// here, at the click, not at the frame that first draws it.
 		s.state.FilterPopoverOpenedAt = time.Now()
 	}
@@ -414,9 +414,9 @@ func (s *Shell) ToggleFilterPopover() {
 // hiding them would leave a user wondering whether the feature is missing or the filter
 // is elsewhere.
 func (s *Shell) filterPopover(c *ui.Context, theme *ui.Theme, rail RailTokens, panel, anchor ui.Element) {
-	// The panel is magpie's `.pop`: a card ground, an 11-point radius, one --line hairline and
-	// --shadow's drops (app.css:2270-2280), at `.pop.proto-menu`'s 262 width and 4 inset
-	// (app.css:3024). There is no backdrop blur to copy -- magpie's --pop-bg is 94% opaque
+	// The panel: a card ground, an 11-point radius, one hairline and the palette's
+	// popover shadow, at 262 width and 4 inset.
+	// There is no backdrop blur -- the popover ground is 94% opaque
 	// over one -- so the card colour is drawn opaque, as elsewhere in this shell.
 	//
 	// A FillWidth column drawn inline in the toolbar would push the result grid down the page;
@@ -426,9 +426,9 @@ func (s *Shell) filterPopover(c *ui.Context, theme *ui.Theme, rail RailTokens, p
 		Label(s.t().T(i18n.FilterConditions))
 	panel = popoverShadow(panel, theme.Dark)
 
-	// `.pop` grows out of the button it drops from: a fade over .14s, and a rise from 6
-	// points above at .94 over .24s on --ease-out, around the button's middle at the panel's
-	// top (`transform-origin: var(--ox, 24px) top`, app.css:2283-2286). Our panel is anchored
+	// The popover grows out of the button it drops from: a fade over .14s, and a rise from 6
+	// points above at .94 over .24s on the ease-out curve, around the button's middle at the
+	// panel's top. Our panel is anchored
 	// to the trigger's bottom-left, so that origin is half the trigger's width in from the
 	// panel's left edge.
 	opacity, rise, scale := s.filterPopoverEntrance(c)

@@ -47,7 +47,7 @@ ROWS = [
     # answer has to be the thing that draws it.
     #
     # The workspace's state moved out of the title bar and the hero: it is the foot's status
-    # row now, above four 26-point commands (app.css:397, :513-517). The brand stays in the
+    # row now, above four 26-point commands. The brand stays in the
     # title bar, and the tabs took `.segs`.
     ("工作区状态徽章 圆点+文字", "sidebarFooter", "StatusDotSize"),
     ("brand 书签", "brandLockup", "FontSidebarTitleCompact"),
@@ -78,7 +78,7 @@ ROWS = [
     # at to remove one condition.
     #
     # The page's name then left the content entirely: it is the title bar's crumb at
-    # 13.5/600 (app.css:522), and the count moved to the end of the toolbar's control row.
+    # 13.5/600, and the count moved to the end of the toolbar's control row.
     ("全部书签 标题", "pageCrumb", "FontPageCrumb"),
     ("68 结果", "toolbar", "FontTiny"),
     ("搜索框 + 放大镜", "searchField", "SearchFieldHeight"),
