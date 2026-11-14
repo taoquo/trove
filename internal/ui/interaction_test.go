@@ -403,7 +403,7 @@ func TestTheSidebarButtonKeepsItsPlaceWhenTheColumnFolds(t *testing.T) {
 		t.Errorf("the sidebar button is at y=%v..%v, outside the 50-point title bar",
 			open.Y, open.Y+open.H)
 	}
-	brand, ok := tester.Find(shell.t().T(i18n.AppTitle))
+	brand, ok := tester.Find(shell.t().T(i18n.AppName))
 	if !ok {
 		t.Fatalf("the title bar has no brand; texts: %q", tester.Texts())
 	}
@@ -418,7 +418,7 @@ func TestTheSidebarButtonKeepsItsPlaceWhenTheColumnFolds(t *testing.T) {
 		t.Errorf("the button moved from (%v,%v) to (%v,%v) when the column folded",
 			open.X, open.Y, folded.X, folded.Y)
 	}
-	foldedBrand, ok := tester.Find(shell.t().T(i18n.AppTitle))
+	foldedBrand, ok := tester.Find(shell.t().T(i18n.AppName))
 	if !ok {
 		t.Fatal("the folded layout dropped the brand")
 	}

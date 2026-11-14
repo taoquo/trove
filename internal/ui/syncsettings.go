@@ -264,17 +264,21 @@ func (s *Shell) removeKeywordRule(index int) {
 // It is engine.HealthyTagCountMax, which the auto-tagging budget also uses.
 func HealthyTagCeiling() int { return engine.HealthyTagCountMax }
 
-// displayFace is the face headings are drawn in.
+// displayFace is the face the headings are drawn in: the family's serif.
 //
-// Every surface -- headings included -- uses the system UI face:
+// The list, the controls and the settings rows stay in the system sans, because a 12-13px
+// serif is harder to read in a dense row than the face the system designed for it. What
+// carries the voice is the display layer -- the brand, the page's name, a modal's title, the
+// author over a post -- and that is what this face is for.
 //
-//	-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif
-//
-// so this returns "" and the toolkit uses its own system face. A serif heading would depart
-// from that look, which is what this shell follows. Both locales are the same face here:
-// the Chinese face is PingFang, which is what the system stack resolves to.
-//
-// The empty string is deliberate, not a fallback: it is the toolkit's "system default".
-func (s *Shell) displayFace() string { return "" }
+// The stack is the download page's (`site/public/styles.css`), word for word: Source Serif 4
+// where it is installed, Charter on a Mac, Georgia on Windows, the Chinese serifs behind them
+// so a Chinese heading keeps the same weight of voice, and SimSun before Palatino because
+// Windows has no Songti and needs a CJK serif of its own. The toolkit resolves a
+// comma-separated list to the first family present and cascades the rest, which is how the
+// Latin face and the CJK face are chosen per glyph.
+func (s *Shell) displayFace() string {
+	return `"Source Serif 4", Charter, Georgia, "Songti SC", "Noto Serif CJK SC", "STSong", SimSun, Palatino, serif`
+}
 
 // FocusSearch asks the next frame to put the cursor in the search field.

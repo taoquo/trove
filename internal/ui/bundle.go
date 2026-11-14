@@ -323,7 +323,8 @@ func (s *Shell) AskBundleImport(ctx context.Context, restore bool) error {
 			}
 
 			s.state.LastBundleReport = ""
-			s.bundle.Arm(BundleRequest{Path: path, Restore: restore}, title, body, label)
+			s.bundle.Arm(BundleRequest{Path: path, Restore: restore}, title, body, label,
+				s.t().T(i18n.ActionCancel))
 			s.invalidate()
 		})
 	})

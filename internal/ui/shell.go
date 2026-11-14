@@ -55,8 +55,8 @@ func (s *Shell) listHasKeyboard() bool {
 // detail, the detail over the tag pages, the tag pages over the results. The search box is
 // last because it is part of the results surface, not a layer over it.
 //
-// A confirmation is a platform AlertDialog and never reaches here: MyGo keeps the window's
-// shortcuts behind a modal, and the dialog already treats Escape as its dismiss gesture.
+// A confirmation is a modal card and never reaches here: MyGo keeps the window's shortcuts
+// behind a dialog, and the card already treats Escape as its dismiss gesture.
 func (s *Shell) escape(ctx context.Context) {
 	switch {
 	case s.LightboxOpen():
@@ -313,7 +313,7 @@ func (s *Shell) View(c *ui.Context) {
 		//
 		// The behaviours needed are DialogBase's own: clicking the backdrop and Escape both
 		// clear the flag. The backdrop's colour is set here because DialogBase leaves it
-		// transparent, and this is the modal scrim: 32% black over the page
+		// transparent, and this is the overlay scrim: 28% black over the page
 		// (`background: rgba(0, 0, 0, .28)` plus a blur this toolkit has no
 		// equivalent for). Mixing the page's own colour into the scrim
 		// greys the window instead of dimming it.
@@ -419,11 +419,11 @@ func (s *Shell) View(c *ui.Context) {
 				})
 		})
 	}
-	s.handleConfirmations(c)
-	s.handleListDeleteConfirmation(c)
-	s.handleTagDeleteConfirmations(c)
-	s.handleResetConfirmation(c)
-	s.handleCleanupConfirmation(c)
+	s.handleConfirmations(c, theme)
+	s.handleListDeleteConfirmation(c, theme)
+	s.handleTagDeleteConfirmations(c, theme)
+	s.handleResetConfirmation(c, theme)
+	s.handleCleanupConfirmation(c, theme)
 }
 
 // sidebar draws the left column: the two system views, the lists and the tags.

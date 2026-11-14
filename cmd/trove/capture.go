@@ -153,6 +153,10 @@ func applyCaptureState(shell *appui.Shell) bool {
 		shell.ApplyCaptureResetReport()
 	case "settings-export":
 		shell.ApplyCaptureExportPrompt()
+	case "batch-delete-confirm":
+		// The question's words were resolved when the state armed it, before the language
+		// was pinned; arming it again is what puts it in the window's language.
+		shell.ApplyCaptureDeleteBookmarks()
 	}
 	return applied
 }

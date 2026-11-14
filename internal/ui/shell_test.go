@@ -138,7 +138,7 @@ func TestShellRendersThreeColumns(t *testing.T) {
 	//
 	// The tags tab draws nothing above its tags; TestTheTagsTabDrawsNothingAboveTheTags
 	// records that.
-	for _, want := range []string{"Bookmarks", "Tags", "Authors"} {
+	for _, want := range []string{"trove", "Tags", "Authors"} {
 		if !tester.HasText(want) {
 			t.Errorf("sidebar is missing %q; texts: %q", want, tester.Texts())
 		}
@@ -362,24 +362,24 @@ func TestShellEmptyStates(t *testing.T) {
 	}
 }
 
-// TestTheThemeUsesTheAccent pins the accent to the project's indigo.
+// TestTheThemeUsesTheAccent pins the accent to the family's cinnabar.
 //
-// The accent is one indigo: #4f46e5 on white, #a5b4fc on the dark ground. It is the
+// The accent is one cinnabar: #b83d2e on paper, #c97a63 on the ink ground. It is the
 // primary button, every focus ring and every selected row, so it is the single most visible
 // colour in the window.
 //
-//	light  accent #4f46e5, soft #eeedfd, foreground #ffffff
-//	dark   accent #a5b4fc
+//	light  accent #b83d2e, pressed #7e241c, soft #f7e6e1, foreground #ffffff
+//	dark   accent #c97a63, pressed #e3a595, soft #3a2521, foreground #191514
 func TestTheThemeUsesTheAccent(t *testing.T) {
 	light := FolioTheme(AppearanceLight, false)
-	if want := ui.Hex("#4f46e5"); light.Accent != want {
+	if want := ui.Hex("#b83d2e"); light.Accent != want {
 		t.Errorf("light accent = %v, want the accent %v", light.Accent, want)
 	}
-	if want := ui.Hex("#4338ca"); light.AccentHover != want {
+	if want := ui.Hex("#7e241c"); light.AccentHover != want {
 		t.Errorf("light accent hover = %v, want the pressed step %v", light.AccentHover, want)
 	}
 	dark := FolioTheme(AppearanceDark, false)
-	if want := ui.Hex("#a5b4fc"); dark.Accent != want {
+	if want := ui.Hex("#c97a63"); dark.Accent != want {
 		t.Errorf("dark accent = %v, want the accent %v", dark.Accent, want)
 	}
 
@@ -387,6 +387,33 @@ func TestTheThemeUsesTheAccent(t *testing.T) {
 	// against the same value twice.
 	if light.Accent == ui.LightTheme().Accent {
 		t.Error("the accent is the platform's again; see the note above before changing this")
+	}
+}
+
+// TestTheScrollbarIsThePaletteThumb pins the one surface the theme used to leave unset.
+//
+// ui.LightTheme() and ui.DarkTheme() each ship a neutral thumb -- 32% black and 35% white --
+// and FolioTheme mapped every role except this one. A grey bar down a parchment results
+// column is the one control painted in a colour the palette does not contain.
+func TestTheScrollbarIsThePaletteThumb(t *testing.T) {
+	for _, appearance := range []Appearance{AppearanceLight, AppearanceDark} {
+		theme := FolioTheme(appearance, false)
+		def := ui.LightTheme()
+		if appearance == AppearanceDark {
+			def = ui.DarkTheme()
+		}
+		if theme.Scrollbar == (ui.Color{}) {
+			t.Errorf("%s: the thumb is unset, so the toolkit's neutral default paints", appearance)
+		}
+		if theme.Scrollbar == def.Scrollbar {
+			t.Errorf("%s: the thumb is still the toolkit's neutral %v", appearance, def.Scrollbar)
+		}
+	}
+	if got, want := FolioTheme(AppearanceLight, false).Scrollbar, lightScrollThumb; got != want {
+		t.Errorf("light thumb = %v, want the palette's %v", got, want)
+	}
+	if got, want := FolioTheme(AppearanceDark, false).Scrollbar, darkScrollThumb; got != want {
+		t.Errorf("dark thumb = %v, want the palette's %v", got, want)
 	}
 }
 
@@ -502,29 +529,32 @@ func sameOrErr(name string, got, want ui.Color) error {
 	return nil
 }
 
-// TestTheHeadingsUseTheSystemFace pins the restyle's typography decision.
+// TestTheHeadingsUseTheFamilySerif pins the typography decision.
 //
-// Every surface -- headings included -- uses one system stack:
+// The display layer -- the brand, the page's name, a modal's title, the author over a post --
+// is set in the family's serif stack, the same one the download page names. The dense rows and
+// the controls stay in the system sans, because a 12-13px serif in a table is harder to read
+// than the face the system designed for it.
 //
-//	-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif
-//
-// so displayFace returns the toolkit's "system default" (the empty string) in both locales, and a
-// serif would be the first thing to give the change away.
-func TestTheHeadingsUseTheSystemFace(t *testing.T) {
+// The list is the toolkit's family list: the first family present is the Latin face, and the
+// rest cascade behind it per glyph, so a Chinese heading is set in a Chinese serif rather than
+// falling back to the system's sans.
+func TestTheHeadingsUseTheFamilySerif(t *testing.T) {
 	shell, _ := newShell(t)
+	want := `"Source Serif 4", Charter, Georgia, "Songti SC", "Noto Serif CJK SC", "STSong", SimSun, Palatino, serif`
 
 	for _, locale := range []string{"en", i18n.ZHCN} {
 		shell.SetLocale(locale)
-		if got := shell.displayFace(); got != "" {
-			t.Errorf("under %s headings ask for %q, want the toolkit's system face", locale, got)
+		if got := shell.displayFace(); got != want {
+			t.Errorf("under %s headings ask for %q, want the family serif %q", locale, got, want)
 		}
 	}
 }
 
 // TestBothAppearancesUseThePalette pins the two token blocks of the palette.
 //
-// The palette is cool: a #f4f4f6 page, white cards, one #e3e3e8 hairline and #1c1c21 ink in
-// the light theme; #1a1a1e, #232327, #333339 and #ededf1 in the dark one.
+// The palette is warm paper: a #f6f0ea page, ivory cards, one #e6dacd hairline and #191514 ink
+// in the light theme; the ink ground #191514, #221c19 cards and #f6f0ea ink in the dark one.
 func TestBothAppearancesUseThePalette(t *testing.T) {
 	light := FolioTheme(AppearanceLight, false)
 	dark := FolioTheme(AppearanceDark, false)
@@ -539,13 +569,13 @@ func TestBothAppearancesUseThePalette(t *testing.T) {
 		want ui.Color
 		from string
 	}{
-		{"light background", light.Background, ui.Hex("#f4f4f6"), "--bg"},
-		{"light surface", light.Surface, ui.Hex("#ffffff"), "--card"},
-		{"light border", light.Border, ui.Hex("#e3e3e8"), "--line"},
-		{"light text", light.Text, ui.Hex("#1c1c21"), "--fg"},
-		{"dark background", dark.Background, ui.Hex("#1a1a1e"), "--bg (dark)"},
-		{"dark surface", dark.Surface, ui.Hex("#232327"), "--card (dark)"},
-		{"dark text", dark.Text, ui.Hex("#ededf1"), "--fg (dark)"},
+		{"light background", light.Background, ui.Hex("#f6f0ea"), "--bg"},
+		{"light surface", light.Surface, ui.Hex("#fbf7f3"), "--card"},
+		{"light border", light.Border, ui.Hex("#e6dacd"), "--line"},
+		{"light text", light.Text, ui.Hex("#191514"), "--fg"},
+		{"dark background", dark.Background, ui.Hex("#191514"), "--bg (dark)"},
+		{"dark surface", dark.Surface, ui.Hex("#221c19"), "--card (dark)"},
+		{"dark text", dark.Text, ui.Hex("#f6f0ea"), "--fg (dark)"},
 	} {
 		if tc.got != tc.want {
 			t.Errorf("%s = %v, want %v from %s", tc.name, tc.got, tc.want, tc.from)
@@ -1388,7 +1418,7 @@ func TestBundleConfirmationFailsClosed(t *testing.T) {
 		// Arm with a path that does not exist, then dismiss: a dismissal must not
 		// even reach the file.
 		shell.bundle.Arm(BundleRequest{Path: filepath.Join(t.TempDir(), "absent.trovebundle")},
-			"Import?", "body", "Import")
+			"Import?", "body", "Import", "Cancel")
 		shell.bundle.Confirmation.Answer(DismissedValue)
 
 		if err := shell.applyBundle(context.Background()); err != nil {
@@ -1445,7 +1475,7 @@ func TestBundleConfirmationFailsClosed(t *testing.T) {
 			t.Fatalf("WriteFile: %v", err)
 		}
 
-		shell.bundle.Arm(BundleRequest{Path: path, Restore: true}, "Restore?", "body", "Replace")
+		shell.bundle.Arm(BundleRequest{Path: path, Restore: true}, "Restore?", "body", "Replace", "Cancel")
 		shell.bundle.Confirmation.Answer(0)
 
 		if err := shell.applyBundle(ctx); err != nil {
@@ -1936,9 +1966,9 @@ func TestStatusBadgeMatchesTheStylesheet(t *testing.T) {
 		light  string
 		dark   string
 	}{
-		{StatusSuccess, "#189a58", "#6fd99b"},
-		{StatusPartial, "#b45309", "#f2b544"},
-		{StatusError, "#d64545", "#f28b82"},
+		{StatusSuccess, "#4a6b52", "#8fb394"},
+		{StatusPartial, "#906327", "#e0b070"},
+		{StatusError, "#7e241c", "#f2a19a"},
 	} {
 		light := StatusBadge(tc.status, AppearanceLight, false, accentForTest)
 		if light.Text != ui.Hex(tc.light) {
@@ -3774,15 +3804,15 @@ func packageSource(t *testing.T) string {
 
 // TestTheTextSelectionHighlightIsTheSelection pins the one place text selection is styled.
 //
-// The selection supplies #ecebfb on white and #33345a in the dark theme, and it is what a
+// The selection supplies #f7e6e1 on paper and #3a2521 on the ink ground, and it is what a
 // selected row and a selected run of text share.
 func TestTheTextSelectionHighlightIsTheSelection(t *testing.T) {
 	light := FolioTheme(AppearanceLight, false)
-	if want := ui.Hex("#ecebfb"); light.Selection != want {
+	if want := ui.Hex("#f7e6e1"); light.Selection != want {
 		t.Errorf("light selection = %v, want the selection %v", light.Selection, want)
 	}
 	dark := FolioTheme(AppearanceDark, false)
-	if want := ui.Hex("#33345a"); dark.Selection != want {
+	if want := ui.Hex("#3a2521"); dark.Selection != want {
 		t.Errorf("dark selection = %v, want --sel %v", dark.Selection, want)
 	}
 }

@@ -40,15 +40,15 @@ func TestSidebarShowsTheBrandRow(t *testing.T) {
 	tester := ui.NewTester(shell.View, 1180, 760)
 	tester.Frame()
 
-	// The brand row's title.
-	if !tester.HasText("Bookmarks") {
+	// The brand row's title: the product's name, not a description of the page.
+	if !tester.HasText("trove") {
 		t.Errorf("the sidebar is missing its brand title; texts: %q", tester.Texts())
 	}
 
-	// And in the other locale, which is also the title's source.
+	// The name is the same word in the other locale too, because it is a name.
 	shell.SetLocale("zh-CN")
 	tester.Frame()
-	if !tester.HasText("书签") {
+	if !tester.HasText("trove") {
 		t.Errorf("the Chinese sidebar is missing its brand title; texts: %q", tester.Texts())
 	}
 }

@@ -89,8 +89,8 @@ func (s *Shell) settingsPageHeader(c *ui.Context, theme *ui.Theme, rail RailToke
 			drawIcon(p, "back", r.X+(r.W-side)/2, r.Y+(r.H-side)/2, side, rail.TextTertiary)
 		})
 		ui.Text(c, s.t().T(i18n.SettingsTitle)).
-			FontSize(FontSidebarTitleCompact).FontWeight(600).TextColor(theme.Text).
-			Padding(0, 10, 0, 4)
+			Font(s.displayFace()).FontSize(FontSidebarTitleCompact).FontWeight(600).
+			TextColor(theme.Text).Padding(0, 10, 0, 4)
 
 		// The field is one element in one place whatever the page is doing. Two call sites --
 		// a grown one while filtering, a fixed one otherwise -- would replace the element on

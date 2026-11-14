@@ -77,9 +77,11 @@ ROWS = [
     # a printed word, so the row below the search is the chip itself: it is what a person points
     # at to remove one condition.
     #
-    # The page's name then left the content entirely: it is the title bar's crumb at
-    # 13.5/600, and the count moved to the end of the toolbar's control row.
-    ("全部书签 标题", "pageCrumb", "FontPageCrumb"),
+    # The workspace's name then left the content entirely: it is the title bar's crumb in the
+    # display face at 17/600, and the count moved to the end of the toolbar's control row.
+    # (Settings, the tag library and the graph keep their name in their own page head instead,
+    # so the crumb draws nothing there and the name appears once.)
+    ("全部书签 标题", "pageCrumb", "FontPageTitle"),
     ("68 结果", "toolbar", "FontTiny"),
     ("搜索框 + 放大镜", "searchField", "SearchFieldHeight"),
     ("筛选 (图标+文字)", "toolbar", "IconButtonSize"),

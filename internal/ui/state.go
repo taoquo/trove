@@ -658,6 +658,12 @@ type Shell struct {
 	// window, publish runs the write on the goroutine and a test reading the outcome
 	// immediately would race it.
 	probeDone chan struct{}
+	// confirmAnswered and confirmAnswer carry a confirmation card's click from the handler
+	// that recorded it to the next build, which is the pass that acts on it: a click handler
+	// runs after the build, so the card cannot read its own button's press in the same pass
+	// that drew it. The zero value is "nothing answered".
+	confirmAnswered bool
+	confirmAnswer   int
 	// deleteBookmarks is a deletion awaiting confirmation.
 	deleteBookmarks PendingAction[[]string]
 	// removeTags is a tag removal awaiting confirmation.

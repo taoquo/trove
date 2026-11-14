@@ -31,11 +31,11 @@ const (
 	// The table follows the list: a row is 48 high with 7/12/7/14 of padding and a 12
 	// gap, its name is the page's 13 at weight 500, and its metadata is the 11.5px sub line.
 	// The head is the 11px/600 uppercase label on a 26-point strip.
-	TagTableShellRadius = 12
+	TagTableShellRadius = 10
 	TagTableShellPad    = 0
 	TagTableHeadHeight  = 26
 	TagTableHeadFont    = 11
-	TagTableHeadTrack   = 0.04
+	TagTableHeadTrack   = 0.12
 	TagTableRowMin      = 48
 	TagTablePadY        = 12
 	TagTablePadX        = 12

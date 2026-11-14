@@ -236,7 +236,7 @@ func TestRestoreRunsOffTheWindowThread(t *testing.T) {
 	shell.Reload(ctx)
 
 	path := exportedBundle(t, db, "restore.trovebundle")
-	shell.bundle.Arm(BundleRequest{Path: path, Restore: true}, "Restore?", "body", "Replace")
+	shell.bundle.Arm(BundleRequest{Path: path, Restore: true}, "Restore?", "body", "Replace", "Cancel")
 	shell.bundle.Confirmation.Answer(0)
 
 	work := capturedBackground(shell)

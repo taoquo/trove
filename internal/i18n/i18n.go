@@ -594,7 +594,6 @@ const (
 	AppearanceLight  Key = "appearance.light"
 	AppearanceDark   Key = "appearance.dark"
 	ThemeLabel       Key = "themeLabel"
-	AppTitle         Key = "pageTitle"
 	ActionCopyLink   Key = "copyLink"
 	// ActionCopied is the copy chip's own confirmation, shown in its place for a moment
 	// after the link is on the clipboard.
@@ -1082,7 +1081,6 @@ var catalogs = map[Locale]map[Key]string{
 		AppearanceLight:           "Light",
 		AppearanceDark:            "Dark",
 		ThemeLabel:                "Theme",
-		AppTitle:                  "Bookmarks",
 		ActionCopyLink:            "Copy link",
 		ActionCopied:              "Copied",
 		ActionOpenBookmark:        "Open bookmark",
@@ -1545,7 +1543,6 @@ var catalogs = map[Locale]map[Key]string{
 		AppearanceLight:           "浅色",
 		AppearanceDark:            "深色",
 		ThemeLabel:                "主题",
-		AppTitle:                  "书签",
 		ActionCopyLink:            "复制链接",
 		ActionCopied:              "已复制",
 		ActionOpenBookmark:        "打开书签",

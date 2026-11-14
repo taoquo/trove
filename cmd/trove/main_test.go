@@ -46,9 +46,9 @@ func TestCompositionRootRendersWithoutAWindow(t *testing.T) {
 	if !tester.HasText("All bookmarks") {
 		t.Errorf("the workspace shell did not render; texts: %q", tester.Texts())
 	}
-	// The chrome is the hero: the brand and, under it, the pair of facet tabs. "Library" was
-	// a heading this shell invented.
-	if !tester.HasText("Bookmarks") || !tester.HasText("Tags") || !tester.HasText("Authors") {
+	// The chrome is the hero: the product's name and, under it, the pair of facet tabs.
+	// "Library" was a heading this shell invented.
+	if !tester.HasText("trove") || !tester.HasText("Tags") || !tester.HasText("Authors") {
 		t.Errorf("the shell is missing its chrome; texts: %q", tester.Texts())
 	}
 }

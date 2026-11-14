@@ -143,7 +143,9 @@ func drawSidebarGlyph(p *ui.Painter, r ui.Rect, ink ui.Color, pane float32) {
 		ink, 0)
 }
 
-// brandLockup is the mark and the name, the pair the title bar starts with in either layout.
+// brandLockup is the mark and the product's name, the pair the title bar starts with in
+// either layout. The name is the product's, not the page's: the crumb beside it says what
+// the reader is looking at, in the same words in both languages.
 // maxWidth is what the row has left for the words; a narrow column keeps the mark and drops
 // the name, as a tight sidebar does.
 func (s *Shell) brandLockup(c *ui.Context, theme *ui.Theme, maxWidth float32) {
@@ -151,29 +153,27 @@ func (s *Shell) brandLockup(c *ui.Context, theme *ui.Theme, maxWidth float32) {
 	if maxWidth < TitleBarBrandMinText {
 		return
 	}
-	ui.Text(c, s.t().T(i18n.AppTitle)).
+	ui.Text(c, s.t().T(i18n.AppName)).
 		Font(s.displayFace()).FontSize(FontSidebarTitleCompact).FontWeight(600).
 		LineHeight(SidebarTitleLineHeight).MaxLines(1).MaxWidth(maxWidth).
 		LetterSpacing(trackingEm(0.01, FontSidebarTitleCompact)).
 		TextColor(theme.Text)
 }
 
-// pageCrumb names the page the reader is on, in the title bar beside the brand.
+// pageCrumb names the results' scope, in the title bar beside the brand.
 //
-// The crumb is where the window says "Work / Library / MCP servers":
-// the pages have no headings of their own, so the reader's place lives in the chrome. This
-// build draws the current page's name alone at 13.5/600 -- the path prefix would name a
-// hierarchy the sidebar already shows.
+// The workspace has no heading of its own, so the reader's place lives in the chrome: the
+// crumb says "All bookmarks", a tag's name or a domain, in the display face at 17/600. It is
+// the current name alone -- a "Work / Library" prefix would name a hierarchy the sidebar
+// already shows.
+//
+// The three pages that draw their own head -- settings, the tag library, the graph -- set the
+// same name in the content, beside their back control. There the crumb would print one word
+// twice, so it draws nothing: the page head is the name.
 func (s *Shell) pageCrumb(c *ui.Context, theme *ui.Theme) {
-	label := s.scopeTitle()
-	switch {
-	case s.state.SettingsOpen:
-		label = s.t().T(i18n.SettingsTitle)
-	case s.state.TagMode:
-		label = s.t().T(i18n.TagManageLabel)
-	case s.state.GraphMode:
-		label = s.t().T(i18n.ToolbarGraph)
+	if s.state.SettingsOpen || s.state.TagMode || s.state.GraphMode {
+		return
 	}
-	ui.Text(c, label).FontSize(FontPageCrumb).FontWeight(600).
+	ui.Text(c, s.scopeTitle()).Font(s.displayFace()).FontSize(FontPageTitle).FontWeight(600).
 		MaxLines(1).TextColor(theme.Text)
 }

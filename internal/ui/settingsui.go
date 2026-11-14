@@ -249,6 +249,14 @@ type textActionSpec struct {
 	// where the glyph would be, as busy controls do.
 	busy   bool
 	danger bool
+	// destructive is the button that ends something: the danger ink on the danger-soft
+	// ground at rest, filling to the danger ink under the pointer. It is not `danger`, which
+	// only tints the hover of an action that is otherwise ordinary -- a confirmation's
+	// "yes" says what it will do before it is pressed.
+	destructive bool
+	// autoFocus gives the button the keyboard focus in the frame it appears, which is how
+	// a dialog puts Return on the safe answer.
+	autoFocus bool
 	// fill stretches the button across its row, for the one action a narrow
 	// panel puts under everything else.
 	fill bool
@@ -277,7 +285,7 @@ func textAction(c *ui.Context, theme *ui.Theme, rail RailTokens, spec textAction
 		Padding(0, SettingsActionPadX).Radius(SettingsActionRadius).
 		Border(1, rail.CardBorder).Background(theme.Surface).
 		GapX(SettingsActionGap).AlignItems(ui.Center).Focusable().
-		Label(spec.label).Shadow(0, 1, 1, 0, ui.RGBA(0, 0, 0, 0.04))
+		Label(spec.label).Shadow(0, 1, 1, 0, ui.RGBA(25, 21, 20, 0.04))
 	if spec.fill {
 		button = button.FillWidth().Center()
 	} else {
@@ -301,6 +309,16 @@ func textAction(c *ui.Context, theme *ui.Theme, rail RailTokens, spec textAction
 	case spec.active:
 		button = button.Background(surfaceAltFor(theme.Dark)).Border(1, theme.TextMuted)
 		ink = theme.Text
+	case spec.destructive:
+		// At rest the danger ink on its soft ground -- readable, but plainly a warning
+		// rather than the path of least resistance. Under the pointer the ground fills, so
+		// the press the reader is about to make is the one they see.
+		hovering := button.Hovered()
+		button = button.
+			Background(hoverColor(c, button, "confirm-action-bg", dangerSoftFor(theme.Dark), theme.Danger, hovering)).
+			Border(1, theme.Danger)
+		ink = hoverColor(c, button, "confirm-action-ink", theme.Danger, theme.AccentText, hovering)
+		weight = 500
 	case button.Hovered() && spec.danger:
 		// The danger action under the pointer: the danger ink on the danger-soft ground.
 		button = button.Background(hoverColor(c, button, "settings-action-bg", theme.Surface, dangerSoftFor(theme.Dark), true)).
@@ -310,6 +328,9 @@ func textAction(c *ui.Context, theme *ui.Theme, rail RailTokens, spec textAction
 		button = button.Background(hoverColor(c, button, "settings-action-bg", theme.Surface, surfaceAltFor(theme.Dark), true)).
 			Border(1, rail.TextTertiary)
 		ink = theme.Text
+	}
+	if spec.autoFocus && !spec.disabled {
+		button = button.AutoFocus()
 	}
 	if !spec.disabled && spec.onClick != nil {
 		button.OnClick(spec.onClick)

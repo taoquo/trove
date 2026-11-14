@@ -40,7 +40,7 @@
 | `pendingSuggestionsBar` | `toolbar.go:551` | `.options-bulk-actions-bar`：待确认标签计数 + `接受全部建议`。**与 `batchBar` 不同**：那个是选中后的批量操作，这个与选择无关（是应用在请你处理） |
 | `listsAndViewsSettings` | `listsviews.go:199` | 设置 › **列表与视图**页签里的「列表」与「保存视图」两段（`state.SettingsOpen`）。侧栏只列标签与作者，这两项的入口在这里；用偏好行语法；Unclassified 与 Inbox 各带一句说明，其余列表只有名字；行内图标带对象名 |
 | `settingsPage` | `settingsview.go:35` | `state.SettingsOpen`。**整页**：占据结果列，侧栏保留；页头 + 顶部标签 + 可滚动分区。分区内容是按偏好行组织的卡片 |
-| `settingsPageHeader` | `settingsview.go:74` | 页头一行：图标返回、页名、四个分区标签、右端 `Find a setting` 输入框；查找有字时标签让位、输入框占满（`.set-searching`） |
+| `settingsPageHeader` | `settingsview.go:74` | 页头一行：图标返回、页名（13.5/600 衬线）、四个分区标签、右端 `Find a setting` 输入框；查找有字时标签让位、输入框占满（`.set-searching`） |
 | `settingsTabs` | `settingsview.go:121` | 顶部四个分区标签：`.warm-tabs`，11/600/.05em 大写、22 高、6 圆角，选中用 --pill 底；`Wrap()`，1180 点窗里一行放得下 |
 | `warmTab`（`settingsTabs` / `tagLibraryTabs` 共用） | `settingsui.go:167` | 一片 `.warm-tabs` 按钮；`mark` 在字后带 6pt 圆点 |
 | `settingsFilteredSections` | `settingsview.go:214` | `SettingsQuery` 非空时：命中分区名 + 该分区内命中的行，全不命中显示 `SettingsNoMatch` |
@@ -52,13 +52,13 @@
 | `settingsDataSafetySection` | `settingsview.go:430` | 数据安全：DATA 标签 + 一句说明；导出、兼容备份、恢复、重置四行（各带一句说明，危险操作用 `.text.danger`）；卡片下方一行回执（`LastBundleOK` 为真时用成功色，进度与拒绝仍是 muted 的 `settingsNote`） |
 | `settingsUpdatesSection` | `updatesview.go:57` | 更新：**版本**一行（`trove <版本> · 上次检查 <时间>`，从未检查时说「安装后尚未检查过」，行尾是「检查更新…」，与菜单栏同一条命令）与**自动检查更新**一行（关/开两段开关，写入更新器自己的偏好）。画在通用页签下、语言与主题那张卡之后，没有自己的页签 |
 | `settingsListsViewsSection` | `listsviews.go:188` | 列表与视图：`listsAndViewsSettings` 的两个卡片，只在 `SettingsSectionListsViews` 页签下画 |
-| `settingsSectionLabel` / `settingsNote` | `settingsui.go:135` | `.label`：11px/600/.05em/**大写**/--muted 的分组标题；`settingsNote` 是它下面的一句说明（`.feat-say`：12px、--muted、在卡外）。设置页与自动标签页共用 |
+| `settingsSectionLabel` / `settingsNote` | `settingsui.go:135` | `.label`：11px/600/.12em/**大写**/--muted 的分组标题；`settingsNote` 是它下面的一句说明（`.feat-say`：12px、--muted、在卡外）。设置页与自动标签页共用 |
 | `settingsField` / `settingsInput` / `settingsQuiet` | `settingsui.go:458` | 偏好行里的文本框：27 高、7 圆角、0 9 内边距、12.5px；`settingsInput` 是可继续链式设置 placeholder / Bind 的底层字段，`settingsQuiet` 是行尾的只读值（11.5px --muted，不画按钮框） |
 | `textAction` / `settingsAction` / `IconChip` | `settingsui.go:271` | 全壳唯一的带字按钮 `.text.action`：27 高、6 圆角、--card 底、12px --fg-2；primary / active / danger / disabled / fill / height 变体。`IconChip` 是带图标的同一按钮 |
 
 | `runProgressBar` | `toolbar.go:19` | `view` 里带进度时（侧栏 hero 下方） |
 | `tagLibraryText` | `taglibrary.go:96` | `state.TagMode`。页头之后按 `state.TagView` 二选一：标签页 = 工具面板 + 表格，自动标签页 = `tagAutoTagView`。两页互斥 |
-| `tagLibraryHeader` | `taglibrary_header.go:26` | 标签库页头（两页共用），与设置页同一语法：34 高一行的图标返回 + `管理标签` 13.5/600 + `标签 / 自动标签` 两个 `.warm-tabs`，下面一行 --muted 统计 |
+| `tagLibraryHeader` | `taglibrary_header.go:26` | 标签库页头（两页共用），与设置页同一语法：34 高一行的图标返回 + `管理标签` 13.5/600 衬线 + `标签 / 自动标签` 两个 `.warm-tabs`，下面一行 --muted 统计 |
 | `tagLibraryBack` | `taglibrary_header.go:50` | 页头左端的 26 方形返回：`ToggleTagMode` 退出标签模式；文字「返回书签」作 Label 与 Tooltip，与设置页返回一致 |
 | `tagLibraryTabs` | `taglibrary_header.go:84` | 「标签 / 自动标签」两片 `.warm-tabs`（`warmTab`）。`自动标签` 未选中且有待办时带 6pt 圆点（运行中或有待确认建议）。**在页头里**，不占表格一行 |
 | `tagAutoTagView` | `autotagview.go:32` | `TagView == TagViewAutoTag`：滚动区里一张运行卡 + 前缀说明的偏好行卡（基础规则 / 标签来源 / 关键词规则 / 请求节奏 / 大模型标签），与设置页同一 `.list` / `.row.pref` 语法 |
@@ -79,7 +79,7 @@
 | `tagTableRow` | `taglibrary.go:559` | 每个标签一行：勾选、名称（点击查看书签；重命名时原地变成输入框）、别名/子标签（别名编辑时原地变成输入框 + 保存/取消）、主题（点击原地变成选择器）、两个计数、更新时间、四个行内动作（书签/重命名/别名/删除） |
 | `tagTableCount` | `taglibrary.go:788` | 一个数字格 |
 | `tagAliasEditor` | `taglibrary.go:767` | `TagEditField == TagEditAliases`：别名行原地变成输入框 + 保存 + 取消 |
-| `dangerDialog` | `dialogs.go:34` | 四类危险确认（删标签、批量删标签、删列表、重置数据、清理孤儿）共用的对话框。**按钮顺序固定为「危险动作, 取消」**：MyGo 聚焦最后一个按钮，所以回车落在取消上 |
+| `confirmDialog` | `dialogs.go:33` | 全部确认共用的一张卡片（删标签、批量删标签、合并、删列表、重置、清理孤儿、删书签、导入/恢复）。`DialogBase` 的面板即卡片：380 宽、`PaddingPanel`、圆角 12、纸色底；标题是显示衬线 16/600，正文 13 muted。**按钮顺序固定为「确认动作, 取消」**：确认动作在前，用危险墨 + 危险浅底（悬停填实）；取消在后并 `AutoFocus`，所以回车与服务生读到的默认答案都是拒绝。Esc 与点遮罩也是拒绝。返回 `(choice, open)`；点击经 `answerConfirmation` 记到下一帧再读，因为点击处理器在构建之后运行 |
 | `vocabularyReviewPanel` | `review.go:33` | `state.ReviewOpen`（`EntranceProgress` 驱动）。四种身体：请求中 / 请求失败（错误 + `ReviewRetry`）/ 部分失败（错误在计划列表之上，Apply 即重试剩余）/ 计划列表（`ReviewApplying` 时按钮忙碌、未勾选时禁用）|
 | `suggestionsPanel` | `panels.go:548` | `state.SuggestionsOpen`（`EntranceProgress` 驱动） |
 | `detailOverlay` | `inspector.go:21` | `state.DetailOpen`（`EntranceProgress` 驱动） |
@@ -104,11 +104,11 @@
 
 | 方法 | 文件:行 | 何时出现 |
 |---|---|---|
-| `handleConfirmations` | `dialogs.go:142` | 分发器：`deleteBookmarks` 的确认答复 |
-| `handleTagDeleteConfirmations` | `dialogs.go:40` | 删除标签 / 合并标签的确认 |
-| `handleListDeleteConfirmation` | `dialogs.go:122` | 删除列表的确认 |
-| `handleCleanupConfirmation` | `dialogs.go:176` | 清理孤儿标签的确认 |
-| `handleResetConfirmation` | `dialogs.go:99` | 重置的确认 |
+| `handleConfirmations` | `dialogs.go:189` | 两处带载荷的确认：`bundle`（导入 / 恢复）与 `deleteBookmarks`。**只有恢复**替换整座书库，所以只有恢复用危险样式；导入只是追加 |
+| `handleTagDeleteConfirmations` | `dialogs.go:82` | 删除标签 / 批量删标签 / 合并标签的确认 |
+| `handleListDeleteConfirmation` | `dialogs.go:164` | 删除列表的确认 |
+| `handleCleanupConfirmation` | `dialogs.go:218` | 清理孤儿标签的确认 |
+| `handleResetConfirmation` | `dialogs.go:141` | 重置的确认 |
 
 ## 窗口标题栏
 
@@ -116,8 +116,8 @@
 |---|---|---|
 | `titleBar` | `titlebar.go:27` | 常驻，窗口第一行。自己画的 50pt 标题栏：系统标题栏隐藏、红绿灯保留；左段是侧栏自己的顶带（同样的底色 + 侧栏边缘延伸到窗口顶端），右段是结果上方的头部。两段都能拖动窗口，双击缩放。开关的图形画在 `drawSidebarGlyph`：16 格上的圆角框 12.5×10.5 r2.25 stroke1.25，分隔线 6.75，左窗格 4×9 r1、展开时 32% |
 | `sidebarToggle` | `titlebar.go:108` | 常驻，标题栏里。侧栏开关：方框 + 分隔线 + 左侧填充（展开时 32%），**两种布局都在窗口同一个 x**——展开时在左段，折叠时搬进右段 |
-| `brandLockup` | `titlebar.go:150` | 常驻，紧接开关。标记 + 13.5/600 名称；宽度不足时只留标记（tight 态） |
-| `pageCrumb` | `titlebar.go:168` | 常驻，品牌之后。当前页名 13.5/600：设置 / 管理标签 / 标签图 / 作用域名。**页名只在这里** |
+| `brandLockup` | `titlebar.go:151` | 常驻，紧接开关。标记 + 13.5/600 衬线产品名 `trove`（`i18n.AppName`，两种语言同一个词，不随页面变）；宽度不足时只留标记（tight 态） |
+| `pageCrumb` | `titlebar.go:173` | 工作区常驻，品牌之后。当前作用域名 17/600，显示衬线（`FontPageTitle` + `displayFace`）：全部书签 / 标签名 / 作用域名。**设置、标签库、标签图不画**——这三页的内容页头自己写页名，页名只出现一次 |
 
 ## 侧栏
 

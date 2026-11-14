@@ -10,34 +10,76 @@ import (
 	"github.com/taoquo/trove/internal/usecase/settings"
 )
 
-// handleConfirmations reads the dialog's answer.
+// confirmDialog draws the shell's confirmation card and reports the answer.
 //
-// MyGo's AlertDialog reports through its open pointer and its return value, so
-// the answer can only be read during a build pass. Clearing the confirmation
-// before acting is what keeps that safe.
+// The card is the shell's own: the question in the display face, the body in the muted ink,
+// and two text actions at the foot. The confirming button comes first and carries the danger
+// ink; Cancel comes last with the keyboard focus, so a reflexive Return refuses. The confirm
+// button must not be labelled "Cancel" while choosing it performs the deletion: a button's
+// label and what it does are two things, and only the pair shows that one is wrong.
+//
+// It is DialogBase rather than a platform alert because the alert paints the system face and
+// gives its accent to the last button -- with a cinnabar accent, that is a red refusal.
+// DialogBase's panel is unstyled, so the panel is the card and no second rounded surface sits
+// behind it.
+//
+// The answer is not read from the click in the same pass: a click handler runs after the
+// build has finished, so answerConfirmation records the choice and the *next* pass reads it
+// here, before anything is drawn. The return value is 0 for the confirming button and 1 for
+// everything else; the second result is whether the dialog is still open. A build can run
+// more than once per frame, and only a pass that closed the dialog may clear the state that
+// asked for it -- clearing on the first pass made the dialog vanish before the frame was
+// photographed.
+func (s *Shell) confirmDialog(c *ui.Context, theme *ui.Theme,
+	title, body, confirmLabel string, destructive bool) (int, bool) {
+	if s.confirmAnswered {
+		s.confirmAnswered = false
+		return s.confirmAnswer, false
+	}
+	rail := Rail(s.state.Appearance, s.state.SystemDark, s.translator.Locale() == i18n.ZHCN)
+	open := true
+	ui.DialogBase(c, &open, func(backdrop, panel ui.Element) {
+		// The scrim the other modal cards use (MyGo's Modal), so a confirmation dims the
+		// window as much as the suggestions and review cards do.
+		backdrop.Background(ui.RGBA(0, 0, 0, 0.4))
+		// The role and the two texts are what a screen reader announces for the question;
+		// the drawn title and body are separate nodes and carry no role of their own.
+		panel.Width(ConfirmDialogWidth).Padding(PaddingPanel).GapY(SpaceLoose).
+			Radius(RadiusDialog).Background(theme.Background).
+			Shadow(0, 10, 30, 0, ui.RGBA(0, 0, 0, 0.3)).
+			Role(ui.RoleAlertDialog).Label(title).Description(body)
+		ui.Text(c, title).Font(s.displayFace()).FontSize(FontModalTitle).FontWeight(600).
+			TextColor(theme.Text)
+		ui.Text(c, body).FontSize(FontBody).TextColor(theme.TextMuted)
+		ui.Row(c).FillWidth().GapX(SpaceBase).Justify(ui.End).Children(func() {
+			textAction(c, theme, rail, textActionSpec{
+				label: confirmLabel, destructive: destructive,
+				onClick: func() { s.answerConfirmation(0) },
+			})
+			// Cancel is last and focused: the safe answer is the one a keyboard reaches.
+			textAction(c, theme, rail, textActionSpec{
+				label: s.t().T(i18n.ActionCancel), autoFocus: true,
+				onClick: func() { s.answerConfirmation(1) },
+			})
+		})
+	})
+	if !open {
+		return 1, false
+	}
+	return DismissedValue, true
+}
+
+// answerConfirmation records a click and asks for the frame that acts on it.
+func (s *Shell) answerConfirmation(choice int) {
+	s.confirmAnswered = true
+	s.confirmAnswer = choice
+	s.invalidate()
+}
+
 // handleTagDeleteConfirmations draws the two tag-deletion dialogs and the merge confirmation.
 //
 // The merge asks here because it deletes what it folds in.
-//
-// The confirm button must not be labelled "Cancel" while choosing it performs the deletion: a
-// button's label and what it does are two things, and only the pair shows that one is wrong.
-// dangerDialog shows a destructive confirmation whose default button is Cancel.
-//
-// MyGo gives the last button the accent colour and the focus, and Enter clicks it. The old
-// dialogs put Delete last, so the focused, Enter-activated button was the destructive one --
-// the opposite of what a confirmation exists for. Delete now comes first and Cancel last
-// The return value is the clicked button's index, 0 for the
-// destructive one and 1 for Cancel; AlertDismissed means Escape, which is also a refusal.
-// The second result is whether the dialog is still on screen. A build can run more than once
-// per frame, and only a pass that closed the dialog may clear the state that asked for it --
-// clearing on the first pass made the dialog vanish before the frame was photographed.
-func (s *Shell) dangerDialog(c *ui.Context, title, message, confirmLabel string) (int, bool) {
-	open := true
-	choice := ui.AlertDialog(c, &open, title, message, confirmLabel, s.t().T(i18n.ActionCancel))
-	return choice, open
-}
-
-func (s *Shell) handleTagDeleteConfirmations(c *ui.Context) {
+func (s *Shell) handleTagDeleteConfirmations(c *ui.Context, theme *ui.Theme) {
 	if s.state.ConfirmMergeTags {
 		target, found := s.mergeTargetTag()
 		count := 0
@@ -46,8 +88,8 @@ func (s *Shell) handleTagDeleteConfirmations(c *ui.Context) {
 		}
 		// The body names the survivor and the count: "merged into X" alone does not say how
 		// many rows are about to disappear from the library.
-		choice, open := s.dangerDialog(c, s.t().T(i18n.TagMergeLabel),
-			s.t().Tf(i18n.TagMergeConfirmBody, count, target.Name), s.t().T(i18n.TagMergeLabel))
+		choice, open := s.confirmDialog(c, theme, s.t().T(i18n.TagMergeLabel),
+			s.t().Tf(i18n.TagMergeConfirmBody, count, target.Name), s.t().T(i18n.TagMergeLabel), true)
 		if open {
 			return
 		}
@@ -63,8 +105,8 @@ func (s *Shell) handleTagDeleteConfirmations(c *ui.Context) {
 	}
 
 	if s.state.ConfirmDeleteTag != "" {
-		choice, open := s.dangerDialog(c, s.t().T(i18n.ActionDelete),
-			s.t().T(i18n.DeleteTagConfirm), s.t().T(i18n.ActionDelete))
+		choice, open := s.confirmDialog(c, theme, s.t().T(i18n.ActionDelete),
+			s.t().T(i18n.DeleteTagConfirm), s.t().T(i18n.ActionDelete), true)
 		if open {
 			return
 		}
@@ -80,9 +122,9 @@ func (s *Shell) handleTagDeleteConfirmations(c *ui.Context) {
 	}
 
 	if s.state.ConfirmDeleteTags {
-		choice, open := s.dangerDialog(c, s.t().T(i18n.ActionDelete),
+		choice, open := s.confirmDialog(c, theme, s.t().T(i18n.ActionDelete),
 			fmt.Sprintf("%s (%d)", s.t().T(i18n.DeleteTagsConfirm), s.SelectedTagCount()),
-			s.t().T(i18n.ActionDelete))
+			s.t().T(i18n.ActionDelete), true)
 		if open {
 			return
 		}
@@ -96,13 +138,13 @@ func (s *Shell) handleTagDeleteConfirmations(c *ui.Context) {
 }
 
 // handleResetConfirmation draws the reset dialog.
-func (s *Shell) handleResetConfirmation(c *ui.Context) {
+func (s *Shell) handleResetConfirmation(c *ui.Context, theme *ui.Theme) {
 	if !s.state.ConfirmResetData {
 		return
 	}
 
-	choice, open := s.dangerDialog(c, s.t().T(i18n.ResetLocalData),
-		s.t().T(i18n.ResetLocalDataConfirm), s.t().T(i18n.ResetLocalData))
+	choice, open := s.confirmDialog(c, theme, s.t().T(i18n.ResetLocalData),
+		s.t().T(i18n.ResetLocalDataConfirm), s.t().T(i18n.ResetLocalData), true)
 	if open {
 		return
 	}
@@ -119,13 +161,13 @@ func (s *Shell) handleResetConfirmation(c *ui.Context) {
 //
 // It follows the same rule as the other danger actions: the dialog's answer is the only
 // thing that runs the delete, so dismissing it leaves the list alone.
-func (s *Shell) handleListDeleteConfirmation(c *ui.Context) {
+func (s *Shell) handleListDeleteConfirmation(c *ui.Context, theme *ui.Theme) {
 	if s.state.ConfirmDeleteList == "" {
 		return
 	}
 
-	choice, open := s.dangerDialog(c, s.t().T(i18n.ActionDelete),
-		s.t().T(i18n.DeleteListConfirm), s.t().T(i18n.ActionDelete))
+	choice, open := s.confirmDialog(c, theme, s.t().T(i18n.ActionDelete),
+		s.t().T(i18n.DeleteListConfirm), s.t().T(i18n.ActionDelete), true)
 	if open {
 		return
 	}
@@ -139,33 +181,33 @@ func (s *Shell) handleListDeleteConfirmation(c *ui.Context) {
 	s.ConfirmDeleteListNow(context.Background())
 }
 
-func (s *Shell) handleConfirmations(c *ui.Context) {
-	if !s.deleteBookmarks.Confirmation.Asked() {
-		return
-	}
-
-	// The bundle question is checked as well, because only one dialog is on screen
-	// at a time and either may be the one that is open.
+// handleConfirmations draws the two confirmations that carry a payload: a bundle import or
+// restore, and a batch deletion.
+//
+// Only one dialog is on screen at a time, and each handler returns after drawing its own, so
+// the bundle is checked first and the deletion second.
+func (s *Shell) handleConfirmations(c *ui.Context, theme *ui.Theme) {
 	if s.bundle.Confirmation.Asked() {
 		confirmation := &s.bundle.Confirmation
-		buttons := confirmation.Buttons()
-		open := confirmation.Open()
-
-		result := ui.AlertDialog(c, open, confirmation.Title, confirmation.Body, buttons...)
-		if !*open {
-			confirmation.Answer(result)
+		// A restore replaces the library; an import only adds to it, so only the restore is
+		// drawn as the action that ends something.
+		choice, open := s.confirmDialog(c, theme, confirmation.Title, confirmation.Body,
+			confirmation.Buttons()[0], s.bundle.Payload.Restore)
+		if !open {
+			confirmation.Answer(choice)
 			_ = s.applyBundle(context.Background())
 		}
 		return
 	}
 
+	if !s.deleteBookmarks.Confirmation.Asked() {
+		return
+	}
 	confirmation := &s.deleteBookmarks.Confirmation
-	buttons := confirmation.Buttons()
-	open := confirmation.Open()
-
-	result := ui.AlertDialog(c, open, confirmation.Title, confirmation.Body, buttons...)
-	if !*open {
-		confirmation.Answer(result)
+	choice, open := s.confirmDialog(c, theme, confirmation.Title, confirmation.Body,
+		confirmation.Buttons()[0], true)
+	if !open {
+		confirmation.Answer(choice)
 		s.applyDeleteBookmarks(context.Background())
 	}
 }
@@ -173,13 +215,13 @@ func (s *Shell) handleConfirmations(c *ui.Context) {
 // State exposes the state for tests.
 
 // handleCleanupConfirmation draws the orphan-cleanup dialog.
-func (s *Shell) handleCleanupConfirmation(c *ui.Context) {
+func (s *Shell) handleCleanupConfirmation(c *ui.Context, theme *ui.Theme) {
 	if !s.state.ConfirmCleanupTags {
 		return
 	}
 
-	choice, open := s.dangerDialog(c, s.t().T(i18n.TagCleanupOrphans),
-		s.t().T(i18n.TagCleanupConfirm), s.t().T(i18n.TagCleanupOrphans))
+	choice, open := s.confirmDialog(c, theme, s.t().T(i18n.TagCleanupOrphans),
+		s.t().T(i18n.TagCleanupConfirm), s.t().T(i18n.TagCleanupOrphans), true)
 	if open {
 		return
 	}

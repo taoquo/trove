@@ -12,8 +12,8 @@ package ui
 // ConfirmResult is what a dialog reported.
 type ConfirmResult = int
 
-// DismissedValue is what MyGo's AlertDialog returns when it closes without a
-// button being chosen.
+// DismissedValue is what a confirmation reports when it closed without a
+// button being chosen: Escape or a press on the backdrop.
 const DismissedValue ConfirmResult = -1
 
 // Confirmation is a destructive action awaiting an answer.
@@ -40,8 +40,10 @@ type Confirmation struct {
 
 // Buttons are the dialog's labels, in the order they are shown.
 //
-// Cancel comes last because MyGo gives the last button the focus and Enter: the
-// destructive one must never be the button a reflexive Return presses.
+// Cancel comes last because the confirmation card gives the last button the focus
+// and Enter: the destructive one must never be the button a reflexive Return
+// presses. The shells pass a translated CancelLabel; the fallbacks keep a
+// confirmation built without one — every test — readable.
 func (c *Confirmation) Buttons() []string {
 	cancel := c.CancelLabel
 	if cancel == "" {
@@ -95,11 +97,6 @@ func (c *Confirmation) Denied() bool {
 	return c.answer != nil && *c.answer != c.confirmIndex
 }
 
-// Open reports whether the dialog should be drawn.
-// It is the pointer MyGo's AlertDialog binds to, so it clears itself when the
-// dialog closes.
-func (c *Confirmation) Open() *bool { return &c.asked }
-
 // Reset clears the confirmation without acting on it.
 func (c *Confirmation) Reset() {
 	c.asked = false
@@ -120,10 +117,14 @@ type PendingAction[T any] struct {
 }
 
 // Arm opens a confirmation for a specific payload.
-func (p *PendingAction[T]) Arm(payload T, title, body, confirmLabel string) {
+//
+// The cancel label is passed rather than defaulted: the shell knows its locale, and a
+// Chinese window that says "Cancel" under its question is a defect.
+func (p *PendingAction[T]) Arm(payload T, title, body, confirmLabel, cancelLabel string) {
 	p.Payload = payload
 	p.armed = true
 	p.Confirmation.Ask(title, body, confirmLabel)
+	p.Confirmation.CancelLabel = cancelLabel
 }
 
 // Approved returns the payload, and whether the action may proceed.

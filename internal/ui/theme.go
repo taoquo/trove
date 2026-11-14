@@ -4,8 +4,15 @@ import "github.com/egoist/mygo/ui"
 
 // The palette.
 //
-// The visual language is a cool grey canvas, white cards with a hairline edge, one
-// indigo accent, and a compact system-sans type scale.
+// The visual language is warm paper: a parchment canvas, ivory cards edged in a hairline,
+// one cinnabar accent, and a compact type scale whose headings are serif.
+//
+// It is the language the brand mark and the download page are already set in, so the window
+// and the page that sells it are one thing.
+//
+// The dark appearance inverts the paper to the ink: the ground is the ink colour, the cards
+// are a warm charcoal, and the accent is cinnabar three steps lighter so it still reads on a
+// dark ground.
 //
 // The light and dark palettes below are the two sources.
 //
@@ -14,133 +21,121 @@ import "github.com/egoist/mygo/ui"
 
 // Light tokens.
 var (
-	lightPageBg = ui.Hex("#f4f4f6") // the page ground
-	// The results ground is the page: every page sits directly on the page ground and draws
-	// a card only where there is a panel. lightMainBg is kept as a second name because call
-	// sites name it.
-	lightMainBg         = ui.Hex("#f4f4f6") // the page ground
-	lightSideBg         = ui.Hex("#f4f4f6") // the page ground (the sidebar sits on the page)
-	lightSurfaceBg      = ui.Hex("#ffffff") // the card ground
-	lightSurfaceAlt     = ui.Hex("#f9f9fb") // an expanded editor or a raised row
-	lightRailBg         = ui.Hex("#f4f4f6") // the page ground
-	lightRailBorder     = ui.Hex("#e3e3e8") // the hairline
-	lightBorderSubtle   = ui.Hex("#ececf0") // the subtle hairline
-	lightSurfaceMuted   = ui.Hex("#f1f1f4") // the tray ground
-	lightTextStrong     = ui.Hex("#1c1c21") // the strong ink
-	lightTextMuted      = ui.Hex("#4b4b53") // the muted ink
-	lightTextTertiary   = ui.Hex("#85858d") // the tertiary ink
-	lightTextQuater     = ui.Hex("#b9b9c2") // the faint ink
-	lightBadgeBg        = ui.Hex("#f1f1f4") // the tray ground
-	lightBadgeFg        = ui.Hex("#4b4b53") // the muted ink
-	lightPanelStrong    = ui.Hex("#ffffff") // the card ground
-	lightBtnHover       = ui.Hex("#e9e9ee") // the pressed ground
-	lightFieldFocus     = ui.Hex("#ffffff") // the card ground; a field keeps its ground and gains a ring
-	lightOptionsPage    = ui.Hex("#f4f4f6") // the page ground
-	lightOptionsSurf    = ui.Hex("#ffffff") // the card ground
-	lightOptionsBorder  = ui.Hex("#e3e3e8") // the hairline
-	lightResultsSurface = ui.Hex("#f4f4f6") // the page ground
+	lightPageBg = ui.Hex("#f6f0ea") // the page ground
+	// Every page sits directly on the page ground and draws a card only where there is a
+	// panel; the results column is the page too.
+	lightSurfaceBg      = ui.Hex("#fbf7f3") // the card ground
+	lightSurfaceAlt     = ui.Hex("#f9f3ec") // an expanded editor or a raised row
+	lightRailBorder     = ui.Hex("#e6dacd") // the hairline
+	lightBorderSubtle   = ui.Hex("#eadfd5") // the subtle hairline
+	lightSurfaceMuted   = ui.Hex("#efe7df") // the tray ground
+	lightTextStrong     = ui.Hex("#191514") // the strong ink
+	lightTextMuted      = ui.Hex("#5a4a43") // the muted ink
+	lightTextTertiary   = ui.Hex("#756a63") // the tertiary ink
+	lightTextQuater     = ui.Hex("#8b8078") // the faint ink
+	lightBadgeBg        = ui.Hex("#efe7df") // the tray ground
+	lightBadgeFg        = ui.Hex("#5a4a43") // the muted ink
+	lightBtnHover       = ui.Hex("#ede3da") // the pressed ground: one step below the tray
+	lightResultsSurface = ui.Hex("#f6f0ea") // the page ground
 
 	// A selected row is the selection ground with an accent-tinted edge. The selected list rows carry no
 	// border; the 0.55 mix is this shell's, for a native selection that has to
 	// read without a hover state.
-	lightSelectedBg     = ui.Hex("#ecebfb") // the selection ground
-	lightSelectedBorder = ui.Hex("#a5a0f2") // 55% #4f46e5 over #ffffff
-	lightScrollThumb    = ui.Hex("#b9b9c2") // the faint ink
+	lightSelectedBg     = ui.Hex("#f7e6e1") // the selection ground
+	lightSelectedBorder = ui.Hex("#c97a63") // cinnabar at 55% over the page
+	// The scroll thumb is warm neutral paper, never the toolkit's neutral black: a grey
+	// thumb over a parchment column reads as a piece of another palette.
+	lightScrollThumb = ui.Hex("#c9b9ac")
 
-	// A tag is a pill: the tray ground, the muted ink. Badges and chips are grey until
-	// they are interactive.
-	lightTagBg     = ui.Hex("#f1f1f4") // the tray ground
-	lightCardTagBg = ui.Hex("#f1f1f4") // the tray ground
-
-	// detailDoneWarm is kept for the one reader that names it (the detail's done button) and
-	// points at the accent.
-	detailDoneWarm = ui.Hex("#4f46e5")
+	// A tag is a pill: the tray ground, the muted ink.
+	lightCardTagBg = ui.Hex("#efe7df") // the tray ground
 )
 
 // Dark tokens.
 var (
-	darkPageBg         = ui.Hex("#1a1a1e") // the page ground
-	darkMainBg         = ui.Hex("#1a1a1e") // the page ground
-	darkSideBg         = ui.Hex("#1a1a1e") // the page ground
-	darkSurfaceBg      = ui.Hex("#232327") // the card ground
-	darkSurfaceAlt     = ui.Hex("#1f1f23") // an expanded editor or a raised row
-	darkRailBorder     = ui.Hex("#333339") // the hairline
-	darkSubtleLine     = ui.Hex("#2c2c32") // the subtle hairline
-	darkSurfaceMuted   = ui.Hex("#2d2d33") // the tray ground
-	darkTextStrong     = ui.Hex("#ededf1") // the strong ink
-	darkTextMuted      = ui.Hex("#b9b9c1") // the muted ink
-	darkTextTertiary   = ui.Hex("#8b8b94") // the tertiary ink
-	darkTextQuater     = ui.Hex("#56565f") // the faint ink
-	darkBadgeBg        = ui.Hex("#2d2d33") // the tray ground
-	darkBadgeFg        = ui.Hex("#b9b9c1") // the muted ink
-	darkPanelStrong    = ui.Hex("#232327") // the card ground
-	darkBtnHover       = ui.Hex("#36363d") // the pressed ground
-	darkFieldFocus     = ui.Hex("#232327") // the card ground
-	darkOptionsPage    = ui.Hex("#1a1a1e") // the page ground
-	darkOptionsSurf    = ui.Hex("#232327") // the card ground
-	darkOptionsBorder  = ui.Hex("#333339") // the hairline
-	darkResultsSurface = ui.Hex("#1a1a1e") // the page ground
+	darkPageBg         = ui.Hex("#191514") // the page ground
+	darkSurfaceBg      = ui.Hex("#221c19") // the card ground
+	darkSurfaceAlt     = ui.Hex("#1e1815") // an expanded editor or a raised row
+	darkRailBorder     = ui.Hex("#3a2f2a") // the hairline
+	darkSubtleLine     = ui.Hex("#322925") // the subtle hairline
+	darkSurfaceMuted   = ui.Hex("#2b2421") // the tray ground
+	darkTextStrong     = ui.Hex("#f6f0ea") // the strong ink
+	darkTextMuted      = ui.Hex("#d7cbc2") // the muted ink
+	darkTextTertiary   = ui.Hex("#b9aca3") // the tertiary ink
+	darkTextQuater     = ui.Hex("#7f736b") // the faint ink
+	darkBadgeBg        = ui.Hex("#2b2421") // the tray ground
+	darkBadgeFg        = ui.Hex("#d7cbc2") // the muted ink
+	darkBtnHover       = ui.Hex("#332b27") // the pressed ground: one step below the tray
+	darkResultsSurface = ui.Hex("#191514") // the page ground
 
-	darkSelectedBg = ui.Hex("#33345a") // the selection ground
-	// 55% #a5b4fc over #232327.
-	darkSelectedBorder = ui.Hex("#6c74a6")
-	darkScrollThumb    = ui.Hex("#56565f") // the faint ink
+	darkSelectedBg = ui.Hex("#3a2521") // the selection ground
+	// 55% #c97a63 over #221c19.
+	darkSelectedBorder = ui.Hex("#a35b47")
+	darkScrollThumb    = ui.Hex("#6b5b52") // the scroll thumb
 
-	darkTagBg     = ui.Hex("#2d2d33") // the tray ground
-	darkCardTagBg = ui.Hex("#2d2d33") // the tray ground
-
-	darkOverlay = ui.RGBA(0, 0, 0, 0.55)
-
-	// The quiet control ink is a control's quiet text: darker than the muted ink so it clears 4.5:1 on every
-	// surface it sits on. The view switch's unselected tabs and the toolbar's labelled
-	// actions use it.
-	lightControlText = ui.Hex("#63636b")
-	darkControlText  = ui.Hex("#a1a1aa")
+	darkCardTagBg = ui.Hex("#2b2421") // the tray ground
 )
+
+// The quiet control ink is a control's quiet text: one step behind the muted ink, and still
+// 5.7:1 on the light page and 7.5:1 on the dark one, so an unselected tab stays readable.
+// The view switch's unselected tabs and the toolbar's labelled actions use it.
+var (
+	lightControlText = ui.Hex("#6b5b52")
+	darkControlText  = ui.Hex("#b0a49b")
+)
+
+// modalScrim is the lightbox's backdrop, in both appearances.
+//
+// It is the one colour that is not mixed with the page: a photo needs the room dimmed
+// further than the cards' 0.4 scrim, and mixing paper into a scrim greys the window instead
+// of dimming it.
+var modalScrim = ui.RGBA(0, 0, 0, 0.55)
 
 // The segmented control's thumb.
 //
 // The view switch has no track behind the tabs: only the open tab's thumb, which is the
 // card ground in the light theme and a low-alpha white in the dark one.
 var (
-	lightSegThumb = ui.Hex("#ffffff")
-	darkSegThumb  = ui.RGBA(255, 255, 255, 0.15)
+	lightSegThumb = lightSurfaceBg
+	darkSegThumb  = ui.RGBA(255, 255, 255, 0.10)
 )
 
 // Status colours, from the same two palettes.
 var (
-	lightSuccess = ui.Hex("#189a58") // the success ink
-	lightWarning = ui.Hex("#b45309") // the warning ink
-	lightDanger  = ui.Hex("#d64545") // the danger ink
+	lightSuccess = ui.Hex("#4a6b52") // the success ink
+	lightWarning = ui.Hex("#906327") // the warning ink
+	lightDanger  = ui.Hex("#7e241c") // the danger ink
 
-	darkSuccess = ui.Hex("#6fd99b") // the success ink
-	darkWarning = ui.Hex("#f2b544") // the warning ink
-	darkDanger  = ui.Hex("#f28b82") // the danger ink
+	darkSuccess = ui.Hex("#8fb394") // the success ink
+	darkWarning = ui.Hex("#e0b070") // the warning ink
+	darkDanger  = ui.Hex("#f2a19a") // the danger ink
 
 	// The soft grounds a badge sits on: the success, warning and danger soft grounds.
-	lightSuccessFill = ui.Hex("#e4f6ec")
-	lightWarningFill = ui.Hex("#fbf0df")
-	lightDangerFill  = ui.Hex("#fbe9e9")
-	darkSuccessFill  = ui.Hex("#1e3a2b")
-	darkWarningFill  = ui.Hex("#3f3220")
-	darkDangerFill   = ui.Hex("#45272a")
+	lightSuccessFill = ui.Hex("#e7eee5")
+	lightWarningFill = ui.Hex("#f6ebd9")
+	lightDangerFill  = ui.Hex("#f7e2de")
+	darkSuccessFill  = ui.Hex("#22322a")
+	darkWarningFill  = ui.Hex("#3a2f1e")
+	darkDangerFill   = ui.Hex("#40231f")
 )
 
 // The accent, with its soft and foreground steps.
 //
-// There is no hover token for the accent: the primary button brightens by 8% and the
-// links do not change. The two hovers below are that 8% adjustment evaluated, so a hovered
-// primary button moves that way without inventing a second hue.
+// There is no hover token for the accent: a pressed primary button steps down the same hue
+// to cinnabar-800 and the links do not change. The step below is that pressed value, so a
+// pressed button deepens rather than inventing a second hue.
 var (
-	lightAccent      = ui.Hex("#4f46e5") // the accent
-	lightAccentHover = ui.Hex("#4338ca") // the accent at 92% brightness (a brightness of 1.08 would be lighter; this is the pressed step)
-	lightAccentSoft  = ui.Hex("#eeedfd") // the accent's soft ground
+	lightAccent      = ui.Hex("#b83d2e") // the accent
+	lightAccentHover = ui.Hex("#7e241c") // the accent's pressed step, two shades deeper
+	lightAccentSoft  = ui.Hex("#f7e6e1") // the accent's soft ground
 	lightAccentFg    = ui.Hex("#ffffff") // the accent's foreground
 
-	darkAccent      = ui.Hex("#a5b4fc")
-	darkAccentHover = ui.Hex("#c7d2fe")
-	darkAccentSoft  = ui.Hex("#2b2c47")
-	darkAccentFg    = ui.Hex("#14142a")
+	darkAccent      = ui.Hex("#c97a63")
+	darkAccentHover = ui.Hex("#e3a595")
+	darkAccentSoft  = ui.Hex("#3a2521")
+	// A dark-theme accent is light enough for the ink to sit on it; the ink is the family's
+	// ground colour, not a second near-black invented for this one role.
+	darkAccentFg = darkPageBg
 )
 
 // StatusBadgeTokens are one status pill: its border, fill and text.
@@ -296,6 +291,9 @@ func folioTheme(dark bool) *ui.Theme {
 		theme.Danger = darkDanger
 		theme.Warning = darkWarning
 		theme.Success = darkSuccess
+		// The toolkit's own default is a neutral 35% white; the thumb is a token like every
+		// other surface.
+		theme.Scrollbar = darkScrollThumb
 	} else {
 		theme.Background = lightPageBg
 		theme.Surface = lightSurfaceBg
@@ -313,6 +311,9 @@ func folioTheme(dark bool) *ui.Theme {
 		theme.Danger = lightDanger
 		theme.Warning = lightWarning
 		theme.Success = lightSuccess
+		// The toolkit's own default is a neutral 32% black; the thumb is a token like every
+		// other surface.
+		theme.Scrollbar = lightScrollThumb
 	}
 	return theme
 }
@@ -321,7 +322,7 @@ func folioTheme(dark bool) *ui.Theme {
 //
 // The brand mark is the app's own bookmark logo; the name is kept because branding and the
 // icon tests refer to it, and the value follows the product's accent.
-var BrandCinnabar = ui.Hex("#4f46e5")
+var BrandCinnabar = ui.Hex("#b83d2e")
 
 type RailTokens struct {
 	// Sidebar, Results and Inspector are the three columns.
@@ -375,8 +376,9 @@ type RailTokens struct {
 
 // Rail returns the structural colours for an appearance.
 //
-// The zh locale used to select a serif stack; both locales use the system sans here,
-// so the argument stays for the call sites and changes nothing.
+// The zh locale used to select a serif stack for the shell. Headings now use the display
+// stack in syncsettings.go, the same in both locales, so the argument stays for the call
+// sites and changes nothing.
 func Rail(appearance Appearance, systemDark bool, chineseLocale bool) RailTokens {
 	tokens := railLight()
 	if IsDark(appearance, systemDark) {
@@ -453,33 +455,33 @@ func segShadowFor(dark bool) ui.Color {
 	if dark {
 		return ui.RGBA(0, 0, 0, 0.30)
 	}
-	return ui.RGBA(0, 0, 0, 0.14)
+	return ui.RGBA(25, 21, 20, 0.14)
 }
 
 // segEdge is the segmented edge: a one-point drop and a half-point ring, in that order.
 //
-// Light: `0 1px 2px rgba(0,0,0,.14), 0 0 0 .5px rgba(0,0,0,.08)`. Dark: the drop, plus an
+// Light: `0 1px 2px rgba(25,21,20,.14), 0 0 0 .5px rgba(25,21,20,.08)`. Dark: the drop, plus an
 // inset highlight MyGo cannot draw -- an inner shadow would need a blend the painter has no
 // equivalent for, so the dark thumb keeps its drop alone.
 func segEdge(el ui.Element, dark bool) ui.Element {
 	el = el.Shadow(0, 1, 2, 0, segShadowFor(dark))
 	if !dark {
-		el = el.Shadow(0, 0, 0, 0.5, ui.RGBA(0, 0, 0, 0.08))
+		el = el.Shadow(0, 0, 0, 0.5, ui.RGBA(25, 21, 20, 0.08))
 	}
 	return el
 }
 
 // popoverShadow is the palette's popover shadow, the drop under a popover:
 //
-//	light: 0 16px 44px rgba(20,22,30,.16), 0 2px 8px rgba(20,22,30,.06),
-//	       0 0 0 .5px rgba(20,22,30,.1)
+//	light: 0 16px 44px rgba(25,21,20,.16), 0 2px 8px rgba(25,21,20,.06),
+//	       0 0 0 .5px rgba(25,21,20,.1)
 //	dark:  0 16px 44px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.3),
 //	       0 0 0 .5px rgba(255,255,255,.1)
 //
 // The half-point ring is a shadow rather than a border; the panels that use this also carry
 // the hairline, so the two meet in the same place.
 func popoverShadow(el ui.Element, dark bool) ui.Element {
-	drop, near, ring := ui.RGBA(20, 22, 30, 0.16), ui.RGBA(20, 22, 30, 0.06), ui.RGBA(20, 22, 30, 0.10)
+	drop, near, ring := ui.RGBA(25, 21, 20, 0.16), ui.RGBA(25, 21, 20, 0.06), ui.RGBA(25, 21, 20, 0.10)
 	if dark {
 		drop, near, ring = ui.RGBA(0, 0, 0, 0.55), ui.RGBA(0, 0, 0, 0.30), ui.RGBA(255, 255, 255, 0.10)
 	}
@@ -539,7 +541,7 @@ func railFrom(theme *ui.Theme, chineseLocale bool) RailTokens {
 		SelectedBorder: selectedBorderFor(dark),
 		FieldFocus:     theme.Surface,
 
-		Overlay: darkOverlay,
+		Overlay: modalScrim,
 	}
 }
 

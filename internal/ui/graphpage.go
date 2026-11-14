@@ -107,8 +107,8 @@ func (s *Shell) graphPageHead(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 				drawIcon(p, "back", r.X+(r.W-side)/2, r.Y+(r.H-side)/2, side, rail.TextTertiary)
 			})
 		ui.Text(c, s.t().T(i18n.ToolbarGraph)).
-			FontSize(FontSidebarTitleCompact).FontWeight(600).TextColor(theme.Text).
-			Padding(0, 10, 0, 4)
+			Font(s.displayFace()).FontSize(FontSidebarTitleCompact).FontWeight(600).
+			TextColor(theme.Text).Padding(0, 10, 0, 4)
 		ui.Spacer(c).FillWidth()
 	})
 }

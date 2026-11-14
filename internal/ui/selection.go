@@ -283,7 +283,8 @@ func (s *Shell) AskDeleteBookmarks(tweetIDs []string) {
 	s.deleteBookmarks.Arm(tweetIDs,
 		s.t().T(i18n.ConfirmDeleteBookmarksTitle),
 		s.t().Tf(i18n.ConfirmDeleteBookmarksBody, len(tweetIDs)),
-		s.t().T(i18n.ActionDelete))
+		s.t().T(i18n.ActionDelete),
+		s.t().T(i18n.ActionCancel))
 }
 
 // applyDeleteBookmarks runs the deletion, but only if it was approved.

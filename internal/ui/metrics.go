@@ -13,18 +13,19 @@ package ui
 const (
 	// Radii.
 	//
-	// The scale is flat: a page is a 12px card, a control is 6-8px, and only pills and
-	// avatars go fully round.
+	// The scale is flat: a page is a 10px card, a control is 6-8px, and only pills and
+	// avatars go fully round. The paper's card is 8-10; a larger radius reads as a web card
+	// rather than a sheet.
 	//
-	//   list cards             12px
+	//   list cards             10px
 	//   a picker                6px
 	//   an icon button          7px
 	//   a segmented button      6px
 	//   a grouped sub-row       6px
 	//   a sidebar nav row       7px
 	//   a chip or badge       999px
-	//   a confirm action       14px
-	RadiusPanel  = 12
+	//   a confirm action       12px
+	RadiusPanel  = 10
 	RadiusMedium = 8
 	// RadiusSmall is the 6px of a field, a segmented button and a small nav row.
 	RadiusSmall = 6
@@ -34,11 +35,16 @@ const (
 
 	// The component radii.
 	RadiusSidebarRow  = 7  // sidebar nav rows
-	RadiusResultCard  = 12 // a page's card
-	RadiusToolbar     = 12 // the toolbar's panel
+	RadiusResultCard  = 10 // a page's card
+	RadiusToolbar     = 10 // the toolbar's panel
 	RadiusToolbarItem = 8  // a control in the toolbar
-	RadiusDialog      = 14 // a confirm action
-	RadiusInspector   = 12
+	RadiusDialog      = 12 // a confirm action
+	RadiusInspector   = 10
+
+	// ConfirmDialogWidth is the confirmation card's measure: wide enough for a sentence of
+	// body copy at FontBody on two or three lines, narrow enough that the question reads as
+	// one question rather than as a page.
+	ConfirmDialogWidth = 380
 )
 
 const (
@@ -107,10 +113,9 @@ const (
 	FontSidebarTitle        = 14
 	FontSidebarTitleCompact = 13.5
 	// There is no 34px display title in this window. A page names itself in the title
-	// bar's crumb at 13.5/600, so no page heading is drawn in the
-	// content at all. FontDisplayTitle stays for the pages that still draw one.
+	// bar, in the display face at 17/600 (FontPageTitle), so no page heading is drawn in
+	// the content at all. FontDisplayTitle stays for the pages that still draw one.
 	FontDisplayTitle = 16
-	FontPageCrumb    = 13.5
 	// FontResultsValue is the large number drawn for a total: 22px.
 	FontResultsValue = 22
 	// DisplayTracking is the tight tracking applied to the large numerals.
@@ -131,7 +136,7 @@ const (
 	// padding; its meta line is 13px. These are the pending-suggestions bar's own numbers, read
 	// from the bar rather than borrowed from the card.
 	BulkBarPadding = 10
-	BulkBarRadius  = 12
+	BulkBarRadius  = 10
 	BulkBarGap     = 10
 	// The bulk bar's bottom margin.
 	BulkBarMarginBottom = 14
@@ -360,18 +365,18 @@ const (
 	// The inline media is at least 108 high with a 12px radius. It fills the side column's
 	// height rather than holding an aspect ratio, so a tall card gets a tall picture.
 	CardListSideMinHeight = 108
-	CardListMediaRadius   = 12
+	CardListMediaRadius   = 10
 	// CardNoMediaPaddingLeft leaves room for the card's select toggle, which floats in the
 	// grid's top-left corner.
 	CardNoMediaPaddingLeft = 30
 
 	// The loading and empty states. The shell must not show a bare spinner where the reference
 	// draws a panel of six placeholder cards.
-	SkeletonShellRadius = 12
+	SkeletonShellRadius = 10
 	SkeletonShellGap    = 24
 	SkeletonShellPad    = 24
 	SkeletonGridGap     = 16
-	SkeletonCardRadius  = 12
+	SkeletonCardRadius  = 10
 	SkeletonCardPad     = 20
 	SkeletonMinCardW    = 220
 	// SkeletonCardCount is the number of placeholder cards: six.
@@ -548,10 +553,12 @@ const (
 	DetailMetaValueFont = 14
 	DetailMetaValueLine = 1.45
 
-	// The settings section label: 11px/600/.05em uppercase. The settings
-	// page's own numbers live in metrics_interaction.go, beside the rest of that page.
+	// The settings section label: 11px/600/.12em uppercase. The tracking is the family's
+	// one value for a capitalised label (FeedStateOverlineTrack and TagTableHeadTrack are the
+	// same number), because a label that sets its own letter spacing is a second scale. The
+	// settings page's own numbers live in metrics_interaction.go, beside the rest of that page.
 	SettingsGroupTitle = 11
-	SettingsGroupTrack = 0.05
+	SettingsGroupTrack = 0.12
 
 	// DetailContextMinWidth and DetailContextMaxWidth are the reading pane's companion:
 	// `grid-template-columns: minmax(0, 1fr) minmax(238px, 270px)`. The rail takes its

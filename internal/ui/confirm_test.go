@@ -132,7 +132,7 @@ func TestPendingActionRequiresApproval(t *testing.T) {
 
 	t.Run("arming without an answer hands out nothing", func(t *testing.T) {
 		var action PendingAction[[]string]
-		action.Arm([]string{"a", "b"}, "Delete?", "body", "Delete")
+		action.Arm([]string{"a", "b"}, "Delete?", "body", "Delete", "Cancel")
 
 		if _, ok := action.Approved(); ok {
 			t.Error("arming must not approve the action")
@@ -141,7 +141,7 @@ func TestPendingActionRequiresApproval(t *testing.T) {
 
 	t.Run("a denial hands out nothing", func(t *testing.T) {
 		var action PendingAction[[]string]
-		action.Arm([]string{"a", "b"}, "Delete?", "body", "Delete")
+		action.Arm([]string{"a", "b"}, "Delete?", "body", "Delete", "Cancel")
 		action.Confirmation.Answer(1)
 
 		if payload, ok := action.Approved(); ok {
@@ -151,7 +151,7 @@ func TestPendingActionRequiresApproval(t *testing.T) {
 
 	t.Run("an approval hands out exactly what was shown", func(t *testing.T) {
 		var action PendingAction[[]string]
-		action.Arm([]string{"a", "b"}, "Delete?", "body", "Delete")
+		action.Arm([]string{"a", "b"}, "Delete?", "body", "Delete", "Cancel")
 		action.Confirmation.Answer(0)
 
 		payload, ok := action.Approved()
@@ -165,7 +165,7 @@ func TestPendingActionRequiresApproval(t *testing.T) {
 
 	t.Run("clearing forgets the payload", func(t *testing.T) {
 		var action PendingAction[[]string]
-		action.Arm([]string{"a"}, "Delete?", "body", "Delete")
+		action.Arm([]string{"a"}, "Delete?", "body", "Delete", "Cancel")
 		action.Confirmation.Answer(0)
 		action.Clear()
 
@@ -182,11 +182,11 @@ func TestPendingActionRequiresApproval(t *testing.T) {
 // after the user has been shown what it will do.
 func TestPayloadIsNotSwappableMidDialog(t *testing.T) {
 	var action PendingAction[[]string]
-	action.Arm([]string{"first"}, "Delete?", "body", "Delete")
+	action.Arm([]string{"first"}, "Delete?", "body", "Delete", "Cancel")
 
 	// Re-arming replaces both at once, so the payload and the text can never
 	// disagree.
-	action.Arm([]string{"second"}, "Delete?", "body", "Delete")
+	action.Arm([]string{"second"}, "Delete?", "body", "Delete", "Cancel")
 	action.Confirmation.Answer(0)
 
 	payload, ok := action.Approved()

@@ -32,6 +32,15 @@ func (s *Shell) ApplyCaptureReceipt(count int) {
 	s.ShowStatus(ToastOK, s.t().T(i18n.SyncNothingNew))
 }
 
+// ApplyCaptureDeleteBookmarks re-arms the batch deletion after the language is pinned.
+//
+// A Confirmation carries already-translated text, resolved the moment it is armed. The
+// capture path arms it before it pins the language, so without this second arm the picture
+// shows an English question under a Chinese window.
+func (s *Shell) ApplyCaptureDeleteBookmarks() {
+	s.AskDeleteBookmarks(s.BatchSelection())
+}
+
 // ApplyCaptureResetReport writes the sentence a finished reset shows.
 //
 // Same reason as ApplyCaptureReceipt: the sentence is translated, and the capture path
@@ -421,6 +430,16 @@ func (s *Shell) ApplyCaptureState(state string) bool {
 			}
 			s.toggleSelection(row.TweetID)
 		}
+	case "batch-delete-confirm":
+		// The question a batch deletion asks. Two rows ticked through the card's own call, then
+		// armed through the bulk bar's Delete, so the picture is the card the reader would get.
+		for _, row := range s.state.Data.Bookmarks {
+			if len(s.state.SelectedIDs) == 2 {
+				break
+			}
+			s.toggleSelection(row.TweetID)
+		}
+		s.AskDeleteBookmarks(s.BatchSelection())
 	case "filter":
 		// The filter popover, raised through the same call the toolbar's button makes, so the
 		// picture shows what pressing that button shows.

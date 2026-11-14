@@ -42,8 +42,8 @@ func TestTheTypeScaleMatchesTheStylesheet(t *testing.T) {
 //
 // The scale is smaller and visible in the component rules: 6 for a field or a switch
 // button, 7 for a sidebar
-// row and a field, 8 for a switch track, 12 for every card and list, 14 for a dialog and 999 for
-// a pill/avatar. Each value below is from that scale; a seventh radius fails here.
+// row and a field, 8 for a switch track, 10 for every card and list, 12 for a dialog and 999 for
+// a pill/avatar. Each value below is from that scale; a sixth radius fails here.
 //
 // The mapping is the point: a control, a row, a card and a dialog each have one radius and a new
 // component has to pick one of them rather than invent a near value.
@@ -52,8 +52,8 @@ func TestTheRadiiFollowTheScale(t *testing.T) {
 		6:   "controls: a text action, a field, a segmented button",
 		7:   "rows and fields: the sidebar's nav row, a find field, an editor input",
 		8:   "switch tracks: a segmented control",
-		12:  "cards and lists",
-		14:  "dialogs: a confirm action, a modal",
+		10:  "cards and lists",
+		12:  "dialogs: a confirm action, a modal",
 		999: "pills and avatars",
 	}
 	for _, item := range []struct {
@@ -69,7 +69,7 @@ func TestTheRadiiFollowTheScale(t *testing.T) {
 		{"pill", RadiusPill},
 	} {
 		if item.got != 0 && scale[item.got] == "" {
-			t.Errorf("%s radius is %v, which is not one of the scale's levels (6/7/8/12/14/999)", item.name, item.got)
+			t.Errorf("%s radius is %v, which is not one of the scale's levels (6/7/8/10/12/999)", item.name, item.got)
 		}
 	}
 	for _, item := range []struct {
@@ -78,11 +78,11 @@ func TestTheRadiiFollowTheScale(t *testing.T) {
 		want float32
 	}{
 		{"sidebar row", RadiusSidebarRow, 7},
-		{"result card", RadiusResultCard, 12},
-		{"toolbar shell", RadiusToolbar, 12},
+		{"result card", RadiusResultCard, 10},
+		{"toolbar shell", RadiusToolbar, 10},
 		{"toolbar item", RadiusToolbarItem, 8},
-		{"dialog", RadiusDialog, 14},
-		{"inspector", RadiusInspector, 12},
+		{"dialog", RadiusDialog, 12},
+		{"inspector", RadiusInspector, 10},
 	} {
 		if item.got != item.want {
 			t.Errorf("%s radius = %v, want %v (the scale)", item.name, item.got, item.want)
@@ -290,11 +290,11 @@ func TestTheLoadingStateMatchesTheStylesheet(t *testing.T) {
 		value float32
 		from  string
 	}{
-		{"shell radius", SkeletonShellRadius, 12, "a panel's radius"},
+		{"shell radius", SkeletonShellRadius, 10, "a panel's radius"},
 		{"shell gap", SkeletonShellGap, 24, "the skeleton shell gap"},
 		{"shell padding", SkeletonShellPad, 24, "the skeleton shell padding"},
 		{"grid gap", SkeletonGridGap, 16, "the skeleton grid gap"},
-		{"card radius", SkeletonCardRadius, 12, "a card's radius"},
+		{"card radius", SkeletonCardRadius, 10, "a card's radius"},
 		{"card padding", SkeletonCardPad, 20, "the skeleton card padding"},
 		{"min card width", SkeletonMinCardW, 220, "repeat(auto-fit, minmax(220px, 1fr))"},
 		{"avatar", SkeletonAvatarSize, 44, "h-11 w-11"},
@@ -411,9 +411,9 @@ func TestTheDetailHeroMatchesTheStylesheet(t *testing.T) {
 		{"settings row sub", SettingsRowSubFont, 11.5, "a preference row's sub-line font-size"},
 		{"settings number width", SettingsNumberWidth, 72, "a preference row's number field width"},
 		{"settings number height", SettingsNumberHeight, 24, "a preference row's number field height"},
-		{"settings card radius", RadiusPanel, 12, "a list card's radius"},
+		{"settings card radius", RadiusPanel, 10, "a list card's radius"},
 		{"settings section title", SettingsGroupTitle, 11, "a section label's font-size"},
-		{"settings tracking", SettingsGroupTrack, 0.05, "a section label's letter-spacing"},
+		{"settings tracking", SettingsGroupTrack, 0.12, "a section label's letter-spacing"},
 		{"settings tab height", SettingsTabHeight, 22, "a tab's height"},
 		{"settings pick height", SettingsPickHeight, 24, "a pick's height"},
 		{"tag table head height", TagTableHeadHeight, 26, "the 26-point label strip"},

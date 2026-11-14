@@ -77,8 +77,9 @@ const (
 //	a row head   26 high, 4 above and 6 below
 //	the find field  180 wide, 120 at least, 26 high
 const (
-	// FontPageTitle stays for the pages that still name themselves at display size; the
-	// settings page's own name is set at the sidebar-title step, beside its tabs.
+	// FontPageTitle is the title bar's crumb, in the display face: the page a reader is on is
+	// named in the chrome at display size. The settings page's own name is set at the
+	// sidebar-title step, beside its tabs.
 	FontPageTitle = 17
 
 	SettingsPageHeaderHeight = 34

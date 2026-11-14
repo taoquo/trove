@@ -61,7 +61,7 @@ func (s *Shell) viewEnds(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 
 	tray := ui.Box(c).Absolute().Right(viewEndsRight(inset)).Bottom(ViewEndsBottomInset).
 		Padding(ViewEndsPad).Radius(ViewEndsRadius).Background(theme.Surface).
-		Shadow(0, 4, 14, 0, ui.RGBA(20, 22, 30, 0.12)).
+		Shadow(0, 4, 14, 0, ui.RGBA(25, 21, 20, 0.12)).
 		Shadow(0, 0, 0, 0.5, rail.SubtleLine)
 	// The first call starts at its target, so a list opened already scrolled shows the tray
 	// without a fade -- and a fresh one, at rest, stays invisible until the reader moves.

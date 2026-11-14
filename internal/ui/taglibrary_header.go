@@ -30,8 +30,8 @@ func (s *Shell) tagLibraryHeader(c *ui.Context, theme *ui.Theme, rail RailTokens
 			s.tagLibraryBack(c, theme, rail)
 
 			ui.Text(c, s.t().T(i18n.TagManageLabel)).
-				FontSize(FontSidebarTitleCompact).FontWeight(600).TextColor(theme.Text).
-				Padding(0, 10, 0, 4)
+				Font(s.displayFace()).FontSize(FontSidebarTitleCompact).FontWeight(600).
+				TextColor(theme.Text).Padding(0, 10, 0, 4)
 
 			s.tagLibraryTabs(c, theme, rail)
 			ui.Spacer(c).FillWidth()
