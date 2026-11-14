@@ -8,7 +8,7 @@ import (
 	"github.com/taoquo/trove/internal/i18n"
 )
 
-// Updates is what the updates section of Settings reads and calls.
+// Updates is what the update card on Settings › General reads and calls.
 //
 // It is a seam rather than a direct call because the update window and the check behind it
 // belong to the updater plugin, which the app registers and a test does not: internal/ui draws
@@ -37,7 +37,7 @@ func defaultUpdates() *Updates {
 	}
 }
 
-// UseUpdates wires the updates section to the updater plugin. The app calls it once, at wiring
+// UseUpdates wires the update card to the updater plugin. The app calls it once, at wiring
 // time, with the plugin's own functions: nothing is called here, because the plugin is not
 // listening until the app runs. The page reads them when it opens.
 func (s *Shell) UseUpdates(updates Updates) {
@@ -54,12 +54,13 @@ func (s *Shell) loadUpdatePreferences() {
 	s.state.UpdateLastCheck = s.updates.LastCheck()
 }
 
-// settingsUpdatesSection is 更新: which version this is, when it last looked for a newer one,
-// and the switch that decides whether it keeps looking.
+// settingsUpdatesSection is the update card on 通用: which version this is, when it last looked
+// for a newer one, and the switch that decides whether it keeps looking.
 //
 // The app menu carries the same check, next to About. That is where someone who already knows
 // the app looks; this is where someone asking "how do I update" looks, which is the page they
-// opened to find out how anything else about the app is set.
+// opened to find out how anything else about the app is set. It sits under General rather than
+// on a tab of its own: one version line is not a section.
 func (s *Shell) settingsUpdatesSection(c *ui.Context, theme *ui.Theme, rail RailTokens) int {
 	updates := s.updates
 	if updates == nil {

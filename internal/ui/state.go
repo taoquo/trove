@@ -185,7 +185,7 @@ type State struct {
 	// there are older bookmarks still to fetch.
 	SyncResumePending bool
 
-	// The update preferences the Settings › Updates rows show. They are read when the page
+	// The update preferences the Settings › General rows show. They are read when the page
 	// opens rather than in a frame, because the updater keeps them in a file of its own.
 	UpdateAutoCheck bool
 	UpdateLastCheck time.Time
@@ -571,8 +571,9 @@ type Shell struct {
 	// "tell the operating system", and a test that ran it would be testing the OS.
 	openExternal func(url string) error
 	media        *media.Fetcher
-	// updates is the updater plugin behind Settings › Updates (updatesview.go). It is never nil:
-	// a shell built outside the app gets defaultUpdates, which checks nothing.
+	// updates is the updater plugin behind the Settings › General update card
+	// (updatesview.go). It is never nil: a shell built outside the app gets
+	// defaultUpdates, which checks nothing.
 	updates *Updates
 	// video is the native player, or nil where the platform has none (video.go).
 	video VideoPlayer

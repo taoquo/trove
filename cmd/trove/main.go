@@ -284,9 +284,9 @@ func start() error {
 	// file to the system's player instead.
 	shell.UseVideoPlayer(appui.NewNativeVideoPlayer())
 	shell.UseCredentials(credentialStore)
-	// Settings › Updates. The page shows the version this bundle runs and when it last checked,
-	// and its switch writes the plugin's own preference; the plugin is handed over as functions
-	// rather than called here, because it starts listening when the app runs.
+	// The update card on Settings › General. It shows the version this bundle runs and when it
+	// last checked, and its switch writes the plugin's own preference; the plugin is handed over
+	// as functions rather than called here, because it starts listening when the app runs.
 	shell.UseUpdates(appui.Updates{
 		Version:            appVersion(),
 		Check:              updater.CheckForUpdates,

@@ -14,7 +14,7 @@ import (
 // the general tab's appearance picker, the sync tab's switch, the auto-tag tab's jump, the
 // find field, and the way out.
 //
-// The page is a stack of six surfaces in one slot, so a control that only exists on one tab is
+// The page is a stack of five surfaces in one slot, so a control that only exists on one tab is
 // easy to leave unnamed or unwired; the back control, for one, was tooltip-only.
 func TestTheSettingsPageAnswersEveryClick(t *testing.T) {
 	shell, db := newShell(t)
@@ -51,7 +51,6 @@ func TestTheSettingsPageAnswersEveryClick(t *testing.T) {
 		{SettingsSectionAutoTag, i18n.SettingsSectionAutoTag},
 		{SettingsSectionDataSafe, i18n.SettingsSectionDataSafety},
 		{SettingsSectionListsViews, i18n.SettingsSectionListsViews},
-		{SettingsSectionUpdates, i18n.SettingsSectionUpdates},
 		{SettingsSectionGeneral, i18n.SettingsSectionGeneral},
 	} {
 		click(tab(section.key))

@@ -173,10 +173,10 @@ func (s *Shell) ApplyCaptureState(state string) bool {
 		s.state.SettingsSection = SettingsSectionDataSafe
 		s.state.BundleBusy = true
 	case "settings-updates":
-		// The 更新 tab: the version line and the automatic-check switch. The last check is left
-		// at zero here, so the picture shows the state a fresh install is in.
+		// The 通用 tab with the update card on it: the version line and the automatic-check
+		// switch. The last check is left at zero here, so the picture shows the state a fresh
+		// install is in.
 		s.OpenSettings()
-		s.state.SettingsSection = SettingsSectionUpdates
 	case "settings-lists-views":
 		// The 列表与视图 tab. Nothing else opens these two cards with rows in them, which is
 		// how five identical row actions and an English default view name would go unseen.

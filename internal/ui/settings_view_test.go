@@ -38,7 +38,6 @@ func TestTheSettingsPanelDrawsItsSections(t *testing.T) {
 		i18n.SettingsSectionAutoTag,
 		i18n.SettingsSectionDataSafety,
 		i18n.SettingsSectionListsViews,
-		i18n.SettingsSectionUpdates,
 	} {
 		want := strings.ToUpper(shell.t().T(key))
 		if want == "" {

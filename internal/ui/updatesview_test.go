@@ -26,7 +26,7 @@ func TestTheUpdatesTabSaysWhatItRunsAndCallsTheUpdater(t *testing.T) {
 	})
 
 	shell.OpenSettings()
-	shell.state.SettingsSection = SettingsSectionUpdates
+	shell.state.SettingsSection = SettingsSectionGeneral
 
 	tester := ui.NewTester(shell.View, 1180, 760)
 	tester.Frame()
@@ -79,7 +79,7 @@ func TestTheUpdatesTabShowsWhenItLastChecked(t *testing.T) {
 	})
 
 	shell.OpenSettings()
-	shell.state.SettingsSection = SettingsSectionUpdates
+	shell.state.SettingsSection = SettingsSectionGeneral
 
 	tester := ui.NewTester(shell.View, 1180, 760)
 	tester.Frame()
