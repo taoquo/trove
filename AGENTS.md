@@ -32,6 +32,7 @@ internal/importexport 旧版 exportVersion: 2 JSON
 internal/ui          MyGo 工作区与全部绘制
 internal/i18n        中英文案目录
 resources/           应用图标等随包资源
+Casks/               Homebrew cask（跟随 latest release，版本无关）
 site/                静态产品页（Cloudflare Worker，手动发布）
 testdata/            冻结的等价性 fixture
 tools/               检查器、截图工具、quality gate
@@ -110,10 +111,16 @@ go tool mygo build -platform windows/amd64
 macOS 的 `.dmg`、签名与公证需要 macOS；Windows 的 NSIS `Setup.exe` 需要 Windows。`mygo.json`
 的 `main` 指向 `./cmd/trove`，`version` 是发布版本的唯一来源。
 
-发布：推 `v<version>` 标签即触发 `.github/workflows/release.yml`，它构建三个安装包、改名成站点
-使用的固定文件名（`trove-macos-arm64.dmg`、`trove-macos-x64.dmg`、
-`trove-windows-x64-setup.exe`）并创建 Release。文件名与 `site/public/app.js` 的 `FILES` 是同一
-份契约，改名要两边一起改。CI 在 `.github/workflows/ci.yml`，只跑 gate 里不需要窗口的部分。
+无窗口命令在 `cmd/trove/cli.go`：`trove sync`、`trove export <文件>`、`trove version`。它们和窗口
+共用同一份数据库与同一个同步服务（`library.syncer`），参数走 `flag`，输出是英文并写到 stdout。
+新增子命令时，`runCommand` 里不认识的参数必须落回窗口——macOS 自己会传 `-psn_…`。
+
+发布：推 `v<version>` 标签即触发 `.github/workflows/release.yml`，它构建三个安装包、生成更新包与
+清单、改名成站点使用的固定文件名（`trove-macos-arm64.dmg`、`trove-macos-x64.dmg`、
+`trove-windows-x64-setup.exe`）、为全部资产出构建证明与 `SHA256SUMS.txt` 并创建 Release。
+文件名与 `site/public/app.js` 的 `FILES` 是同一份契约，改名要两边一起改。签名、公证与自更新由
+secret 决定，缺哪个少哪层，见 `docs/testing.md`；发行说明取自 `CHANGELOG.md` 对应版本小节。
+CI 在 `.github/workflows/ci.yml`，只跑 gate 里不需要窗口的部分。
 
 ## 3. 架构
 

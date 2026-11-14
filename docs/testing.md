@@ -29,18 +29,43 @@ bash -c 'source .toolchain/env.sh && bash tools/gate.sh'
 只在本地 gate 跑。
 
 `.github/workflows/release.yml` 由 `v*` 标签触发：macOS 上构建两种架构的 dmg，Windows 上构建
-NSIS 安装包，改名成站点使用的固定文件名后创建 GitHub Release。
+NSIS 安装包，生成更新包与清单，改名成站点使用的固定文件名，为全部资产出构建证明与校验和，
+然后创建 GitHub Release。
 
 | 文件 | 平台 |
 |---|---|
 | `trove-macos-arm64.dmg` | macOS Apple 芯片 |
 | `trove-macos-x64.dmg` | macOS Intel |
 | `trove-windows-x64-setup.exe` | Windows x64 |
+| `SHA256SUMS.txt` | 三个安装包的校验和 |
+| `trove-<version>-<platform>.tar.gz` | 自更新下载的应用归档 |
+| `update-<platform>.json` | 自更新清单（版本、发行说明、归档的 URL/大小/签名） |
+
+版本号：`mygo.json` 的 `version` 是唯一来源，标签必须等于 `v<version>`。1.0 之前不因为加了功能
+就动 minor，每次发布只加 patch（0.3.1 → 0.3.2 → 0.3.3），和 magpie 的 `0.1.<构建号>` 一样：
+自更新只比较版本大小，单调递增就够用，提前把 minor 用掉会让 1.0 变得没有意义。minor 留给
+「用户能感知的形态变了」——数据格式、界面结构、支持范围，而不是一次功能批次。
 
 标签必须等于 `v$(mygo.json 里的 version)`，否则发布任务直接失败。站点下载走
 `https://github.com/taoquo/trove/releases/latest/download/<文件名>`，所以文件名是公开契约：
-改名必须同时改 `site/public/app.js` 的 `FILES`。当前发布包是 ad-hoc 签名的开发构建，站点已
-注明；Developer ID 签名与公证需要 `macos.signingIdentity` 和公证凭据，仓库里没有。
+改名必须同时改 `site/public/app.js` 的 `FILES`。更新清单引用的是 MyGo 自己的归档名，不要改。
+
+发布任务的 secret，缺一个就少一层，流水线会在运行摘要里说明缺的是哪个：
+
+| Secret | 作用 |
+|---|---|
+| `MACOS_CERTIFICATE`、`MACOS_CERTIFICATE_PASSWORD` | base64 的 Developer ID `.p12` 与它的密码；导入临时 keychain 后 `mygo build -sign` 用它签名 |
+| `MACOS_SIGNING_IDENTITY` | 例如 `Developer ID Application: Name (TEAMID)` |
+| `APPLE_ID`、`APPLE_TEAM_ID`、`APPLE_APP_PASSWORD` | `notarytool store-credentials` 的凭据；公证 dmg 并 stapling |
+| `MYGO_UPDATER_PRIVATE_KEY` | `mygo keygen` 生成的私钥内容；没有它就不生成更新包，应用也无法自更新 |
+
+更新签名密钥是 Ed25519 的一对：私钥只放在密码管理器和这个 secret 里，公钥写在 `mygo.json` 的
+`updates.publicKey`，并随应用编译进去。**私钥丢了，所有已安装的应用就再也收不到更新**，所以换
+密钥要连同 `updates.publicKey` 一起发新版，否则旧版只会拒绝新更新。
+
+发行说明取自 `CHANGELOG.md` 中与 `mygo.json` 版本对应的 `## <version>` 小节；`mygo build` 在
+文件存在但缺少该小节时直接失败，这是有意的：没有发行说明的更新窗口是空白的。Windows 的代码
+签名还没接（MyGo 侧是 `windows.certificate`）。
 
 ## 单元测试
 

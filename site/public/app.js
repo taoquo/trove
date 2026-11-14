@@ -94,7 +94,7 @@ const STRINGS = {
     "download.note": "Download",
     "download.title": "Download trove.",
     "download.body":
-      "Version 0.3.0, an unsigned development build for macOS 12+ and Windows 10+. Links point at the latest GitHub release.",
+      "The latest release runs on macOS 12+ and Windows 10+. Links point at the GitHub release, and from 0.3.1 on the app installs its own updates.",
     "download.macArm": "macOS, Apple silicon",
     "download.macIntel": "macOS, Intel",
     "download.windows": "Windows, x64",
@@ -188,7 +188,7 @@ const STRINGS = {
     "download.note": "下载",
     "download.title": "下载 trove。",
     "download.body":
-      "版本 0.3.0，未签名的开发构建，支持 macOS 12+ 与 Windows 10+。链接指向最新的 GitHub Release。",
+      "最新版本支持 macOS 12+ 与 Windows 10+。链接指向 GitHub Release；从 0.3.1 起，应用会自己安装更新。",
     "download.macArm": "macOS，Apple 芯片",
     "download.macIntel": "macOS，Intel",
     "download.windows": "Windows，x64",
