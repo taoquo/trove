@@ -20,6 +20,11 @@ bash -c 'source .toolchain/env.sh && bash tools/gate.sh'
 
 必须在将要提交的那棵树上跑；跑完再改代码就要重跑。
 
+gate 会编译很多次（vet、两种 test、构建、三平台），而 `internal/ui` 单个包就有 15 MB 左右的
+编译产物。Go 的构建缓存只按时间老化（5 天没用才删，每天最多扫一次，**没有容量上限**），所以
+缓存放在仓库外：`GOCACHE` 指向 `~/Library/Caches/trove/go-build`，编译临时目录用系统
+`$TMPDIR`。密集开发一周仍可能堆到几 G，`go clean -cache` 随时可以全部回收，代价只是下次重编。
+
 ## CI 与发布
 
 `.github/workflows/ci.yml` 在每次 push 和 PR 上跑 gate 里不需要窗口的部分：文案检查、
