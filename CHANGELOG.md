@@ -4,6 +4,21 @@
 update it signs, so the heading below must exist before a tag is pushed. Keep the
 heading plain (`## 0.3.2`) or Keep a Changelog's (`## [0.3.2] - 2026-11-14`).
 
+## 0.3.4
+
+### Fixed
+
+- The window's close button now quits the app. It used to postpone the close and
+  leave the window where it was, so the click looked like it did nothing.
+
+### Changed
+
+- A fresh install starts in English whatever the system language. The language is
+  a setting inside the app, and "follow the system" is no longer one of its
+  values.
+- Settings no longer carries the auto-tagging signpost. Auto-tagging lives in the
+  tag library's own tab, beside the tags it writes and the run that writes them.
+
 ## 0.3.3
 
 ### Changed
