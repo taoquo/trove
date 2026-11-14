@@ -163,15 +163,7 @@ func (s *Store) RefreshXCredentialsFromBrowser(ctx context.Context) (bool, error
 	if err != nil {
 		return false, err
 	}
-
-	stored, storedErr := s.XCredentials(ctx)
-	if storedErr == nil && stored.AuthToken == found.AuthToken && stored.CSRFToken == found.CSRFToken {
-		return false, nil
-	}
-	if err := s.SaveXCredentials(ctx, found); err != nil {
-		return false, err
-	}
-	return true, nil
+	return s.saveIfChanged(ctx, found)
 }
 
 func (s *Store) browserCookies(ctx context.Context) (xsource.Credentials, error) {

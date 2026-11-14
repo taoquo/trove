@@ -43,6 +43,10 @@ X 会话是 `auth_token` + `ct0`。来源有两个：
 - 从已登录的浏览器配置读取（`internal/credentials/browser.go`，sweetcookie）；
 - 用户粘贴 Cookie header。
 
+`trove auth` 是第一条的命令行版本（`credentials.Store.SignInFromBrowser`）：先打开 X 的登录页，
+再轮询浏览器直到出现会话，然后写进同一个安全存储。它读写的是同一组账户，所以窗口与命令行
+互相看得见对方的登录结果；系统拒绝读取浏览器配置目录时立刻失败，不空等。
+
 两条路都写进系统安全存储的同一组账户：macOS 上是 Keychain，Windows 上是 Credential Manager。
 服务名/目标前缀是 `com.taoquo.trove`，账户按
 `keychain.Account*` 命名；`credentials.Accounts` 是重置本地数据时清理全部密钥的唯一清单。

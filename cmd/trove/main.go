@@ -18,9 +18,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -256,19 +254,9 @@ func start() error {
 	}
 	workspaceService := workspace.New(repos, clock, ids)
 	shell := appui.NewShell(workspaceService, appui.AppearanceSystem)
-	// Opening a bookmark in the browser. MyGo has no API for this, so it is the
-	// operating system's own opener; `open` is what macOS provides.
-	shell.UseExternalOpener(func(rawURL string) error {
-		// Only the web. `open` happily hands a file:// path or a custom scheme
-		// to LaunchServices, and the URL can come from an imported backup, so an
-		// unchecked value here would let a crafted file ask the system to open
-		// something local.
-		parsed, err := url.Parse(rawURL)
-		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
-			return fmt.Errorf("refusing to open a non-web URL")
-		}
-		return exec.Command("open", rawURL).Start()
-	})
+	// Opening a bookmark in the browser. The opener, its platform branches and its
+	// web-only rule live in openurl.go, where `trove auth` uses the same ones.
+	shell.UseExternalOpener(openWebURL)
 	shell.UseSettings(settingsService)
 	shell.UseSuggestions(suggestionService)
 	shell.UseSyncer(syncService)

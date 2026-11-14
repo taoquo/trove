@@ -111,7 +111,7 @@ go tool mygo build -platform windows/amd64
 macOS 的 `.dmg`、签名与公证需要 macOS；Windows 的 NSIS `Setup.exe` 需要 Windows。`mygo.json`
 的 `main` 指向 `./cmd/trove`，`version` 是发布版本的唯一来源。
 
-无窗口命令在 `cmd/trove/cli.go`：`trove sync`、`trove export <文件>`、`trove version`。它们和窗口
+无窗口命令在 `cmd/trove/cli.go`：`trove sync`、`trove export <文件>`、`trove auth`、`trove version`。它们和窗口
 共用同一份数据库与同一个同步服务（`library.syncer`），参数走 `flag`，输出是英文并写到 stdout。
 新增子命令时，`runCommand` 里不认识的参数必须落回窗口——macOS 自己会传 `-psn_…`。
 

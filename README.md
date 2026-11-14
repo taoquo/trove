@@ -30,7 +30,7 @@ if you want someone else's recommendations on top of them.
 - Suggest tags with keyword heuristics or your own model key; every suggestion waits for your yes.
 - Read a post, its thread, the date you saved it and your own note without loading x.com.
 - Import legacy `exportVersion: 2` JSON backups and export a native `.trovebundle`.
-- Run `trove sync` and `trove export` from a scheduler, with no window open.
+- Sign in, sync and export from a terminal: `trove auth`, `trove sync`, `trove export`.
 - Stay bilingual (English / Simplified Chinese).
 
 ## Install
@@ -73,13 +73,19 @@ those are updated by the thing that installed them.
 
 ## Command line
 
-The window is the app, but two commands run without it — useful for a nightly job:
+The window is the app, but a few commands run without it:
 
 ```bash
+trove auth            # open X, wait for the sign-in, save the session to the keychain
 trove sync            # one sync; -full walks the whole timeline, -quiet prints only failures
 trove export <file>   # write a .trovebundle backup
 trove version
 ```
+
+`trove auth` reads the cookies X sets in your browser, so on macOS the terminal running it
+needs Full Disk Access (System Settings › Privacy & Security); without it the browser's
+cookie database cannot be opened, and the command says so instead of waiting. `-no-open`
+skips launching the browser, and `-timeout` shortens the five-minute wait.
 
 The binary inside the app is the command: `/Applications/trove.app/Contents/MacOS/trove sync`. A
 LaunchAgent runs it at 03:30 and logs what happened:

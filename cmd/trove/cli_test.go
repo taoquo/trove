@@ -23,7 +23,7 @@ func TestOnlyTheCommandsOpenNoWindow(t *testing.T) {
 		}
 	}
 
-	for _, args := range [][]string{{"sync", "-h"}, {"export", "-h"}, {"version"}, {"help"}} {
+	for _, args := range [][]string{{"sync", "-h"}, {"export", "-h"}, {"auth", "-h"}, {"version"}, {"help"}} {
 		handled, _ := runCommand(args)
 		if !handled {
 			t.Errorf("runCommand(%q) did not handle a command it names", args)
@@ -70,5 +70,32 @@ func TestExportWritesABundleTheAppCanRead(t *testing.T) {
 func TestExportNeedsATarget(t *testing.T) {
 	if err := runExport([]string{"-data-dir", t.TempDir()}); err == nil {
 		t.Fatal("export without a file succeeded")
+	}
+}
+
+// TestAuthTakesNoArguments keeps a mistyped argument from being ignored: the command's
+// only work is the wait, and an argument it does not understand is a mistake the reader
+// should hear about before a browser opens.
+func TestAuthTakesNoArguments(t *testing.T) {
+	if err := runAuth([]string{"-timeout", "1s", "extra"}); err == nil {
+		t.Fatal("auth accepted an argument it does not define")
+	}
+}
+
+// TestTheOpenerRefusesAnythingButTheWeb pins the rule the window's bookmark opener and
+// the sign-in page now share. The opener hands its argument to the system, which will
+// open a local file or a custom scheme just as happily as a web page, and the address
+// can come from an imported backup.
+func TestTheOpenerRefusesAnythingButTheWeb(t *testing.T) {
+	for _, rawURL := range []string{
+		"file:///etc/passwd",
+		"javascript:alert(1)",
+		"ftp://example.com/file",
+		"x.com/i/flow/login",
+		"",
+	} {
+		if err := openWebURL(rawURL); err == nil {
+			t.Errorf("openWebURL(%q) opened it; only http and https may be handed to the system", rawURL)
+		}
 	}
 }

@@ -6,6 +6,13 @@ heading plain (`## 0.3.2`) or Keep a Changelog's (`## [0.3.2] - 2026-11-14`).
 
 ## 0.3.5
 
+### Added
+
+- `trove auth` signs in to X without opening the window: it opens X's sign-in page, waits
+  for the browser session to appear, and files the two cookies in the system vault. The
+  window and the command share one stored session. `-no-open` skips launching the browser
+  and `-timeout` shortens the five-minute wait.
+
 ### Changed
 
 - The window is set in the folio family: parchment pages and ivory cards in the light

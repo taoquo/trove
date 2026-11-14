@@ -39,6 +39,7 @@ Without a command, trove opens its window.
 
   trove sync [flags]        sync bookmarks now, without a window
   trove export <file>       write a .trovebundle backup
+  trove auth [flags]        sign in to X through your browser
   trove version             print the version
   trove help                print this text
 
@@ -47,9 +48,18 @@ sync flags:
   -quiet       print nothing unless the run fails
   -data-dir    read and write another data directory
 
+auth flags:
+  -timeout     how long to wait for the sign-in (default 5m0s)
+  -no-open     do not open the browser; wait for a session you sign in to yourself
+
 Scheduling: run "trove sync -quiet" from launchd on macOS or Task Scheduler on
 Windows. A run that fails exits non-zero and prints why, so the scheduler records it.
 `
+
+// signInURL is where `trove auth` sends the browser. The flow URL is what x.com/login
+// redirects to; naming it directly saves the reader a redirect and a page that then
+// bounces them again.
+const signInURL = "https://x.com/i/flow/login"
 
 // runCommand runs a headless command when the arguments name one. ok is false for
 // anything else, including the "-psn_…" argument macOS adds when it opens the app, and
@@ -63,6 +73,8 @@ func runCommand(args []string) (ok bool, err error) {
 		return true, runSync(args[1:])
 	case "export":
 		return true, runExport(args[1:])
+	case "auth":
+		return true, runAuth(args[1:])
 	case "version":
 		fmt.Println(appVersion())
 		return true, nil
@@ -205,6 +217,63 @@ func runExport(args []string) error {
 		return err
 	}
 	fmt.Printf("wrote %s (%s)\n", target, humanBytes(int64(len(payload))))
+	return nil
+}
+
+// runAuth signs in through the browser and files the session in the keychain.
+//
+// The window's settings panel does the same read, but it can only read a browser that
+// is already signed in. The command is the reader with the missing half in front of it:
+// open X's sign-in page, wait for the cookies to land, save them. No window, no
+// database -- a session is the keychain's, and `trove sync` is what proves it works.
+func runAuth(args []string) error {
+	flags := flag.NewFlagSet("auth", flag.ContinueOnError)
+	timeout := flags.Duration("timeout", 5*time.Minute, "how long to wait for the sign-in")
+	noBrowser := flags.Bool("no-open", false, "do not open the browser")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if flags.NArg() > 0 {
+		return fmt.Errorf("auth takes no arguments, got %q", flags.Arg(0))
+	}
+
+	ctx, stop := signalContext()
+	defer stop()
+	ctx, cancel := context.WithTimeout(ctx, *timeout)
+	defer cancel()
+
+	open := func() error {
+		fmt.Println("no X session in any browser yet")
+		if !*noBrowser {
+			fmt.Printf("opening %s\n", signInURL)
+			if err := openWebURL(signInURL); err != nil {
+				return fmt.Errorf("could not open a browser: %w\nopen %s yourself, or run trove auth -no-open", err, signInURL)
+			}
+		}
+		fmt.Println("sign in to X in the browser; waiting for the session… (Ctrl-C to stop)")
+		return nil
+	}
+
+	changed, err := credentials.NewWithKeychain().SignInFromBrowser(ctx, credentials.SignInInterval, open)
+	switch {
+	case errors.Is(err, credentials.ErrBrowserPermission):
+		// The wait stops here, so the fix has to be on the line itself: the profile
+		// directory is behind a privacy setting, not behind a sign-in the browser has not
+		// finished yet.
+		fmt.Fprintln(os.Stderr, "trove auth: this terminal cannot read the browser profiles.")
+		fmt.Fprintln(os.Stderr, "Grant it Full Disk Access (System Settings › Privacy & Security) and run trove auth again.")
+		return err
+	case errors.Is(err, credentials.ErrSignInTimedOut):
+		return fmt.Errorf("gave up after %s: %w", *timeout, err)
+	case errors.Is(err, credentials.ErrSignInStopped):
+		return err
+	case err != nil:
+		return fmt.Errorf("auth: %w", err)
+	case changed:
+		fmt.Println("saved the X session (auth_token, ct0) to the keychain")
+	default:
+		fmt.Println("the stored X session already matches this browser; nothing changed")
+	}
 	return nil
 }
 
