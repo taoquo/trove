@@ -1,0 +1,297 @@
+// Headless commands, for a scheduler or a terminal.
+//
+// The window is the app. These exist so that "keep the library current overnight" does
+// not need a window left open: `trove sync` runs the same service the window runs, over
+// the same database, and `trove export` writes the same bundle the export panel writes.
+//
+// The output is English and goes to stdout, because it is read by a scheduler's log and
+// by people with a terminal; the window's two catalogs are for the window.
+package main
+
+import (
+	"context"
+	"errors"
+	"flag"
+	"fmt"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+	"time"
+
+	"github.com/egoist/mygo"
+	"github.com/taoquo/trove/internal/credentials"
+	"github.com/taoquo/trove/internal/domain"
+	"github.com/taoquo/trove/internal/idgen"
+	"github.com/taoquo/trove/internal/importexport"
+	"github.com/taoquo/trove/internal/ports"
+	"github.com/taoquo/trove/internal/storage/sqlite"
+	"github.com/taoquo/trove/internal/usecase/settings"
+	syncer "github.com/taoquo/trove/internal/usecase/syncer"
+	"github.com/taoquo/trove/internal/xsource"
+)
+
+// commandHelp is what `trove help` prints. It names the app binary rather than
+// os.Args[0], which inside a bundle is a path no one types.
+const commandHelp = `trove — a local-first library for your X bookmarks.
+
+Without a command, trove opens its window.
+
+  trove sync [flags]        sync bookmarks now, without a window
+  trove export <file>       write a .trovebundle backup
+  trove version             print the version
+  trove help                print this text
+
+sync flags:
+  -full        walk the whole timeline instead of stopping at familiar pages
+  -quiet       print nothing unless the run fails
+  -data-dir    read and write another data directory
+
+Scheduling: run "trove sync -quiet" from launchd on macOS or Task Scheduler on
+Windows. A run that fails exits non-zero and prints why, so the scheduler records it.
+`
+
+// runCommand runs a headless command when the arguments name one. ok is false for
+// anything else, including the "-psn_…" argument macOS adds when it opens the app, and
+// main goes on to show the window.
+func runCommand(args []string) (ok bool, err error) {
+	if len(args) == 0 {
+		return false, nil
+	}
+	switch args[0] {
+	case "sync":
+		return true, runSync(args[1:])
+	case "export":
+		return true, runExport(args[1:])
+	case "version":
+		fmt.Println(appVersion())
+		return true, nil
+	case "help", "-h", "--help":
+		fmt.Print(commandHelp)
+		return true, nil
+	}
+	return false, nil
+}
+
+// runSync performs one sync and reports what it stored.
+func runSync(args []string) error {
+	flags := flag.NewFlagSet("sync", flag.ContinueOnError)
+	full := flags.Bool("full", false, "walk the whole timeline")
+	quiet := flags.Bool("quiet", false, "print nothing unless the run fails")
+	dataDir := flags.String("data-dir", "", "read and write another data directory")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if flags.NArg() > 0 {
+		return fmt.Errorf("sync takes no arguments, got %q", flags.Arg(0))
+	}
+
+	ctx, stop := signalContext()
+	defer stop()
+
+	library, err := openLibrary(*dataDir)
+	if err != nil {
+		return err
+	}
+	defer library.close()
+
+	syncService := library.syncer()
+	// A sync that was in flight when this command's predecessor died cannot still be
+	// running, and the record of it would make the window say a sync is under way.
+	if healed, err := syncService.CleanupOrphanedRuns(ctx); err != nil {
+		fmt.Fprintf(os.Stderr, "trove sync: could not close stale runs: %v\n", err)
+	} else if healed > 0 && !*quiet {
+		fmt.Printf("closed %d sync run(s) left in flight\n", healed)
+	}
+
+	preferences, err := settings.New(library.repos, ports.SystemClock{}).Load(ctx)
+	if err != nil {
+		return fmt.Errorf("read settings: %w", err)
+	}
+
+	// The same rule the window follows: the first run walks the timeline, later ones
+	// may stop early -- but only once a full walk is known to have completed.
+	incremental := false
+	if !*full {
+		done, err := syncService.HasCompletedInitialFullSync(ctx)
+		if err != nil {
+			return fmt.Errorf("read sync history: %w", err)
+		}
+		incremental = done
+	}
+
+	if !*quiet {
+		fmt.Println("syncing…")
+	}
+	started := time.Now()
+	run, err := syncService.Run(ctx, syncer.RunOptions{
+		Incremental: incremental,
+		RawPayloads: preferences.Sync.SaveRawPayloads,
+		Limit:       preferences.Sync.PageLimit,
+	})
+	if err != nil {
+		return syncFailure(run, err)
+	}
+	// Partial is a finished run: some pages failed and the rest are stored, which is the
+	// normal outcome of a flaky connection, not a reason to wake the scheduler's owner.
+	if run.Status != domain.SyncSuccess && run.Status != domain.SyncPartialSuccess {
+		return syncFailure(run, nil)
+	}
+	if !*quiet {
+		fmt.Printf("saved %d new, updated %d, %d page(s) in %s\n",
+			run.InsertedCount, run.UpdatedCount, run.PagesCompleted,
+			time.Since(started).Round(time.Second))
+	}
+	return nil
+}
+
+// syncFailure turns a failed run into the sentence a scheduler's log should hold. The
+// run's own summary is the app's account of what happened; the error may only say that
+// the context was cancelled, which is what Ctrl-C looks like.
+func syncFailure(run domain.SyncRun, err error) error {
+	switch {
+	case err != nil && run.ErrorSummary != "":
+		return fmt.Errorf("sync failed: %s: %w", run.ErrorSummary, err)
+	case err != nil:
+		return fmt.Errorf("sync failed: %w", err)
+	case run.ErrorSummary != "":
+		return fmt.Errorf("sync failed: %s", run.ErrorSummary)
+	}
+	return fmt.Errorf("sync ended as %s", run.Status)
+}
+
+// runExport writes a .trovebundle backup.
+func runExport(args []string) error {
+	flags := flag.NewFlagSet("export", flag.ContinueOnError)
+	dataDir := flags.String("data-dir", "", "read another data directory")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if flags.NArg() != 1 {
+		return errors.New("usage: trove export <file>")
+	}
+	target := flags.Arg(0)
+
+	ctx, stop := signalContext()
+	defer stop()
+
+	library, err := openLibrary(*dataDir)
+	if err != nil {
+		return err
+	}
+	defer library.close()
+
+	// An unconfigured app exports sync history by default, the same as the export panel.
+	service := importexport.New(library.repos, ports.SystemClock{}, appVersion())
+	payload, err := service.Export(ctx, importexport.DefaultExportOptions())
+	if err != nil {
+		return fmt.Errorf("export: %w", err)
+	}
+	// Write beside the target and rename, so an interrupted export never leaves a
+	// half-written bundle where the previous good one was.
+	temporary, err := os.CreateTemp(filepath.Dir(target), ".trovebundle-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(temporary.Name())
+	if _, err := temporary.Write(payload); err != nil {
+		temporary.Close()
+		return err
+	}
+	if err := temporary.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(temporary.Name(), target); err != nil {
+		return err
+	}
+	fmt.Printf("wrote %s (%s)\n", target, humanBytes(int64(len(payload))))
+	return nil
+}
+
+// library is the storage half of the composition root, for the commands that need no
+// window, no tagger and no model client.
+type library struct {
+	db    *sqlite.DB
+	repos ports.Repositories
+	store *credentials.Store
+}
+
+func openLibrary(dataDir string) (*library, error) {
+	dir, err := dataDirectory(dataDir)
+	if err != nil {
+		return nil, err
+	}
+	db, err := sqlite.Open(filepath.Join(dir, databaseFile))
+	if err != nil {
+		return nil, fmt.Errorf("open %s: %w", dir, err)
+	}
+	repos := ports.Repositories{
+		Bookmarks:   sqlite.NewBookmarkRepository(db),
+		Tags:        sqlite.NewTagRepository(db),
+		Lists:       sqlite.NewListRepository(db),
+		Suggestions: sqlite.NewSuggestionRepository(db),
+		Analysis:    sqlite.NewAnalysisRepository(db),
+		Settings:    sqlite.NewSettingsRepository(db),
+		SavedViews:  sqlite.NewSavedViewRepository(db),
+		SyncRuns:    sqlite.NewSyncRunRepository(db),
+		Revision:    db,
+	}
+	return &library{db: db, repos: repos, store: credentials.NewWithKeychain()}, nil
+}
+
+func (l *library) close() error { return l.db.Close() }
+
+// syncer is the same client the window syncs with: credentials are read from the
+// system vault per request, so a re-authenticated session applies to this run.
+func (l *library) syncer() *syncer.Service {
+	client := xsource.NewClient(
+		xsource.NewQueryCatalog(""),
+		func(ctx context.Context) (xsource.Credentials, error) {
+			return l.store.XCredentials(ctx)
+		},
+	)
+	client.CaptureRawPayload = true
+
+	service := syncer.New(l.repos, ports.SystemClock{}, idgen.New("trove"), client)
+	// An expired session heals itself from the browser's live cookies, which is what
+	// makes an unattended nightly run survive a token that rolled over since yesterday.
+	service.UseCredentialRefresher(l.store.RefreshXCredentialsFromBrowser)
+	return service
+}
+
+// dataDirectory resolves the directory the window uses, with the same override the app
+// honours: TROVE_DATA_DIR, or -data-dir for one command.
+func dataDirectory(override string) (string, error) {
+	if override != "" {
+		return override, os.MkdirAll(override, 0o755)
+	}
+	if dir := os.Getenv("TROVE_DATA_DIR"); dir != "" {
+		return dir, os.MkdirAll(dir, 0o755)
+	}
+	dir, err := mygo.App.Path(mygo.PathUserData)
+	if err != nil {
+		return "", err
+	}
+	return dir, nil
+}
+
+// signalContext cancels on Ctrl-C and on the scheduler's termination signal, so a run
+// interrupted at 3 a.m. is recorded as interrupted rather than left in flight.
+func signalContext() (context.Context, func()) {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	return ctx, cancel
+}
+
+// humanBytes prints a size the way a person reads it.
+func humanBytes(n int64) string {
+	const unit = 1024
+	if n < unit {
+		return fmt.Sprintf("%d B", n)
+	}
+	div, exp := int64(unit), 0
+	for n/div >= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(n)/float64(div), "KMGTPE"[exp])
+}

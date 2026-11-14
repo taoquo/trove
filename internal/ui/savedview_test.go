@@ -941,11 +941,18 @@ func TestEmptyStatesUseTheSourcesWording(t *testing.T) {
 	shell.Reload(ctx)
 	tester := ui.NewTester(shell.View, 1180, 760)
 	tester.Frame()
-	if !tester.HasText("No bookmarks saved yet") {
+	if !tester.HasText("Your library is empty") {
 		t.Errorf("the empty library is not the expected wording; texts: %q", tester.Texts())
 	}
-	if !tester.HasText("Once you save items from X") {
+	if !tester.HasText("trove copies the bookmarks you already saved on X") {
 		t.Errorf("the advice under it is missing; texts: %q", tester.Texts())
+	}
+	// The first run offers the way in, not a description of a library it does not have.
+	if !tester.HasText("Connect X") {
+		t.Errorf("an empty library offers no way to connect X; texts: %q", tester.Texts())
+	}
+	if !tester.HasText("Import…") {
+		t.Errorf("an empty library offers no way to import a backup; texts: %q", tester.Texts())
 	}
 
 	// A filter that matches nothing: the other message, and no advice.

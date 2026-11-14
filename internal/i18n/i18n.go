@@ -84,6 +84,9 @@ const (
 	// sidebar header has no room for one, so it lives in the menu bar instead.
 	MenuAddBookmark Key = "menu.addBookmark"
 	MenuImport      Key = "menu.import"
+	// MenuCheckUpdates opens MyGo's update window. It is in the app menu beside About,
+	// where macOS users look for it, and it also works when the background check is off.
+	MenuCheckUpdates Key = "menu.checkUpdates"
 
 	SidebarLibrary        Key = "sidebar.library"
 	SidebarAllBookmarks   Key = "sidebar.allBookmarks"
@@ -179,8 +182,11 @@ const (
 	ActionRetry        Key = "retryLoad"
 	EmptyLibrary       Key = "empty.library"
 	EmptyLibraryDetail Key = "emptyFeedDescription"
-	EmptyFilterDetail  Key = "noBookmarksDescription"
-	EmptyFilter        Key = "empty.filter"
+	// EmptyLibraryConnect is the first run's one action: with no session stored, the
+	// way into an empty library is the browser read, not a sync that would fail.
+	EmptyLibraryConnect Key = "empty.libraryConnect"
+	EmptyFilterDetail   Key = "noBookmarksDescription"
+	EmptyFilter         Key = "empty.filter"
 
 	InspectorTitle Key = "inspector.title"
 	InspectorEmpty Key = "inspector.empty"
@@ -657,7 +663,7 @@ var catalogs = map[Locale]map[Key]string{
 		AppName: "trove",
 
 		MenuFile: "File", MenuEdit: "Edit", MenuView: "View", MenuWindow: "Window",
-		MenuExport: "Export…", MenuImport: "Import…",
+		MenuExport: "Export…", MenuImport: "Import…", MenuCheckUpdates: "Check for Updates…",
 		BundleExportTitle:   "Export backup",
 		BundleExportLegacy:  "Export legacy backup",
 		BundleExported:      "Backup exported",
@@ -731,18 +737,19 @@ var catalogs = map[Locale]map[Key]string{
 		SortCreatedDesc: "Newest published",
 		SortLikesDesc:   "Most liked",
 
-		LoadingFeedTitle:   "Loading your bookmark feed",
-		LoadFailedTitle:    "Failed to load bookmarks",
-		InfoLabel:          "Info",
-		AddBookmark:        "Add bookmark",
-		AddLinkPlaceholder: "Paste a link to the post",
-		AddTextPlaceholder: "Post text (optional)",
-		AddNotAPostLink:    "That is not a link to an X post.",
-		ActionRetry:        "Retry load",
-		EmptyLibrary:       "No bookmarks saved yet",
-		EmptyLibraryDetail: "Once you save items from X, they will appear here in the current card feed layout.",
-		EmptyFilterDetail:  "Try adjusting your search, tags, or author scope.",
-		EmptyFilter:        "No bookmarks match the current filters",
+		LoadingFeedTitle:    "Loading your bookmark feed",
+		LoadFailedTitle:     "Failed to load bookmarks",
+		InfoLabel:           "Info",
+		AddBookmark:         "Add bookmark",
+		AddLinkPlaceholder:  "Paste a link to the post",
+		AddTextPlaceholder:  "Post text (optional)",
+		AddNotAPostLink:     "That is not a link to an X post.",
+		ActionRetry:         "Retry load",
+		EmptyLibrary:        "Your library is empty",
+		EmptyLibraryDetail:  "trove copies the bookmarks you already saved on X. Sign in to x.com in your browser, then connect — or import a backup you already have.",
+		EmptyLibraryConnect: "Connect X",
+		EmptyFilterDetail:   "Try adjusting your search, tags, or author scope.",
+		EmptyFilter:         "No bookmarks match the current filters",
 
 		InspectorTitle:     "Details",
 		InspectorEmpty:     "Select a bookmark to view details",
@@ -1119,7 +1126,7 @@ var catalogs = map[Locale]map[Key]string{
 		AppName: "trove",
 
 		MenuFile: "文件", MenuEdit: "编辑", MenuView: "显示", MenuWindow: "窗口",
-		MenuExport: "导出…", MenuImport: "导入…",
+		MenuExport: "导出…", MenuImport: "导入…", MenuCheckUpdates: "检查更新…",
 		BundleExportTitle:   "导出备份",
 		BundleExportLegacy:  "导出兼容备份",
 		BundleExported:      "备份已导出",
@@ -1193,18 +1200,19 @@ var catalogs = map[Locale]map[Key]string{
 		SortCreatedDesc: "最近发布",
 		SortLikesDesc:   "最多喜欢",
 
-		LoadingFeedTitle:   "正在整理你的书签",
-		LoadFailedTitle:    "书签加载失败",
-		InfoLabel:          "信息",
-		AddBookmark:        "添加书签",
-		AddLinkPlaceholder: "粘贴帖子链接",
-		AddTextPlaceholder: "帖子正文（可选）",
-		AddNotAPostLink:    "这不是一条 X 帖子的链接。",
-		ActionRetry:        "重新加载",
-		EmptyLibrary:       "还没有保存任何书签",
-		EmptyLibraryDetail: "从 X 保存内容后，书签会以当前卡片流布局出现在这里。",
-		EmptyFilterDetail:  "试试调整搜索词、标签或作者范围。",
-		EmptyFilter:        "当前筛选条件下没有匹配的书签",
+		LoadingFeedTitle:    "正在整理你的书签",
+		LoadFailedTitle:     "书签加载失败",
+		InfoLabel:           "信息",
+		AddBookmark:         "添加书签",
+		AddLinkPlaceholder:  "粘贴帖子链接",
+		AddTextPlaceholder:  "帖子正文（可选）",
+		AddNotAPostLink:     "这不是一条 X 帖子的链接。",
+		ActionRetry:         "重新加载",
+		EmptyLibrary:        "书库还是空的",
+		EmptyLibraryDetail:  "trove 会把你已经在 X 上收藏的帖子复制进来。先在浏览器里登录 x.com，再点连接；也可以直接导入已有的备份。",
+		EmptyLibraryConnect: "连接 X",
+		EmptyFilterDetail:   "试试调整搜索词、标签或作者范围。",
+		EmptyFilter:         "当前筛选条件下没有匹配的书签",
 
 		InspectorTitle:     "详情",
 		InspectorEmpty:     "选择一个书签以查看详情",

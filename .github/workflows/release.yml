@@ -3,6 +3,11 @@ name: Release
 # A tag is the release. `mygo.json` holds the version, so the tag must agree with it, and every
 # asset name below must agree with `FILES` in site/public/app.js: the site links to
 # /releases/latest/download/<name>, and a renamed asset is a dead download button.
+#
+# Signing is optional so that a tag still produces a working release before the secrets exist:
+# with MACOS_CERTIFICATE and MACOS_SIGNING_IDENTITY the macOS app is signed, with the APPLE_*
+# secrets it is notarized too, and without them the build is ad-hoc signed and the workflow
+# says so in the run summary. Windows code signing is not wired yet (mygo windows.certificate).
 
 on:
   push:
@@ -11,6 +16,9 @@ on:
 
 permissions:
   contents: write
+  # Build attestations: `gh attestation verify <file> -R taoquo/trove`.
+  id-token: write
+  attestations: write
 
 concurrency:
   group: release-${{ github.ref }}
@@ -20,7 +28,19 @@ jobs:
   macos:
     # macos-14 is retired on GitHub's hosted runners; macos-latest is the supported arm64 image.
     runs-on: macos-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
+
+    env:
+      MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+      MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+      MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+      # The key that signs updates. Without it mygo writes no update archives or manifests,
+      # and installed apps cannot update themselves.
+      MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
+      GH_TOKEN: ${{ github.token }}
 
     steps:
       - name: Checkout
@@ -32,30 +52,80 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      # mygo cross-compiles both arches on one runner and ad-hoc signs the bundle; signing with
-      # a Developer ID and notarizing would need macos.signingIdentity plus notarization
-      # credentials, which this repository does not carry yet.
-      - name: Build disk images
-        run: go tool mygo build -platform darwin/arm64,darwin/amd64
+      - name: Import the signing certificate
+        if: env.MACOS_CERTIFICATE != ''
+        run: |
+          set -euo pipefail
+          keychain="$RUNNER_TEMP/trove-signing.keychain-db"
+          echo "$MACOS_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security create-keychain -p actions "$keychain"
+          security set-keychain-settings -lut 1800 "$keychain"
+          security unlock-keychain -p actions "$keychain"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" \
+            -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions "$keychain"
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          rm "$RUNNER_TEMP/certificate.p12"
 
-      - name: Name the assets the site links to
+      # -sign falls back to the ad-hoc identity when the secret is empty, which is what an
+      # unsigned development release carries today.
+      - name: Build disk images
+        run: go tool mygo build -platform darwin/arm64,darwin/amd64 -sign "${MACOS_SIGNING_IDENTITY:--}"
+
+      # mygo signs the app and the disk image; the notary service is what Gatekeeper asks about,
+      # so the image is submitted and the ticket stapled into it.
+      - name: Notarize the disk images
+        if: env.APPLE_ID != ''
+        run: |
+          set -euo pipefail
+          xcrun notarytool store-credentials trove-notary \
+            --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD"
+          for dmg in build/darwin-*/*.dmg; do
+            xcrun notarytool submit "$dmg" --keychain-profile trove-notary --wait
+            xcrun stapler staple "$dmg"
+            xcrun stapler validate "$dmg"
+          done
+
+      # The site links to fixed names; the update manifests point at mygo's own archive names,
+      # which stay as they are so the two never disagree.
+      - name: Collect the assets
         run: |
           set -euo pipefail
           mkdir -p release
           cp build/darwin-arm64/*arm64.dmg release/trove-macos-arm64.dmg
           cp build/darwin-amd64/*amd64.dmg release/trove-macos-x64.dmg
+          cp build/darwin-*/*.tar.gz release/ 2>/dev/null || true
+          cp build/darwin-*/*.delta release/ 2>/dev/null || true
+          cp build/darwin-*/update-*.json release/ 2>/dev/null || true
           ls -l release
 
-      - name: Upload disk images
+      - name: Say whether this build was signed
+        run: |
+          if [ -z "$MACOS_CERTIFICATE" ]; then
+            echo "::warning::No MACOS_CERTIFICATE secret: this release is ad-hoc signed and not notarized."
+          elif [ -z "$APPLE_ID" ]; then
+            echo "::warning::Signed with a Developer ID but not notarized: no APPLE_ID secret."
+          else
+            echo "Signed with a Developer ID and notarized."
+          fi
+          if [ -z "$MYGO_UPDATER_PRIVATE_KEY" ]; then
+            echo "::warning::No MYGO_UPDATER_PRIVATE_KEY secret: this release carries no update files."
+          fi
+
+      - name: Upload assets
         uses: actions/upload-artifact@v4
         with:
           name: macos
-          path: release/*.dmg
+          path: release/*
           if-no-files-found: error
 
   windows:
     runs-on: windows-latest
     timeout-minutes: 40
+
+    env:
+      MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
+      GH_TOKEN: ${{ github.token }}
 
     steps:
       - name: Checkout
@@ -77,19 +147,22 @@ jobs:
           if (-not $setup) { throw 'mygo did not produce a Setup.exe' }
           New-Item -ItemType Directory -Force release | Out-Null
           Copy-Item $setup.FullName release/trove-windows-x64-setup.exe
+          Get-ChildItem build/windows-amd64 -File |
+            Where-Object { $_.Name -like '*.tar.gz' -or $_.Name -like '*.delta' -or $_.Name -like 'update-*.json' } |
+            Copy-Item -Destination release
           Get-ChildItem release
 
-      - name: Upload installer
+      - name: Upload assets
         uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: release/*.exe
+          path: release/*
           if-no-files-found: error
 
   publish:
     needs: [macos, windows]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -109,8 +182,18 @@ jobs:
           path: release
           merge-multiple: true
 
-      - name: List assets
-        run: ls -l release
+      # Signed statements that these bytes were built from this commit by this workflow.
+      - name: Attest the build
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: release/*
+
+      # The site's install page and the README both point at this file.
+      - name: Write checksums
+        run: |
+          cd release
+          sha256sum *.dmg *.exe > SHA256SUMS.txt
+          cat SHA256SUMS.txt
 
       # Re-running a failed release must not fail on "release already exists": upload over the
       # old assets instead, so a broken build can be fixed and the same tag released again.
@@ -118,12 +201,24 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           version=$(jq -r .version mygo.json)
+          # The release notes are this version's section of the changelog, the same text
+          # `mygo build` puts in the update manifest.
+          awk -v v="$version" '
+            $0 ~ "^## \\[?" v "(\\]| |$)" { on = 1; next }
+            on && /^## / { exit }
+            on
+          ' CHANGELOG.md > NOTES.md
+          if [ ! -s NOTES.md ]; then
+            echo "CHANGELOG.md has no section for $version" >&2
+            exit 1
+          fi
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" release/* --clobber
           else
             gh release create "$GITHUB_REF_NAME" \
               --title "trove $version" \
-              --generate-notes \
+              --notes-file NOTES.md \
               release/*
           fi

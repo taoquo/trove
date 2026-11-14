@@ -213,6 +213,22 @@ func (s *Shell) emptyState(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 	if !failed {
 		card.conditions = s.activeConditions()
 	}
+	// The first run needs a way in, not a description of a library it does not have.
+	// With no session stored, "Connect X" is the one action that can fill the page: it
+	// reads the browser's cookies and retries the sync in a single step. Once a session
+	// exists, the same place offers the sync itself. "Import a backup" is the way in for
+	// someone whose library is already elsewhere.
+	if !failed && s.state.Data.Query.Filter.IsZero() {
+		if s.credentials == nil || !s.state.XCredentialsStored {
+			card.actionLabel = s.t().T(i18n.EmptyLibraryConnect)
+			card.onAction = func() { s.ReconnectXSession() }
+		} else {
+			card.actionLabel = s.t().T(i18n.ActionSync)
+			card.onAction = func() { s.StartSync(context.Background()) }
+		}
+		card.secondaryLabel = s.t().T(i18n.MenuImport)
+		card.onSecondary = func() { _ = s.AskBundleImport(context.Background(), false) }
+	}
 	s.stateCard(c, theme, rail, card)
 }
 
@@ -231,6 +247,10 @@ type stateCard struct {
 	// the reader is looking.
 	actionLabel string
 	onAction    func()
+	// secondaryLabel and onSecondary are the quieter alternative beside the one way
+	// forward, e.g. "Import…" next to "Connect X".
+	secondaryLabel string
+	onSecondary    func()
 	// conditions are the narrowings that produced an empty result, drawn beneath the
 	// advice so "nothing matched" says which conditions it means and how to undo them.
 	conditions []filterCondition
@@ -272,6 +292,10 @@ func (s *Shell) stateCard(c *ui.Context, theme *ui.Theme, rail RailTokens, card 
 
 			if card.actionLabel != "" && card.onAction != nil {
 				SecondaryButton(c, "", card.actionLabel, theme, rail, card.onAction)
+			}
+
+			if card.secondaryLabel != "" && card.onSecondary != nil {
+				settingsAction(c, theme, rail, card.secondaryLabel, false, false, card.onSecondary)
 			}
 
 			// The conditions, under the advice that says nothing matched them. They are

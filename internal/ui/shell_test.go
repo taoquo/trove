@@ -331,12 +331,16 @@ func TestShellEmptyStates(t *testing.T) {
 
 	shell.Reload(ctx)
 	tester := ui.NewTester(shell.View, 1180, 760)
-	// The empty-library wording: a title and a line explaining that saved posts appear here.
-	if !tester.HasText("No bookmarks saved yet") {
+	// The empty-library wording: a title, a line explaining where the posts come from, and
+	// the two ways to fill it.
+	if !tester.HasText("Your library is empty") {
 		t.Errorf("an empty library must say so; texts: %q", tester.Texts())
 	}
-	if !tester.HasText("Once you save items from X, they will appear here in the current card feed layout.") {
-		t.Errorf("an empty library must explain what will appear; texts: %q", tester.Texts())
+	if !tester.HasText("trove copies the bookmarks you already saved on X. Sign in to x.com in your browser, then connect") {
+		t.Errorf("an empty library must explain where the posts come from; texts: %q", tester.Texts())
+	}
+	if !tester.HasText("Connect X") {
+		t.Errorf("an empty library must offer to connect X; texts: %q", tester.Texts())
 	}
 
 	// With a bookmark but a query that matches nothing, the message differs.

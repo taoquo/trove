@@ -27,6 +27,8 @@ import (
 
 	"encoding/json"
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/plugins/updater"
+	updatenative "github.com/egoist/mygo/plugins/updater/native"
 	"github.com/egoist/mygo/ui"
 	engine "github.com/taoquo/trove/internal/autotag"
 	"github.com/taoquo/trove/internal/credentials"
@@ -54,6 +56,22 @@ const databaseFile = "trove.db"
 const mediaCacheDir = "media-cache"
 
 func main() {
+	// `trove sync` and `trove export` run without a window: they are what a scheduler
+	// and a terminal use, and opening a window for them would be a bug. Anything else
+	// (including macOS's own launch argument) means the app.
+	if handled, err := runCommand(os.Args[1:]); handled {
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "trove:", err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	// Every window here is native UI, so the update window is too: no webview, and
+	// it is the same window MyGo gives apps on every platform. Development builds
+	// and builds without `updates` in mygo.json simply cannot update themselves.
+	mygo.Use(updatenative.Plugin)
+
 	mygo.App.WhenReady(func() {
 		if err := start(); err != nil {
 			// A failure here is fatal: without a database there is no library, and
@@ -65,6 +83,17 @@ func main() {
 	if err := mygo.App.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// appVersion is the version the app stamps into what it writes. The bundle records it
+// beside the data, so an exporter reading an old backup can tell what produced it.
+// Outside a bundle -- `go run`, a test binary -- MyGo knows no version, and "dev" is
+// more honest there than a number copied into the source and forgotten.
+func appVersion() string {
+	if v := mygo.App.Version(); v != "" {
+		return v
+	}
+	return "dev"
 }
 
 // start opens storage, builds the usecases and shows the workspace.
@@ -187,7 +216,7 @@ func start() error {
 
 	settingsService := settings.New(repos, clock)
 
-	bundleService := importexport.New(repos, clock, "0.3.0")
+	bundleService := importexport.New(repos, clock, appVersion())
 	// The reset's confirmation promises that local settings are cleared, and the stored
 	// secrets are part of that: the API key lives under its own account, so it is not
 	// reached by clearing bookmarks, tags or settings.
@@ -427,12 +456,23 @@ func shouldHideOnClose(quitting bool) bool { return !quitting }
 // language. Items for features that do not exist yet are disabled rather than
 // omitted: a menu that grows and shrinks between versions is harder to learn than
 // one where a command is visibly unavailable.
+// checkForUpdatesItem opens MyGo's update window in the interface's language. The
+// plugin ships its own item, but its label is fixed when the item is built and it has
+// no id; this one is rebuilt with the rest of the bar on a language change.
+func checkForUpdatesItem(shell *appui.Shell) *mygo.MenuItem {
+	return &mygo.MenuItem{
+		ID: "check-updates", Label: shell.T(i18n.MenuCheckUpdates),
+		Click: func(*mygo.MenuItem, *mygo.Window) { updater.CheckForUpdates() },
+	}
+}
+
 func buildMenu(shell *appui.Shell) *mygo.Menu {
 	return mygo.NewMenu([]*mygo.MenuItem{
 		{
 			Label: mygo.App.Name(),
 			Submenu: []*mygo.MenuItem{
 				{Role: mygo.RoleAbout},
+				checkForUpdatesItem(shell),
 				{Type: mygo.MenuItemSeparator},
 				{Role: mygo.RoleQuit},
 			},
