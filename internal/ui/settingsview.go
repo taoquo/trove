@@ -30,6 +30,10 @@ const (
 	// belong at the end of the data-safety card, under "backups and restores stay on this
 	// Mac", which describes neither.
 	SettingsSectionListsViews = "lists-views"
+	// SettingsSectionUpdates is where a reader finds out which version this is and asks for a
+	// newer one. The app menu has the same command; this is the page someone opens to find out
+	// how the app is set up.
+	SettingsSectionUpdates = "updates"
 )
 
 // settingsPage draws settings as a page of the results pane.
@@ -58,6 +62,8 @@ func (s *Shell) settingsPage(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 					s.settingsDataSafetySection(c, theme, rail)
 				case SettingsSectionListsViews:
 					s.settingsListsViewsSection(c, theme, rail)
+				case SettingsSectionUpdates:
+					s.settingsUpdatesSection(c, theme, rail)
 				default:
 					s.settingsGeneralSection(c, theme, rail)
 				}
@@ -134,6 +140,7 @@ func (s *Shell) settingsTabs(c *ui.Context, theme *ui.Theme, rail RailTokens) ui
 			{SettingsSectionAutoTag, i18n.SettingsSectionAutoTag},
 			{SettingsSectionDataSafe, i18n.SettingsSectionDataSafety},
 			{SettingsSectionListsViews, i18n.SettingsSectionListsViews},
+			{SettingsSectionUpdates, i18n.SettingsSectionUpdates},
 		} {
 			section := section
 			warmTab(c, theme, rail, s.t().T(section.label),
@@ -209,6 +216,10 @@ var settingsSectionKeys = map[string][]i18n.Key{
 		i18n.SavedViewApplyNamed, i18n.SaveCurrentView, i18n.DeleteSavedView,
 		i18n.SettingsNewView,
 	},
+	SettingsSectionUpdates: {
+		i18n.SettingsVersion, i18n.SettingsVersionLine, i18n.SettingsVersionLineNever,
+		i18n.MenuCheckUpdates, i18n.SettingsAutoCheck, i18n.SettingsAutoCheckHint,
+	},
 }
 
 // settingsFilteredSections draws every matching section under its own name.
@@ -224,6 +235,7 @@ func (s *Shell) settingsFilteredSections(c *ui.Context, theme *ui.Theme, rail Ra
 		{SettingsSectionAutoTag, i18n.SettingsSectionAutoTag, s.settingsAutoTagSection},
 		{SettingsSectionDataSafe, i18n.SettingsSectionDataSafety, s.settingsDataSafetySection},
 		{SettingsSectionListsViews, i18n.SettingsSectionListsViews, s.settingsListsViewsSection},
+		{SettingsSectionUpdates, i18n.SettingsSectionUpdates, s.settingsUpdatesSection},
 	} {
 		if !s.settingsShows(settingsSectionKeys[section.id]...) {
 			continue

@@ -51,6 +51,7 @@ func TestTheSettingsPageAnswersEveryClick(t *testing.T) {
 		{SettingsSectionAutoTag, i18n.SettingsSectionAutoTag},
 		{SettingsSectionDataSafe, i18n.SettingsSectionDataSafety},
 		{SettingsSectionListsViews, i18n.SettingsSectionListsViews},
+		{SettingsSectionUpdates, i18n.SettingsSectionUpdates},
 		{SettingsSectionGeneral, i18n.SettingsSectionGeneral},
 	} {
 		click(tab(section.key))

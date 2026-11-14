@@ -26,6 +26,9 @@ func (s *Shell) OpenSettings() {
 	s.syncPreferenceLabels()
 	s.loadAutoTagSettings(context.Background())
 	s.loadSyncPreferences(context.Background())
+	// Which version this is and when it last checked, for the updates tab. Read here rather than
+	// in the frame, because the updater owns them in a file of its own.
+	s.loadUpdatePreferences()
 	s.state.SettingsOpen = true
 	s.markPageChange()
 	// The page opens on what it was last showing, and with no query: a filter left from a

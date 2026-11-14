@@ -406,6 +406,19 @@ const (
 	// to sit at the bottom of Data safety, under a sentence about backups, where nobody
 	// looking for their views would think to go.
 	SettingsSectionListsViews Key = "settingsSectionListsViews"
+	// SettingsSectionUpdates is the tab that says which version this is and checks for a newer
+	// one. The app menu has the same command; a reader who has never opened that menu looks in
+	// Settings.
+	SettingsSectionUpdates Key = "settingsSectionUpdates"
+	// SettingsVersion is the row's name; SettingsVersionLine and SettingsVersionLineNever are
+	// what it says under it, with the version and, when there has been one, the last check.
+	SettingsVersion          Key = "settingsVersion"
+	SettingsVersionLine      Key = "settingsVersionLine"
+	SettingsVersionLineNever Key = "settingsVersionLineNever"
+	// SettingsAutoCheck is the switch that decides whether the app looks for a new version in
+	// the background. Its hint says how often, so the switch is not a guess about the cost.
+	SettingsAutoCheck     Key = "settingsAutoCheck"
+	SettingsAutoCheckHint Key = "settingsAutoCheckHint"
 	// SettingsAutoTagMoved is the sentence left in Settings after the auto-tagging controls
 	// moved into tag management.
 	SettingsAutoTagMoved       Key = "settingsAutoTagMoved"
@@ -934,6 +947,12 @@ var catalogs = map[Locale]map[Key]string{
 		SettingsSectionAutoTag:              "Auto-tagging",
 		SettingsSectionDataSafety:           "Data safety",
 		SettingsSectionListsViews:           "Lists & views",
+		SettingsSectionUpdates:              "Updates",
+		SettingsVersion:                     "Version",
+		SettingsVersionLine:                 "trove %s · last checked %s",
+		SettingsVersionLineNever:            "trove %s · not checked since it was installed",
+		SettingsAutoCheck:                   "Check for updates automatically",
+		SettingsAutoCheckHint:               "Once a day, in the background. A new version opens the update window.",
 		SettingsAutoTagMoved:                "Auto-tagging and its model settings now live in tag management.",
 		SettingsGroupAutoTagBasics:          "Rule-based tagging",
 		SettingsGroupAutoTagLlm:             "LLM tagging",
@@ -1394,6 +1413,12 @@ var catalogs = map[Locale]map[Key]string{
 		SettingsSectionAutoTag:              "自动标签",
 		SettingsSectionDataSafety:           "数据安全",
 		SettingsSectionListsViews:           "列表与视图",
+		SettingsSectionUpdates:              "更新",
+		SettingsVersion:                     "版本",
+		SettingsVersionLine:                 "trove %s · 上次检查 %s",
+		SettingsVersionLineNever:            "trove %s · 安装后尚未检查过",
+		SettingsAutoCheck:                   "自动检查更新",
+		SettingsAutoCheckHint:               "每天在后台检查一次；发现新版本会打开更新窗口。",
 		SettingsAutoTagMoved:                "自动标签与模型配置已移到标签管理。",
 		SettingsGroupAutoTagBasics:          "基础规则",
 		SettingsGroupAutoTagLlm:             "大模型标签",

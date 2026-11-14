@@ -284,6 +284,16 @@ func start() error {
 	// file to the system's player instead.
 	shell.UseVideoPlayer(appui.NewNativeVideoPlayer())
 	shell.UseCredentials(credentialStore)
+	// Settings › Updates. The page shows the version this bundle runs and when it last checked,
+	// and its switch writes the plugin's own preference; the plugin is handed over as functions
+	// rather than called here, because it starts listening when the app runs.
+	shell.UseUpdates(appui.Updates{
+		Version:            appVersion(),
+		Check:              updater.CheckForUpdates,
+		AutomaticChecks:    updater.AutomaticChecks,
+		SetAutomaticChecks: updater.SetAutomaticChecks,
+		LastCheck:          updater.LastCheck,
+	})
 	// The connection test the sync settings run. It is the same client the syncer uses, so a
 	// green test is a statement about the exact path a sync will take: same cookies, same
 	// transport, same proxy.

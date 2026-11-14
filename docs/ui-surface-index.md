@@ -40,8 +40,8 @@
 | `pendingSuggestionsBar` | `toolbar.go:551` | `.options-bulk-actions-bar`：待确认标签计数 + `接受全部建议`。**与 `batchBar` 不同**：那个是选中后的批量操作，这个与选择无关（是应用在请你处理） |
 | `listsAndViewsSettings` | `listsviews.go:199` | 设置 › **列表与视图**页签里的「列表」与「保存视图」两段（`state.SettingsOpen`）。侧栏只列标签与作者，这两项的入口在这里；用偏好行语法；Unclassified 与 Inbox 各带一句说明，其余列表只有名字；行内图标带对象名 |
 | `settingsPage` | `settingsview.go:36` | `state.SettingsOpen`。**整页**：占据结果列，侧栏保留；页头 + 顶部标签 + 可滚动分区。分区内容是按偏好行组织的卡片 |
-| `settingsPageHeader` | `settingsview.go:78` | 页头一行：图标返回、页名、五个分区标签、右端 `Find a setting` 输入框；查找有字时标签让位、输入框占满（`.set-searching`） |
-| `settingsTabs` | `settingsview.go:125` | 顶部五个分区标签：`.warm-tabs`，11/600/.05em 大写、22 高、6 圆角，选中用 --pill 底；`Wrap()`，1180 点窗里一行放得下 |
+| `settingsPageHeader` | `settingsview.go:78` | 页头一行：图标返回、页名、六个分区标签、右端 `Find a setting` 输入框；查找有字时标签让位、输入框占满（`.set-searching`） |
+| `settingsTabs` | `settingsview.go:125` | 顶部六个分区标签：`.warm-tabs`，11/600/.05em 大写、22 高、6 圆角，选中用 --pill 底；`Wrap()`，1180 点窗里一行放得下 |
 | `warmTab`（`settingsTabs` / `tagLibraryTabs` 共用） | `settingsui.go:167` | 一片 `.warm-tabs` 按钮；`mark` 在字后带 6pt 圆点 |
 | `settingsFilteredSections` | `settingsview.go:216` | `SettingsQuery` 非空时：命中分区名 + 该分区内命中的行，全不命中显示 `SettingsNoMatch` |
 | `settingsCard` | `settingsui.go:60` | 一张 `.list`：--card 底、1px --line、12 圆角，行与行之间 1px --line-2；返回通过查找的行数，供分区决定是否画分组标题 |
@@ -51,6 +51,7 @@
 | `settingsSyncSection` | `settingsview.go:288` | 同步：启动同步、原始载荷、停止缓冲、首页上限，然后是 X 凭证卡（状态行、浏览器读取、连接测试、Cookie/cURL 粘贴） |
 | `settingsAutoTagSection` | `settingsview.go:432` | 自动标签：**只剩一行指路牌**（名字是「管理标签」，避免与标签页同名）；控件在标签管理页，按钮打开 `TagMode` 的自动标签页 |
 | `settingsDataSafetySection` | `settingsview.go:449` | 数据安全：DATA 标签 + 一句说明；导出、兼容备份、恢复、重置四行（各带一句说明，危险操作用 `.text.danger`）；卡片下方一行回执（`LastBundleOK` 为真时用成功色，进度与拒绝仍是 muted 的 `settingsNote`） |
+| `settingsUpdatesSection` | `updatesview.go:57` | 更新：**版本**一行（`trove <版本> · 上次检查 <时间>`，从未检查时说「安装后尚未检查过」，行尾是「检查更新…」，与菜单栏同一条命令）与**自动检查更新**一行（关/开两段开关，写入更新器自己的偏好）。只在 `SettingsSectionUpdates` 页签下画 |
 | `settingsListsViewsSection` | `listsviews.go:188` | 列表与视图：`listsAndViewsSettings` 的两个卡片，只在 `SettingsSectionListsViews` 页签下画 |
 | `settingsSectionLabel` / `settingsNote` | `settingsui.go:135` | `.label`：11px/600/.05em/**大写**/--muted 的分组标题；`settingsNote` 是它下面的一句说明（`.feat-say`：12px、--muted、在卡外）。设置页与自动标签页共用 |
 | `settingsField` / `settingsInput` / `settingsQuiet` | `settingsui.go:458` | 偏好行里的文本框：27 高、7 圆角、0 9 内边距、12.5px；`settingsInput` 是可继续链式设置 placeholder / Bind 的底层字段，`settingsQuiet` 是行尾的只读值（11.5px --muted，不画按钮框） |
