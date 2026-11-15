@@ -33,7 +33,7 @@
 | `stateCard` | `results.go:264` | 空状态与错误态共用 |
 | `bookmarkGrid` | `card.go:568` | `ViewMode == grid`。**`ui.GridView` 虚拟化**（规范 §6.12） |
 | `bookmarkList` | `card.go:631` | `ViewMode == list`。**`ui.List` 虚拟化**（规范 §6.13） |
-| `bookmarkCard` | `card.go:13` | 每条结果。**卡片本身**：圆角 16 + `Clip()`，媒体在 body 之前满宽，body padding 18，操作行在 body 内底部 |
+| `bookmarkCard` | `card.go:13` | 每条结果。**卡片本身**：圆角 16 + `Clip()`，媒体在 body 之前满宽，body padding 18，操作行在 body 内底部。媒体格两种布局两种形状（网格 `aspect-video` 满宽、列表 148×108 内联缩略图），视频与 GIF 在两种里都盖 `playMark`（40 / 28）；照片不盖 |
 | `cardSelectToggle` | `card.go:398` | `/`.options-bookmark-select-toggle`：绝对定位 18/18、20 方形、选中显示 13px check。**不接点击**（卡片整体已是选择目标，第二个目标会触发两次） |
 | `cardActions` | `card.go:461` | `/`.options-card-actions`：栅格是 💬 ♡ ⤴ + 右侧 ↗；列表换成 reply/retweet/like 指标。**左侧一组是装饰性的**，只有右侧那个能点 |
 | `cardSuggestionChip` | `card.go:366` | 待确认建议的虚线 chip，结果卡片与详情标签行共用；高度/字号/横向 padding 由调用方给（栅格与列表不同） |
@@ -86,11 +86,11 @@
 | `inspector` | `inspector.go:70` | 详情的入口：固定 hero + 阅读区（单栏滚动）+ 底部一条。**滚动在阅读区里**（规范 §6.14 要它"自己拥有纵向滚动区域"）；长推文不会把按钮推出屏幕 |
 | `inspectorEmpty` | `inspector.go:85` | 没有选中项时的两行。**在 `Scroll` 之外**——它太短，给它滚动区没有意义 |
 | `inspectorBody` | `inspector.go:99` | 详情的骨架：`detailHeader`（作者 / 发布时间 / 标签 / 三个图标）+ 分隔线 + `detailPost` 的滚动区。没有右栏，也没有底栏 |
-| `detailPost` | `detailpost.go:28` | 详情阅读列。**整条推文是一个对象**：正文 → 14pt → 媒体 → alt → 计数，没有「内容摘要」「媒体资源」两个小标题，也没有摘要卡片 |
-| `detailMedia` | `detailpost.go:57` | 有媒体时。1 张满宽；2–4 张两列网格；奇数最后一个保持半宽 |
-| `detailMediaItem` | `detailpost.go:89` | 每一张图：按图片自身比例给高度（比例夹在 0.8–3.2 之间），点击打开灯箱的**对应序号**；`IsVideoMediaType`（含 `animated_gif`）盖一个播放标记 |
-| `detailPlayMark` | `detailpost.go:142` | 视频海报中央的 58pt 圆盘 + play glyph。是标记不是控件——真正的播放器在灯箱里 |
-| `detailMetrics` | `detailpost.go:160` | 有 `row.Metrics` 时：回复 / 转发 / 喜欢三个计数，与卡片列表模式同一套图标 |
+| `detailPost` | `detailpost.go:20` | 详情阅读列。**整条推文是一个对象**：正文（600 阅读宽度，`DetailBodyLabel`）→ 14pt → 媒体 → alt → 计数，没有「内容摘要」「媒体资源」两个小标题，也没有摘要卡片；没有正文时整块不存在，14pt 也一起去掉 |
+| `detailMedia` | `detailpost.go:62` | 有媒体时。1 张装在一个满宽的行里居中；2–4 张两列等高网格（3:2）；奇数最后一个保持半格 |
+| `detailMediaItem` | `detailpost.go:102` | 每一张图：单张时高度封顶 420（外框由 `detailPictureFrame` 算：宽随比例，整张不裁，比例仍夹在 0.8–3.2），点击打开灯箱的**对应序号**；`IsVideoMediaType`（含 `animated_gif`）盖 `playMark` 的 64pt 盘 |
+| `playMark` | `playmark.go:42` | 视频海报中央的圆盘 + play glyph，**一处画法、三处尺寸**：详情 64（`DetailPlaySize`）、网格卡片 46（`CardPlaySize`）、列表缩略图 30（`CardListPlaySize`）；glyph 是盘的 0.42。底色用 `theme.Accent`、glyph 用 `theme.AccentText`——浅色是朱红，深色是它的浅一档，不写死颜色。照片不画——没有标记就是照片的样子。是标记不是控件，播放器在灯箱里 |
+| `detailMetrics` | `detailpost.go:174` | 有 `row.Metrics` 时：回复 / 转发 / 喜欢三个计数，与卡片列表模式同一套图标 |
 | `renderLightbox` | `lightbox.go:203` | `s.LightboxOpen()`。外壳 `min(94vw,1320)` + 三段（工具条 / 舞台 / 计数），舞台是 `72 / 1fr / 72` 三轨；不画类型与 URL 两行 |
 | `detailHeader` | `inspector.go:117` | 卡片唯一的顶栏，一条 `ui.Row`：30pt 头像 / 名字 + handle + 发布时间 + 标签（同一个可换行行）/ 三个图标（复制链接、在 X 打开、关闭） |
 | `detailTags` | `inspector.go:173` | 顶栏作者行里的尾巴：标签药丸 + 待确认建议芯片 + 新标签输入框，紧跟发布时间。没有标题，也没有"还没有标签"的句子 |

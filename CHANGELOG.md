@@ -4,6 +4,28 @@
 update it signs, so the heading below must exist before a tag is pushed. Keep the
 heading plain (`## 0.3.2`) or Keep a Changelog's (`## [0.3.2] - 2026-11-14`).
 
+## 0.3.6
+
+### Added
+
+- A video's poster carries a play disc, so a video no longer looks like a still photo in the
+  grid. It is drawn in the theme's accent — cinnabar in the light appearance, its lighter
+  step in the dark one — at 46 points on a grid card, 30 in a list thumbnail and 64 in the
+  detail. Photos carry no mark: the disc is the whole visible difference between the two.
+
+### Changed
+
+- The detail reads in a 600-point column instead of the full pane, about 46 characters a
+  line rather than 56, which is where the eye stops losing the line it is returning to.
+- One picture is capped at 420 points tall and scaled down whole rather than cropped to the
+  pane's width: a portrait photo is shown complete and centred, and the detail no longer
+  scrolls a screen and a half for it. A gallery is a 3:2 grid, so a row is one height.
+- A post with no words starts at its picture instead of leaving a paragraph gap.
+
+### Fixed
+
+- The fixture seeder keeps a video's poster URL, so a seeded video draws its card media.
+
 ## 0.3.5
 
 ### Added

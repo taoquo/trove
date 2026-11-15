@@ -308,6 +308,20 @@ const (
 	// user-visible: Tester.Find matches labels, and the aspect ratio of this frame is
 	// the thing that decides how tall a card is.
 	CardMediaFrameLabel = "card-media-frame"
+	// The video mark's disc, one size per surface: 46 on the grid card's 16:9 band (257 tall
+	// at the reference card width, 442 in a two-column window), 30 on the list card's inline
+	// thumbnail (108 at its shortest), and DetailPlaySize 64 on the detail's picture. One size
+	// cannot serve all three -- the detail's disc covers a short thumbnail whole. A photo
+	// carries no mark, so the disc is the whole visible difference between a photo and a video.
+	CardPlaySize     = 46
+	CardListPlaySize = 30
+	// CardPlayMarkLabel names that disc on a card for tests, so a test can ask whether a video
+	// is marked and by how much. Not user-visible.
+	CardPlayMarkLabel = "card-play-mark"
+	// CardListMediaLabel names the list card's inline thumbnail for tests: the 148-point box the
+	// picture and the mark share, so a test can check the disc sits inside it rather than a box
+	// that collapsed. Not user-visible.
+	CardListMediaLabel = "card-list-media"
 	// CardAvatarLabel names the card's author avatar for tests: the picture when the
 	// author has one, the initial otherwise.
 	CardAvatarLabel = "card-avatar"
@@ -317,6 +331,13 @@ const (
 	// DetailMediaTriggerLabel names the detail's media picture, which is the lightbox's
 	// trigger.
 	DetailMediaTriggerLabel = "detail-media-trigger"
+	// DetailPlayMarkLabel names the detail's video disc. The card behind the dialog draws the
+	// same mark smaller, so the detail's has a name of its own.
+	DetailPlayMarkLabel = "detail-play-mark"
+	// DetailBodyLabel names the detail's words. The card draws the same sentence in the grid
+	// behind the dialog, so a test that wants the post's measure rather than the card's needs
+	// a name of its own.
+	DetailBodyLabel = "detail-body"
 	// DetailTagInputLabel names the detail's new-tag field, so a test can click it and
 	// check whether it lets go of the focus.
 	DetailTagInputLabel = "detail-tag-input"

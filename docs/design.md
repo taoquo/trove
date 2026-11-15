@@ -128,6 +128,12 @@ gap 已经映射回去：6→8、10→12、14 和 18→16。
 | 确认 | 危险动作悬停 | 静止为危险墨 + 危险浅底；指针下填实危险色 | `TestTheDestructiveAnswerFillsUnderThePointer` |
 | 同步 | 未配置凭据 | 失败原因可读，不显示空列表 | `TestSyncFailureSaysWhatToDo` |
 | 详情 | 媒体缺失 | 占位而不是空白 | `TestTheDetailKeepsAFrameForAPictureThatNeverArrives` |
+| 详情 | 正文 | 600 的阅读宽度，不随窗口变宽 | `TestTheDetailBodyKeepsItsOwnMeasure` |
+| 详情 | 一张竖图 | 高度封顶 420，整张不裁，水平居中；横图仍撑满阅读区 | `TestATallPictureIsShownWholeAtTheCap`、`TestAWidePictureFillsThePane` |
+| 详情 | 多图 | 3:2 等高格子，方形图和宽图同样大小 | `TestTheGalleryTilesShareOneShape` |
+| 详情 | 没有正文 | 媒体直接贴内边距，不留那一段间距 | `TestAPostWithNoWordsStartsWithItsPicture` |
+| 媒体 | 视频与 GIF | 海报中央一枚**主题朱红**的播放盘（跟随明暗外观，不写死红色），一处画法三处尺寸：网格卡片 46、列表缩略图 30、详情 64，glyph 同比缩；卡片与详情是同一个盘 | `TestAVideoCardCarriesTheMarkCentredOnItsPoster`、`TestTheListThumbnailUsesASmallerDisc`、`TestTheDetailKeepsItsOwnDisc`、`TestAGifCardCarriesTheMarkToo` |
+| 媒体 | 照片 | 不加任何标记——没有盘就是照片的样子 | `TestAPhotoCardCarriesNoMark` |
 | 筛选 | 无匹配 | 空态在流内，说明当前筛选 | `TestTheEmptyResultNamesEveryCondition`、`TestTheEmptyResultOffersAWayOut` |
 
 ## 4. 品牌标记

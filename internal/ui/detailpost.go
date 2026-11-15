@@ -16,26 +16,31 @@ import (
 // put an overline on content that has one owner, and a summary card inside a dialog panel was
 // a third panel layer.
 
-// The video mark's ground and ink: the lightbox controls' own pair (a dark translucent disc
-// over the picture, a white glyph), so a video's poster and the player it opens read as one
-// surface.
-var (
-	DetailPlayGround = ui.RGBA(25, 21, 20, 0.55)
-	DetailPlayInk    = ui.RGBA(255, 255, 255, 1)
-)
-
 // detailPost draws the selected post: its words, its media, and its counts.
 func (s *Shell) detailPost(c *ui.Context, theme *ui.Theme, rail RailTokens, row workspace.BookmarkRow) {
 	ui.Column(c).Grow(1).Children(func() {
-		if text := strings.TrimSpace(row.Text); text != "" {
-			ui.Text(c, row.Text).FontSize(DetailBodyFont).LineHeight(DetailBodyLine).
-				TextColor(theme.Text)
+		text := strings.TrimSpace(row.Text)
+		if text != "" {
+			// The words get a column of their own, narrower than the pictures they are about:
+			// at the pane's full width a 13-point line runs to ~56 CJK characters and the eye
+			// loses the start of the line it is returning to. The measure is a cap, so a short
+			// post is still a short line rather than a centred one.
+			ui.Column(c).FillWidth().MaxWidth(DetailReadWidth).Label(DetailBodyLabel).
+				Children(func() {
+					ui.Text(c, row.Text).FontSize(DetailBodyFont).LineHeight(DetailBodyLine).
+						TextColor(theme.Text)
+				})
 		}
 
 		if len(row.Media) > 0 {
 			// The pictures belong to the sentence above them, so the gap is a paragraph's, not
-			// a section's.
-			ui.Column(c).FillWidth().Padding(DetailPostGap, 0, 0, 0).Children(func() {
+			// a section's -- and with no sentence above them there is nothing for them to
+			// belong to, so the gap goes with the text.
+			gap := float32(0)
+			if text != "" {
+				gap = DetailPostGap
+			}
+			ui.Column(c).FillWidth().Padding(gap, 0, 0, 0).Children(func() {
 				s.detailMedia(c, theme, row.Media)
 			})
 			// A picture's description sits under the picture, in the quiet ink. It is the only text in the detail that is about the media rather
@@ -60,7 +65,11 @@ func (s *Shell) detailMedia(c *ui.Context, theme *ui.Theme, media []domain.Media
 		count = DetailMediaMaxCount
 	}
 	if count == 1 {
-		s.detailMediaItem(c, theme, 0, media[0], 1)
+		// A lonely picture keeps its whole frame. When the cap makes it narrower than the pane,
+		// the row is what centres it; the box itself is never stretched.
+		ui.Row(c).FillWidth().Justify(ui.Center).Children(func() {
+			s.detailMediaItem(c, theme, 0, media[0], 1)
+		})
 		return
 	}
 	ui.Column(c).FillWidth().GapY(DetailMediaGridGap).Children(func() {
@@ -80,23 +89,27 @@ func (s *Shell) detailMedia(c *ui.Context, theme *ui.Theme, media []domain.Media
 	})
 }
 
-// detailMediaItem draws one picture at its own aspect ratio, with a play mark over a video.
+// detailMediaItem draws one picture, with a play mark over a video.
 //
-// The height comes from the picture rather than from the stylesheet's clamp: a fixed
-// 15-24rem band cropped every portrait photo to a strip, while the lightbox showed the same
-// photo whole. The ratio is clamped at both ends so one tall picture cannot take the whole
-// pane and one panorama does not become a line; beyond the clamp the crop is the point.
+// One picture keeps its own shape: the height is capped rather than the width, so a portrait
+// photo is scaled down whole and centred instead of being cropped to a band -- the pane shows
+// the frame the lightbox will open. The ratio is still clamped at both ends: past 4:5 or
+// 3.2:1 the frame would be a 236-point sliver or a 227-point line, and the lightbox is what
+// those shapes are for.
+//
+// In the grid every tile takes one shape, so a row is one height; the pictures' own ratios are
+// what the lightbox is for.
 func (s *Shell) detailMediaItem(c *ui.Context, theme *ui.Theme, index int, item domain.Media, columns int) {
 	url := domain.MediaThumbnailURL([]domain.Media{item})
 	box := ui.Box(c).Radius(DetailMediaRadius).Clip().
-		AspectRatio(s.detailMediaRatio(url)).
 		Background(theme.Background).
 		Label(DetailMediaTriggerLabel).Focusable().
 		OnClick(func() { s.OpenLightbox(index) })
 	if columns > 1 {
-		box = box.Grow(1).Basis(0).MinWidth(0)
+		box = box.Grow(1).Basis(0).MinWidth(0).AspectRatio(DetailMediaTileRatio)
 	} else {
-		box = box.FillWidth()
+		width, height := s.detailPictureFrame(s.detailMediaRatio(url))
+		box = box.Width(width).Height(height)
 	}
 	box.Children(func() {
 		if bitmap, ready := s.mediaPicture(url); ready {
@@ -106,9 +119,25 @@ func (s *Shell) detailMediaItem(c *ui.Context, theme *ui.Theme, index int, item 
 		// mp4, and IsVideoMediaType covers both. A GIF compared as a photo got a still poster
 		// and no play mark.
 		if domain.IsVideoMediaType(string(item.Type)) {
-			s.detailPlayMark(c)
+			s.playMark(c, theme, DetailPlaySize, DetailPlayMarkLabel)
 		}
 	})
+}
+
+// detailPictureFrame is the box a post's only picture takes.
+//
+// The width is the pane's, so a wide picture fills the column; the height is capped at
+// DetailMediaCap, so a tall one is scaled down whole. The two numbers always agree with the
+// picture's ratio, which is why the crop anchor the capped-band layout needed does not exist
+// here: there is no crop to anchor.
+func (s *Shell) detailPictureFrame(ratio float32) (float32, float32) {
+	width := s.detailPaneWidth()
+	height := width / ratio
+	if height > DetailMediaCap {
+		height = DetailMediaCap
+		width = height * ratio
+	}
+	return width, height
 }
 
 // detailMediaRatio is a picture's width over its height, clamped to what the pane will show.
@@ -134,21 +163,6 @@ func (s *Shell) detailMediaRatio(url string) float32 {
 		ratio = DetailMediaMaxRatio
 	}
 	return ratio
-}
-
-// detailPlayMark is the disc over a video's poster. It is a mark, not a control: the item
-// under it opens the lightbox, and the lightbox is where the player lives, so the mark says
-// "this one moves" and the press that follows is the same press for every picture.
-func (s *Shell) detailPlayMark(c *ui.Context) {
-	ui.Box(c).Absolute().Left(0).Top(0).Right(0).Bottom(0).Center().PassThrough().Children(func() {
-		ui.Box(c).Width(DetailPlaySize).Height(DetailPlaySize).Radius(RadiusPill).
-			Background(DetailPlayGround).Center().Children(func() {
-			ui.Box(c).Width(DetailPlayGlyph).Height(DetailPlayGlyph).
-				Draw(func(p *ui.Painter, r ui.Rect) {
-					drawIcon(p, "play", r.X, r.Y, min32(r.W, r.H), DetailPlayInk)
-				})
-		})
-	})
 }
 
 // detailMetrics is what the post got, in the quiet ink under it.

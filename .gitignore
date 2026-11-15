@@ -8,6 +8,10 @@ coverage/
 # Screenshots are captured locally by the gate; the design documents are versioned.
 docs/screenshots/
 
+# Mockups are rendered locally from their generators, like the gate's screenshots.
+docs/mockups/*.png
+docs/mockups/*.html
+
 # Pinned Go toolchain and module cache (see .toolchain/env.sh).
 # env.sh records the pin and checksum, so it is the only tracked file here.
 .toolchain/*

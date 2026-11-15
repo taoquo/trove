@@ -107,22 +107,32 @@ func (s *Shell) bookmarkCard(c *ui.Context, theme *ui.Theme, rail RailTokens, in
 		// bottom. The list layout keeps its inline thumbnail instead -- the stylesheet moves that
 		// one into the layout grid at 148 wide -- so this draws for the grid only.
 		if mediaURL := domain.MediaThumbnailURL(row.Media); mediaURL != "" && halfWidth {
-			if picture, ready := s.mediaPicture(mediaURL); ready {
-				// Cover, not the default: card media is `object-fit: cover`. Without it ui.Image
-				// keeps the picture's own aspect ratio and centres it, so a 3:2 photo in a card
-				// twice as wide as it is tall is drawn 305 wide in a 437 card with margins either
-				// side. The media frame is `aspect-video`: 16:9 of the card's width, which at a
-				// 458-point card is 257 tall. A fixed 240 was short by 17 and, worse, wrong at
-				// every other card width.
-				ui.Image(c, picture).FillWidth().AspectRatio(CardMediaAspect).Fit(ui.Cover).
-					BorderWidth(0, 0, 1, 0).BorderColor(rail.SubtleLine).
-					Label(CardMediaFrameLabel)
-			} else {
-				// A block of the same shape, so a picture that lands a frame later does not move
-				// everything under it.
-				ui.Box(c).FillWidth().AspectRatio(CardMediaAspect).Background(rail.CardAvatarBg).
-					Label(CardMediaFrameLabel)
-			}
+			// The frame is `aspect-video`: 16:9 of the card's width, which at a 458-point card
+			// is 257 tall. A fixed 240 was short by 17 and, worse, wrong at every other card
+			// width. It is the frame rather than the picture that carries the ratio, because the
+			// picture is no longer the only thing in it: a video's poster gets the play mark
+			// over it, and the box that holds both has to be the one that decides the height.
+			frame := ui.Box(c).FillWidth().AspectRatio(CardMediaAspect).Label(CardMediaFrameLabel)
+			frame.Children(func() {
+				if picture, ready := s.mediaPicture(mediaURL); ready {
+					// Cover, not the default: card media is `object-fit: cover`. Without it
+					// ui.Image keeps the picture's own aspect ratio and centres it, so a 3:2
+					// photo in a card twice as wide as it is tall is drawn 305 wide in a 437
+					// card with margins either side.
+					ui.Image(c, picture).FillWidth().FillHeight().Fit(ui.Cover).
+						BorderWidth(0, 0, 1, 0).BorderColor(rail.SubtleLine)
+				} else {
+					// A block of the same shape, so a picture that lands a frame later does not
+					// move everything under it.
+					ui.Box(c).FillWidth().FillHeight().Background(rail.CardAvatarBg)
+				}
+				// A card draws the media it was given, which is the first attachment. A video's
+				// poster is a still frame, so without the mark a video card and a photo card are
+				// the same picture.
+				if domain.IsVideoMediaType(string(row.Media[0].Type)) {
+					s.playMark(c, theme, CardPlaySize, CardPlayMarkLabel)
+				}
+			})
 		}
 
 		// The card body: 18 of padding and a 12 gap on the grid, its own padding in the list.
@@ -321,17 +331,26 @@ func (s *Shell) bookmarkCard(c *ui.Context, theme *ui.Theme, rail RailTokens, in
 						return
 					}
 					// The inline media: height 100%, min-height 108, a 12 radius and a hairline.
+					// The radius and the hairline are the inner box's, so the play mark sits
+					// inside a shape that is already the picture's.
 					ui.Column(c).Width(CardListSideWidth).FillHeight().
 						MinHeight(CardListSideMinHeight).Children(func() {
-						if picture, ready := s.mediaPicture(mediaURL); ready {
-							ui.Image(c, picture).FillWidth().FillHeight().Fit(ui.Cover).
-								Radius(CardListMediaRadius).Border(1, rail.SubtleLine)
-						} else {
-							// A block of the same shape, so a picture that lands a frame later does
-							// not move anything beside it.
-							ui.Box(c).FillWidth().FillHeight().Radius(CardListMediaRadius).
-								Background(rail.CardAvatarBg)
-						}
+						ui.Box(c).FillWidth().FillHeight().Radius(CardListMediaRadius).Clip().
+							Border(1, rail.SubtleLine).Label(CardListMediaLabel).Children(func() {
+							if picture, ready := s.mediaPicture(mediaURL); ready {
+								ui.Image(c, picture).FillWidth().FillHeight().Fit(ui.Cover)
+							} else {
+								// A block of the same shape, so a picture that lands a frame
+								// later does not move anything beside it.
+								ui.Box(c).FillWidth().FillHeight().
+									Background(rail.CardAvatarBg)
+							}
+							// The same mark the grid card draws, one step smaller: a
+							// 108-point thumbnail cannot carry the detail's 58-point disc.
+							if domain.IsVideoMediaType(string(row.Media[0].Type)) {
+								s.playMark(c, theme, CardListPlaySize, CardPlayMarkLabel)
+							}
+						})
 					})
 				})
 				return

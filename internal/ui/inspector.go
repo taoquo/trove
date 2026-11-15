@@ -24,17 +24,14 @@ func (s *Shell) detailOverlay(c *ui.Context, theme *ui.Theme, rail RailTokens, e
 	// overlay disappeared (a capture with TROVE_CAPTURE_STATE=detail came back as the bare grid)
 	// and scrolling still did not work. The note on TestTheInspectorOwnsAScrollRegion records
 	// what was tried.
-	width := float32(DetailCardMaxWidth)
-	if viewport := float32(s.windowWidth()); viewport > 0 && viewport*DetailDialogMixWidth < width {
-		width = viewport * DetailDialogMixWidth
-	}
+	width := s.detailDialogWidth()
 	// The dialog: a 14-point radius, one hairline and a deep soft drop.
 	// The gradient stays flat -- both ends are the same card colour -- because panels are
 	// drawn flat.
 	panel.Width(width).
 		MaxHeight(s.viewportHeight()*DetailDialogMixHigh).
 		Radius(RadiusDialog).
-		Border(1, rail.CardBorder).
+		Border(DetailDialogBorder, rail.CardBorder).
 		Shadow(0, 24, 60, 0, ui.RGBA(0, 0, 0, 0.32)).
 		Gradient(rail.InspectorTop, rail.InspectorBottom, 180).
 		Opacity(EntranceDetailCard.OpacityAt(entrance)).
@@ -42,6 +39,23 @@ func (s *Shell) detailOverlay(c *ui.Context, theme *ui.Theme, rail RailTokens, e
 		Children(func() {
 			s.inspector(c, theme, rail)
 		})
+}
+
+// detailDialogWidth is the card's own width: the design width, or 94% of the window when the
+// window is narrower than that. min(94vw, 780).
+func (s *Shell) detailDialogWidth() float32 {
+	width := float32(DetailCardMaxWidth)
+	if viewport := float32(s.windowWidth()); viewport > 0 && viewport*DetailDialogMixWidth < width {
+		width = viewport * DetailDialogMixWidth
+	}
+	return width
+}
+
+// detailPaneWidth is the post's column: the dialog less the padding the hero and the scroll
+// region both carry. A picture that wants to fill the pane asks for this, so the number has one
+// source rather than a copy in the media code.
+func (s *Shell) detailPaneWidth() float32 {
+	return s.detailDialogWidth() - 2*(DetailHeroPadSide+DetailDialogBorder)
 }
 
 // runProgressBar draws a live run.

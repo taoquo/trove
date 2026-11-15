@@ -34,13 +34,24 @@ const (
 	DetailMediaRadius   = 12
 	DetailMediaColumns  = 2
 	DetailMediaMaxCount = 4
+	// The reading measure, narrower than the pane. At the pane's 728 a 13-point line holds
+	// about 56 CJK characters, which is past the point where the eye loses the start of the
+	// line it is returning to; 600 holds about 46. The picture may still use the whole pane.
+	DetailReadWidth = 600
+	// The single picture's height ceiling. At the cap the picture is scaled down whole and
+	// centred rather than cropped to the pane's width, so the pane shows the frame the lightbox
+	// will open, only smaller. Nothing is hidden, and there is no crop anchor to choose.
+	DetailMediaCap = 420
+	// A tile in the multi-picture grid: 3:2 whatever its picture's shape, so a row is one
+	// height and two pictures read as a set rather than as two attachments of different sizes.
+	DetailMediaTileRatio = 3.0 / 2.0
 	// The ratio clamp: a picture taller than 4:5 fills the pane, and one wider than 3.2:1
 	// becomes a band. Beyond these the whole-picture view is the lightbox's job.
 	DetailMediaMinRatio = 0.8
 	DetailMediaMaxRatio = 3.2
-	// The video mark: a 58-point disc carrying a 22-point glyph.
-	DetailPlaySize   = 58
-	DetailPlayGlyph  = 22
+	// The video mark's largest disc: the detail draws it at 64, a card at 46 (grid) or 30
+	// (list). playGlyphSize keeps the glyph in proportion, so the three are one drawing.
+	DetailPlaySize   = 64
 	DetailAltFont    = 12
 	DetailAltGap     = 8
 	DetailMetricGap  = 18
@@ -74,6 +85,9 @@ const (
 	DetailDateGap        = 4
 	DetailDialogMixWidth = 0.94 // width: min(94vw, 980px)
 	DetailDialogMixHigh  = 0.86 // max-height: 86dvh
+	// The dialog's hairline, inside its width: the pane is the dialog less this and the side
+	// padding, so a picture that asks for the pane does not ask for two points it will not get.
+	DetailDialogBorder = 1
 	// DetailViewportFallback is the window height a tester draws at before it has a window,
 	// matching main.go's default.
 	DetailViewportFallback = 760

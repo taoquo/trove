@@ -25,9 +25,13 @@ import (
 const databaseFile = "trove.db"
 
 type mediaFixture struct {
-	Type    string `json:"type"`
-	URL     string `json:"url"`
-	AltText string `json:"altText"`
+	Type string `json:"type"`
+	URL  string `json:"url"`
+	// PosterURL is a video's still frame. Without it a seeded video has no picture at all:
+	// MediaThumbnailURL stands the poster in for a video, so a video with no poster draws no
+	// card media and no play mark, which is not what the app does with real data.
+	PosterURL string `json:"posterUrl"`
+	AltText   string `json:"altText"`
 }
 
 // metricsFixture is the fixture's engagement block. The pointers keep the fixture's own
@@ -169,11 +173,19 @@ func main() {
 			}
 		}
 		for _, media := range item.Media {
-			bookmark.Media = append(bookmark.Media, domain.Media{
+			entry := domain.Media{
 				Type:    domain.MediaType(media.Type),
 				URL:     *mediaBase + media.URL,
 				AltText: media.AltText,
-			})
+			}
+			// A pointer, not a string: the domain tells "a photo, so no poster" (nil) from "a
+			// video whose poster URL is empty" (set and empty), and the seeder keeps that
+			// distinction rather than flattening both to "".
+			if media.PosterURL != "" {
+				poster := *mediaBase + media.PosterURL
+				entry.PosterURL = &poster
+			}
+			bookmark.Media = append(bookmark.Media, entry)
 		}
 		rows = append(rows, bookmark)
 	}
