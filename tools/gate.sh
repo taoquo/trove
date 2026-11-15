@@ -46,7 +46,29 @@ quiet() {
   fi
 }
 
+# The family audit lives outside this repository, in the taoque skill. It is the only check
+# that compares this repo's palette with the other surfaces that copy it. When the skill is
+# not on this machine the step fails rather than skipping: a gate that skips is not a gate,
+# and the fix is one environment variable.
+family_audit() {
+  local audit="${TAOQUE_AUDIT:-}"
+  if [ -z "$audit" ]; then
+    for candidate in ../taoque/scripts/audit.sh "$HOME/.claude/skills/taoque/scripts/audit.sh"; do
+      if [ -f "$candidate" ]; then
+        audit="$candidate"
+        break
+      fi
+    done
+  fi
+  if [ -z "$audit" ]; then
+    echo "taoque audit not found; set TAOQUE_AUDIT to its scripts/audit.sh"
+    return 1
+  fi
+  bash "$audit"
+}
+
 echo "checks:"
+step "family design tokens" family_audit
 step "translator covers every string" bash tools/check-text.sh
 step "wiring, surfaces, tokens, names, citations" bash tools/check-wiring.sh
 step "every checker still catches its defect" bash tools/selfcheck.sh
