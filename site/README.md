@@ -43,6 +43,11 @@ Capture `workspace`, `detail` and `tags` for both locales, then convert each wit
 `cwebp -q 82 -resize 1600 0` into `site/public/img/`. The page keeps a second sentence beside the
 figures saying the samples are invented; keep that promise if the fixture changes.
 
+The pages ask for the pictures as `img/library-en.webp?v=<version>`, and `_headers` gives `/img/*`
+a week of freshness. The query string is what makes a replaced capture appear: without a new one,
+a reader who has seen the page keeps the old picture for up to seven days even though the file on
+the edge is new. Bump the version in `index.html` in the same change that replaces a picture.
+
 ## Deploy
 
 The page is a Cloudflare Worker with static assets, configured by `wrangler.jsonc`:
