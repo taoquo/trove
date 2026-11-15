@@ -10,8 +10,10 @@
   --accent: #b83d2e;
   --accent-pressed: #7e241c; /* the step below the accent, the app's pressed value */
   --on-accent: #ffffff;      /* text on the accent, as in the app */
+  --code-bg: #f1e8de;        /* code chips, one step above the rule */
+  --on-accent-faint: #f0d8d1; /* the small line on an accent button */
   --max: 1120px;
-  --serif: "Source Serif 4", Charter, Georgia, "Songti SC", "Noto Serif CJK SC", "STSong", Palatino, serif;
+  --serif: "Source Serif 4", Charter, Georgia, "Songti SC", "Noto Serif CJK SC", "STSong", SimSun, Palatino, serif;
   --mono: "JetBrains Mono", "SF Mono", ui-monospace, "Songti SC", monospace;
 }
 
@@ -39,7 +41,7 @@ a { color: inherit; }
 code {
   font-family: var(--mono);
   font-size: 0.84em;
-  background: #f1e8de;
+  background: var(--code-bg);
   border: 1px solid var(--rule);
   border-radius: 3px;
   padding: 1px 5px;
@@ -261,7 +263,7 @@ p { color: var(--ink-warm); }
   color: var(--on-accent);
 }
 
-.button.primary small { color: #f0d8d1; }
+.button.primary small { color: var(--on-accent-faint); }
 .button.primary:hover { background: var(--accent-pressed); border-color: var(--accent-pressed); }
 .button:not(.primary):hover { border-color: var(--ink-warm); }
 
