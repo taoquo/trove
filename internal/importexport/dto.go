@@ -18,22 +18,28 @@ import (
 
 // BookmarkDTO is one bookmark.
 type BookmarkDTO struct {
-	TweetID         string          `json:"tweetId"`
-	TweetURL        string          `json:"tweetUrl"`
-	AuthorName      string          `json:"authorName"`
-	AuthorHandle    string          `json:"authorHandle"`
-	AuthorAvatarURL string          `json:"authorAvatarUrl,omitempty"`
-	Text            string          `json:"text"`
-	CreatedAtOnX    string          `json:"createdAtOnX"`
-	SavedAt         string          `json:"savedAt"`
-	LastSeenAt      string          `json:"lastSeenAt,omitempty"`
-	TimelineRank    *int            `json:"bookmarkTimelineRank,omitempty"`
-	Hashtags        []string        `json:"hashtags,omitempty"`
-	SourceKind      string          `json:"sourceKind,omitempty"`
-	Media           []MediaDTO      `json:"media,omitempty"`
-	Metrics         *MetricsDTO     `json:"metrics,omitempty"`
-	UpdatedAt       string          `json:"updatedAt,omitempty"`
-	RawPayload      json.RawMessage `json:"rawPayload,omitempty"`
+	TweetID         string `json:"tweetId"`
+	TweetURL        string `json:"tweetUrl"`
+	AuthorName      string `json:"authorName"`
+	AuthorHandle    string `json:"authorHandle"`
+	AuthorAvatarURL string `json:"authorAvatarUrl,omitempty"`
+	Text            string `json:"text"`
+	CreatedAtOnX    string `json:"createdAtOnX"`
+	SavedAt         string `json:"savedAt"`
+	LastSeenAt      string `json:"lastSeenAt,omitempty"`
+	// The reader's own two states. They are optional so a bundle written before the archive
+	// existed still loads, and so the legacy export format -- which never carried them --
+	// stays readable. An absent value is the state that was true before they existed:
+	// unread, and in play.
+	ReadAt       string          `json:"readAt,omitempty"`
+	ArchivedAt   string          `json:"archivedAt,omitempty"`
+	TimelineRank *int            `json:"bookmarkTimelineRank,omitempty"`
+	Hashtags     []string        `json:"hashtags,omitempty"`
+	SourceKind   string          `json:"sourceKind,omitempty"`
+	Media        []MediaDTO      `json:"media,omitempty"`
+	Metrics      *MetricsDTO     `json:"metrics,omitempty"`
+	UpdatedAt    string          `json:"updatedAt,omitempty"`
+	RawPayload   json.RawMessage `json:"rawPayload,omitempty"`
 }
 
 // MediaDTO is one attachment.
@@ -142,6 +148,12 @@ func NewBookmarkDTO(bookmark domain.Bookmark) BookmarkDTO {
 	if !bookmark.UpdatedAt.IsZero() {
 		dto.UpdatedAt = domain.FormatTimestamp(bookmark.UpdatedAt)
 	}
+	if !bookmark.ReadAt.IsZero() {
+		dto.ReadAt = domain.FormatTimestamp(bookmark.ReadAt)
+	}
+	if !bookmark.ArchivedAt.IsZero() {
+		dto.ArchivedAt = domain.FormatTimestamp(bookmark.ArchivedAt)
+	}
 
 	for _, media := range bookmark.Media {
 		dto.Media = append(dto.Media, MediaDTO{
@@ -170,6 +182,8 @@ func (d BookmarkDTO) ToDomain() domain.Bookmark {
 		CreatedAtOnX:    d.CreatedAtOnX,
 		SavedAt:         domain.MustParseTimestamp(d.SavedAt),
 		LastSeenAt:      domain.MustParseTimestamp(d.LastSeenAt),
+		ReadAt:          domain.MustParseTimestamp(d.ReadAt),
+		ArchivedAt:      domain.MustParseTimestamp(d.ArchivedAt),
 		TimelineRank:    d.TimelineRank,
 		Hashtags:        d.Hashtags,
 		SourceKind:      d.SourceKind,

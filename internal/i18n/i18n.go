@@ -604,18 +604,22 @@ const (
 	ActionAddToSelection Key = "action.addToSelection"
 	// ActionRemoveFromSelection is the same row of the menu once the bookmark is ticked.
 	ActionRemoveFromSelection Key = "action.removeFromSelection"
-	ActionFilterTag           Key = "action.filterTag"
-	ActionOnlyTag             Key = "action.onlyTag"
-	ActionFilterAuthor        Key = "action.filterAuthor"
-	ActionOnlyAuthor          Key = "action.onlyAuthor"
-	ActionCopyHandle          Key = "action.copyHandle"
-	ActionCollapseSidebar     Key = "action.collapseSidebar"
-	ActionExpandSidebar       Key = "action.expandSidebar"
-	ActionToggleSidebar       Key = "action.toggleSidebar"
-	OpenOnX                   Key = "openOnX"
-	MediaPrevious             Key = "previousMedia"
-	MediaNext                 Key = "nextMedia"
-	MediaClose                Key = "closePreview"
+	// ActionArchive and ActionUnarchive name the state the bookmark is about to be in, so
+	// the menu row in the archive reads as the way back out.
+	ActionArchive         Key = "action.archive"
+	ActionUnarchive       Key = "action.unarchive"
+	ActionFilterTag       Key = "action.filterTag"
+	ActionOnlyTag         Key = "action.onlyTag"
+	ActionFilterAuthor    Key = "action.filterAuthor"
+	ActionOnlyAuthor      Key = "action.onlyAuthor"
+	ActionCopyHandle      Key = "action.copyHandle"
+	ActionCollapseSidebar Key = "action.collapseSidebar"
+	ActionExpandSidebar   Key = "action.expandSidebar"
+	ActionToggleSidebar   Key = "action.toggleSidebar"
+	OpenOnX               Key = "openOnX"
+	MediaPrevious         Key = "previousMedia"
+	MediaNext             Key = "nextMedia"
+	MediaClose            Key = "closePreview"
 	// MediaPlay is the video poster's play control in the preview, and MediaPlayGif the same
 	// control over an animated GIF, which X serves as an mp4 too and which is shown as video.
 	MediaPlay    Key = "playMedia"
@@ -624,6 +628,10 @@ const (
 	MediaTitle  Key = "mediaTitle"
 	ToastNoLink Key = "noLinkToCopy"
 	ToastDone   Key = "done"
+	// The archive's receipts. The row leaves the list as the action runs, so the sentence
+	// is what tells the reader it went where they meant.
+	ToastArchived   Key = "toast.archived"
+	ToastUnarchived Key = "toast.unarchived"
 
 	StatusIdle      Key = "status.idle"
 	StatusRunning   Key = "status.running"
@@ -1087,6 +1095,8 @@ var catalogs = map[Locale]map[Key]string{
 		ActionCopyText:            "Copy text",
 		ActionAddToSelection:      "Add to selection",
 		ActionRemoveFromSelection: "Remove from selection",
+		ActionArchive:             "Archive",
+		ActionUnarchive:           "Move out of archive",
 		ActionFilterTag:           "Filter by this tag",
 		ActionOnlyTag:             "Only this tag",
 		ActionFilterAuthor:        "Filter by this author",
@@ -1104,6 +1114,8 @@ var catalogs = map[Locale]map[Key]string{
 		MediaTitle:                "Media",
 		ToastNoLink:               "No link available",
 		ToastDone:                 "Done",
+		ToastArchived:             "Archived",
+		ToastUnarchived:           "Moved out of the archive",
 
 		StatusIdle:      "Idle",
 		StatusRunning:   "Syncing",
@@ -1549,6 +1561,8 @@ var catalogs = map[Locale]map[Key]string{
 		ActionCopyText:            "复制正文",
 		ActionAddToSelection:      "加入选择",
 		ActionRemoveFromSelection: "移出选择",
+		ActionArchive:             "归档",
+		ActionUnarchive:           "移出归档",
 		ActionFilterTag:           "按此标签筛选",
 		ActionOnlyTag:             "只看此标签",
 		ActionFilterAuthor:        "按此作者筛选",
@@ -1566,6 +1580,8 @@ var catalogs = map[Locale]map[Key]string{
 		MediaTitle:                "媒体资源",
 		ToastNoLink:               "暂无可复制链接",
 		ToastDone:                 "完成",
+		ToastArchived:             "已归档",
+		ToastUnarchived:           "已移出归档",
 
 		StatusIdle:      "空闲",
 		StatusRunning:   "同步中",

@@ -44,6 +44,11 @@ func TestFilterNormalize(t *testing.T) {
 	if normalized.TimeRange != RangeAll {
 		t.Errorf("time range = %q, want %q", normalized.TimeRange, RangeAll)
 	}
+	// The archive's zero value is the default that hides it, so a filter written before the
+	// archive existed keeps selecting what it selected.
+	if normalized.Archived != ArchivedHidden {
+		t.Errorf("archive scope = %q, want %q", normalized.Archived, ArchivedHidden)
+	}
 
 	// An explicit mode survives normalisation.
 	filter.TagMatchMode = MatchAny
@@ -60,6 +65,7 @@ func TestFilterValidateRejectsUnknownValues(t *testing.T) {
 		{"tag mode", LibraryFilter{TagMatchMode: "sometimes"}},
 		{"author mode", LibraryFilter{AuthorMatchMode: "maybe"}},
 		{"time range", LibraryFilter{TimeRange: "forever"}},
+		{"archive scope", LibraryFilter{Archived: "both"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -80,6 +86,11 @@ func TestFilterValidateRejectsUnknownValues(t *testing.T) {
 			t.Errorf("range %q must be valid: %v", window, err)
 		}
 	}
+	for _, scope := range AllArchiveScopes {
+		if err := (LibraryFilter{Archived: scope}).Validate(); err != nil {
+			t.Errorf("archive scope %q must be valid: %v", scope, err)
+		}
+	}
 }
 
 func TestFilterIsZero(t *testing.T) {
@@ -94,8 +105,11 @@ func TestFilterIsZero(t *testing.T) {
 		{AuthorHandles: []string{"ada"}},
 		{ListID: "l1"},
 		{OnlyUnclassified: true},
+		{OnlyWithPendingSuggestions: true},
 		{OnlyWithMedia: true},
 		{OnlyLongform: true},
+		{OnlyUnread: true},
+		{Archived: ArchivedOnly},
 		{TimeRange: Range7d},
 	}
 	for i, filter := range notZero {
@@ -123,6 +137,12 @@ func TestFilterActiveCountMatchesTheSpec(t *testing.T) {
 		{"media only", LibraryFilter{OnlyWithMedia: true}, 1},
 		{"longform only", LibraryFilter{OnlyLongform: true}, 1},
 		{"both", LibraryFilter{OnlyWithMedia: true, OnlyLongform: true}, 2},
+		{"unread only", LibraryFilter{OnlyUnread: true}, 1},
+		// The archive is a mode rather than a toggle, but it selects a different set, which
+		// is exactly what the badge warns about.
+		{"the archive", LibraryFilter{Archived: ArchivedOnly}, 1},
+		{"hidden archive is not a condition", LibraryFilter{Archived: ArchivedHidden}, 0},
+		{"unread in the archive", LibraryFilter{OnlyUnread: true, Archived: ArchivedOnly}, 2},
 		// These are visible in the toolbar, so they do not inflate the badge.
 		{"a query does not count", LibraryFilter{Query: "rust"}, 0},
 		{"tags do not count", LibraryFilter{TagIDs: []string{"t1"}}, 0},

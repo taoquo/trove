@@ -37,12 +37,19 @@ var _ ports.BookmarkRepository = (*BookmarkRepository)(nil)
 // saved_at is deliberately absent from the update list: it is when this machine
 // first saw the post, and a later sync must never move it. Every other field is
 // refreshed from the newest payload.
+//
+// read_at and archived_at are absent for the same reason, one step further: they are the
+// reader's own state, not the payload's. They are written on insert -- so a restore into
+// an empty library brings them back -- and never on conflict, so a sync or an import into
+// a library that already holds the post cannot mark it unread again or pull it out of the
+// archive.
 const upsertSQL = `
 INSERT INTO bookmarks (
   tweet_id, tweet_url, author_name, author_handle, author_avatar_url, text,
   created_at_on_x, created_at_on_x_ts, saved_at, last_seen_at, timeline_rank,
+  read_at, archived_at,
   hashtags_json, source_kind, media_json, metrics_json, updated_at, is_longform
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(tweet_id) DO UPDATE SET
   tweet_url          = excluded.tweet_url,
   author_name        = excluded.author_name,
@@ -148,6 +155,10 @@ func bookmarkArgs(bookmark domain.Bookmark) ([]any, error) {
 		timelineRank = sql.NullInt64{Int64: int64(*bookmark.TimelineRank), Valid: true}
 	}
 
+	// The two reader-owned states: the zero time is NULL, which is unread and in play.
+	readAt := nullTimestamp(bookmark.ReadAt)
+	archivedAt := nullTimestamp(bookmark.ArchivedAt)
+
 	sourceKind := bookmark.SourceKind
 	if sourceKind == "" {
 		sourceKind = domain.SourceBookmark
@@ -168,6 +179,7 @@ func bookmarkArgs(bookmark domain.Bookmark) ([]any, error) {
 		nullString(bookmark.AuthorAvatarURL), bookmark.Text,
 		bookmark.CreatedAtOnX, domain.FormatXTimestampOrEmpty(bookmark.CreatedAtOnX),
 		domain.FormatTimestamp(bookmark.SavedAt), lastSeenAt, timelineRank,
+		readAt, archivedAt,
 		hashtagsJSON, sourceKind, mediaJSON, metricsJSON,
 		domain.FormatTimestamp(updatedAt), isLongform,
 	}, nil
@@ -482,6 +494,22 @@ func bookmarkFilterSQL(filter domain.LibraryFilter, now time.Time) (string, []an
 		clauses = append(clauses, `b.is_longform = 1`)
 	}
 
+	// The archive is a mode of the view rather than a toggle, but it is applied here
+	// with every other condition so no caller can forget it: a list that quietly kept
+	// showing archived rows would make the archive unreachable rather than merely
+	// optional. Hidden is unconditional rather than spliced out of the clause list,
+	// because "everything except the archive" is what the app shows by default.
+	if normalized.Archived == domain.ArchivedOnly {
+		clauses = append(clauses, `b.archived_at IS NOT NULL`)
+	} else {
+		clauses = append(clauses, `b.archived_at IS NULL`)
+	}
+
+	if normalized.OnlyUnread {
+		// NULL is unread, and the partial index on read_at is built for exactly this.
+		clauses = append(clauses, `b.read_at IS NULL`)
+	}
+
 	// The cutoff comes from the domain, so the filter's rule exists once. Timestamps
 	// are fixed-width UTC ISO strings, so TEXT comparison is chronological, and
 	// passing the cutoff as a bound value keeps the comparison index-friendly.
@@ -490,9 +518,9 @@ func bookmarkFilterSQL(filter domain.LibraryFilter, now time.Time) (string, []an
 		args = append(args, domain.FormatTimestamp(cutoff))
 	}
 
-	if len(clauses) == 0 {
-		return "", nil
-	}
+	// There is never an empty clause list now that the archive decides every view, so
+	// the result is always a WHERE. Callers that append a condition of their own can
+	// therefore append it with AND.
 	return "\n WHERE " + strings.Join(clauses, "\n   AND "), args
 }
 
@@ -645,6 +673,57 @@ func (r *BookmarkRepository) AssignMissingToInbox(ctx context.Context, now time.
 	return int(affected), nil
 }
 
+// MarkRead records the first time the reader opened these bookmarks.
+//
+// Only rows that are still unread are written. read_at answers "when was this first
+// opened", and re-opening a bookmark must not move it; skipping the row also keeps a
+// detail-view open from counting as a write every time. The count that comes back is
+// how many were newly read, so the caller can skip a reload when nothing changed.
+func (r *BookmarkRepository) MarkRead(ctx context.Context, tweetIDs []string, at time.Time) (int, error) {
+	if len(tweetIDs) == 0 {
+		return 0, nil
+	}
+
+	stamp := domain.FormatTimestamp(at)
+	marked := 0
+	for _, batch := range chunkStrings(tweetIDs, 500) {
+		args := append([]any{stamp}, argsFor(batch)...)
+		result, err := r.db.ExecContext(ctx,
+			`UPDATE bookmarks SET read_at = ? WHERE read_at IS NULL AND tweet_id IN (`+
+				placeholders(len(batch))+`)`, args...)
+		if err != nil {
+			return marked, fmt.Errorf("sqlite: mark bookmarks read: %w", err)
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return marked, err
+		}
+		marked += int(affected)
+	}
+	return marked, nil
+}
+
+// SetArchived moves one bookmark into or out of the archive.
+//
+// A zero time is the way back: archived_at NULL is "in play", the same value every row
+// carried before the archive existed. Archiving keeps the row and everything attached to
+// it -- a restore into an empty library brings the state back with it.
+func (r *BookmarkRepository) SetArchived(ctx context.Context, tweetID string, at time.Time) error {
+	result, err := r.db.ExecContext(ctx,
+		`UPDATE bookmarks SET archived_at = ? WHERE tweet_id = ?`, nullTimestamp(at), tweetID)
+	if err != nil {
+		return fmt.Errorf("sqlite: set archived for %s: %w", tweetID, err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return fmt.Errorf("sqlite: no bookmark %s", tweetID)
+	}
+	return nil
+}
+
 // Counts returns the sidebar aggregates in one round trip.
 func (r *BookmarkRepository) Counts(ctx context.Context) (domain.WorkspaceCounts, error) {
 	var counts domain.WorkspaceCounts
@@ -696,12 +775,9 @@ func (r *BookmarkRepository) FacetCounts(ctx context.Context, filter domain.Libr
 	// builds the matching id set once and walks the tag index from there, where a join
 	// probed the primary key per relation: measured on a 10k library with one tag, 6.6ms
 	// against 12.1ms.
-	tagQuery := `SELECT tag_id, COUNT(*) FROM bookmark_tags GROUP BY tag_id`
-	if where != "" {
-		tagQuery = `SELECT tag_id, COUNT(*) FROM bookmark_tags
-		 WHERE bookmark_id IN (SELECT b.tweet_id FROM bookmarks AS b` + where + `)
-		 GROUP BY tag_id`
-	}
+	tagQuery := `SELECT tag_id, COUNT(*) FROM bookmark_tags
+		WHERE bookmark_id IN (SELECT b.tweet_id FROM bookmarks AS b` + where + `)
+		GROUP BY tag_id`
 	rows, err := r.db.QueryContext(ctx, tagQuery, args...)
 	if err != nil {
 		return domain.FacetCounts{}, fmt.Errorf("sqlite: tag facet counts: %w", err)
@@ -729,11 +805,7 @@ func (r *BookmarkRepository) FacetCounts(ctx context.Context, filter domain.Libr
 	where, args = bookmarkFilterSQL(authorFilter, r.now())
 	// A bookmark with no handle has no sidebar row to count for (AuthorSummaries skips
 	// them too), so it is left out of the groups rather than folded into a nameless one.
-	if where == "" {
-		where = "\n WHERE b.author_handle <> ''"
-	} else {
-		where += "\n   AND b.author_handle <> ''"
-	}
+	where += "\n   AND b.author_handle <> ''"
 	rows, err = r.db.QueryContext(ctx,
 		`SELECT b.author_handle, COUNT(*) FROM bookmarks AS b`+where+`
 		 GROUP BY b.author_handle`, args...)

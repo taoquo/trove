@@ -71,6 +71,23 @@ type Bookmark struct {
 	// LastSeenAt is the most recent sync that saw the post still bookmarked.
 	LastSeenAt time.Time
 
+	// ReadAt is when the reader first opened this bookmark's detail here, and the zero
+	// time is "unread". It is the first time rather than the latest, so re-opening a
+	// bookmark never rewrites it.
+	//
+	// It is local state, not anything X reports: the library is a reading queue, and a
+	// bookmark nobody has opened has to stay distinguishable from one opened a second
+	// after it was saved. A sync never writes it.
+	ReadAt time.Time
+	// ArchivedAt is when the reader put this bookmark away, and the zero time means it
+	// is in play.
+	//
+	// Archiving is not deleting: the row keeps its text, its tags and its place in the
+	// backup. It leaves the lists -- every view hides archived rows unless the filter
+	// asks for them -- which is what lets a library stay complete while the list a
+	// reader works from stays short.
+	ArchivedAt time.Time
+
 	// TimelineRank is the post's position in the bookmark timeline. Nil means
 	// unknown; zero is a real rank (the first post).
 	TimelineRank *int
@@ -88,6 +105,12 @@ type Bookmark struct {
 
 // HasMedia reports whether the post has any attachment.
 func (b Bookmark) HasMedia() bool { return len(b.Media) > 0 }
+
+// Unread reports whether the reader has not opened this bookmark yet.
+func (b Bookmark) Unread() bool { return b.ReadAt.IsZero() }
+
+// Archived reports whether the reader has put this bookmark away.
+func (b Bookmark) Archived() bool { return !b.ArchivedAt.IsZero() }
 
 // LongformThreshold is the character count above which a post is treated as
 // longform: trimmed length > 280.

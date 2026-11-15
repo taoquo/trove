@@ -18,7 +18,7 @@ import (
 //
 // Everything that narrows the list is described by one of the two tables below:
 // filterFacets for multi-valued conditions (tags, authors) and filterFlags for switches
-// (media, longform, pending suggestions). The toolbar's chips, the badge beside the
+// (media, longform, unread, pending suggestions, the archive). The toolbar's chips, the badge beside the
 // filter control, "clear all" and the tests all read those tables. Adding a condition is
 // therefore one row here plus its compilation in state.filter -- not another field
 // threaded through the sidebar, the toolbar and the chip list separately.
@@ -98,6 +98,20 @@ func (s *Shell) filterFlags() []filterFlag {
 			key: i18n.FilterLongform,
 			on:  func(shell *Shell) bool { return shell.state.OnlyLongform },
 			set: func(shell *Shell, on bool) { shell.state.OnlyLongform = on },
+		},
+		{
+			key: i18n.FilterUnread,
+			on:  func(shell *Shell) bool { return shell.state.OnlyUnread },
+			set: func(shell *Shell, on bool) { shell.state.OnlyUnread = on },
+		},
+		{
+			// The archive is a mode of the view rather than a switch with a second copy,
+			// but it selects a different set, which is exactly what a chip reports. It
+			// is listed last because it is the one condition that replaces the list
+			// rather than narrowing it.
+			key: i18n.FilterArchived,
+			on:  func(shell *Shell) bool { return shell.state.OnlyArchived },
+			set: func(shell *Shell, on bool) { shell.state.OnlyArchived = on },
 		},
 	}
 }

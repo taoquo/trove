@@ -7,7 +7,7 @@
 
 | 表 | 内容 |
 |---|---|
-| `bookmarks` | 书签本体与在 X 上的时间、作者、媒体、长文标记 |
+| `bookmarks` | 书签本体与在 X 上的时间、作者、媒体、长文标记，以及读者自己的两个状态 `read_at` / `archived_at` |
 | `raw_payloads` | 最近一次同步拿到的原始 JSON，用于重放与排查 |
 | `deleted_bookmarks` | 本地删除的墓碑，同步导入时据此跳过 |
 | `tags` / `bookmark_tags` | 标签树与书签-标签关系；关系的 `source` 记录人工、规则或模型 |
@@ -17,6 +17,12 @@
 | `lists` / `bookmark_lists` | 列表与书签归属；Inbox 是系统行 |
 | `sync_runs` | 每次同步的状态、计数与错误 |
 | `app_settings` | 界面与自动打标的本地设置 |
+
+`read_at` 是第一次在这台机器上打开详情的时刻，`archived_at` 是放进归档的时刻；NULL 分别是
+"未读"和"在用"。这两列只属于读者，不属于 X 的负载：它们在插入时写入、在
+`ON CONFLICT DO UPDATE` 的更新列表里刻意缺席，所以一次同步不会把已归档的书签拉回来，也不会
+把读过的重新标成未读；而恢复进一个空库时，备份里的状态会跟着回来。旧版 JSON 导出把它们作为
+可选的 `readAt` / `archivedAt` 携带，旧文件没有这两个字段，读出来就是未读、未归档。
 
 名称排序在 Go 里用 `domain.CompareNaturalNames`，不要交给 SQL 的字节比较；`tools/namesort.py`
 会检查这一点。

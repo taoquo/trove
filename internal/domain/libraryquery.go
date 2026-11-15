@@ -21,6 +21,36 @@ const (
 // ValidMatchMode reports whether mode is known.
 func ValidMatchMode(mode string) bool { return mode == MatchAny || mode == MatchAll }
 
+// ArchiveScope decides which archive state a view shows.
+//
+// There are two states and not three. "Both at once" has no control that could reach
+// it, and a value nobody can choose is a value nobody can explain when it shows up in a
+// stored view. The default is ArchivedHidden, so every existing view and every saved
+// view keeps showing the list it showed before the archive existed.
+type ArchiveScope = string
+
+const (
+	// ArchivedHidden leaves archived bookmarks out. It is the default.
+	ArchivedHidden ArchiveScope = "hidden"
+	// ArchivedOnly shows the archive and nothing else.
+	ArchivedOnly ArchiveScope = "only"
+)
+
+// AllArchiveScopes is the whitelist. A stored view holding anything else is rejected
+// rather than defaulted: quietly showing the live list to someone who saved the archive
+// is exactly the silent substitution Validate exists to prevent.
+var AllArchiveScopes = []ArchiveScope{ArchivedHidden, ArchivedOnly}
+
+// ValidArchiveScope reports whether scope is known.
+func ValidArchiveScope(scope string) bool {
+	for _, candidate := range AllArchiveScopes {
+		if scope == candidate {
+			return true
+		}
+	}
+	return false
+}
+
 // SavedTimeRange limits results to bookmarks saved recently.
 type SavedTimeRange = string
 
@@ -104,6 +134,15 @@ type LibraryFilter struct {
 	OnlyWithMedia bool
 	OnlyLongform  bool
 
+	// OnlyUnread keeps bookmarks whose detail has never been opened here.
+	//
+	// It is a condition rather than a scope because it combines: "unread videos" is a
+	// question a reader asks, and a scope cannot stack.
+	OnlyUnread bool
+	// Archived decides whether the view shows the archive. The zero value is filled by
+	// Normalize with ArchivedHidden.
+	Archived ArchiveScope
+
 	// TimeRange limits by saved_at and defaults to RangeAll.
 	TimeRange SavedTimeRange
 }
@@ -126,6 +165,9 @@ func (f LibraryFilter) Normalize() LibraryFilter {
 	if normalized.TimeRange == "" {
 		normalized.TimeRange = RangeAll
 	}
+	if normalized.Archived == "" {
+		normalized.Archived = ArchivedHidden
+	}
 	return normalized
 }
 
@@ -145,10 +187,16 @@ func (f LibraryFilter) Validate() error {
 	if !ValidSavedTimeRange(normalized.TimeRange) {
 		return errors.New("domain: unknown time range " + normalized.TimeRange)
 	}
+	if !ValidArchiveScope(normalized.Archived) {
+		return errors.New("domain: unknown archive scope " + normalized.Archived)
+	}
 	return nil
 }
 
-// IsZero reports whether the filter would select everything.
+// IsZero reports whether the filter would select everything the app shows by default.
+//
+// The archive's default exclusion is not a condition here: nothing the reader did put
+// it in place, and a filter that counted it would report every empty library as filtered.
 func (f LibraryFilter) IsZero() bool {
 	normalized := f.Normalize()
 	return normalized.Query == "" &&
@@ -159,6 +207,8 @@ func (f LibraryFilter) IsZero() bool {
 		!normalized.OnlyWithPendingSuggestions &&
 		!normalized.OnlyWithMedia &&
 		!normalized.OnlyLongform &&
+		!normalized.OnlyUnread &&
+		normalized.Archived == ArchivedHidden &&
 		normalized.TimeRange == RangeAll
 }
 
@@ -174,6 +224,14 @@ func (f LibraryFilter) ActiveCount() int {
 		count++
 	}
 	if f.OnlyLongform {
+		count++
+	}
+	if f.OnlyUnread {
+		count++
+	}
+	// The archive mode is a setting of the list rather than a switch with its own
+	// copy, but it selects a different set, which is what the badge is warning about.
+	if f.Normalize().Archived == ArchivedOnly {
 		count++
 	}
 	return count

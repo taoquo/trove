@@ -175,7 +175,9 @@ func sameLibraryQuery(a, b domain.LibraryQuery) bool {
 		af.OnlyWithPendingSuggestions == bf.OnlyWithPendingSuggestions &&
 		af.OnlyUnclassified == bf.OnlyUnclassified &&
 		af.OnlyWithMedia == bf.OnlyWithMedia &&
-		af.OnlyLongform == bf.OnlyLongform
+		af.OnlyLongform == bf.OnlyLongform &&
+		af.OnlyUnread == bf.OnlyUnread &&
+		af.Archived == bf.Archived
 }
 
 // reloadRequest is one queued refresh: the sequence that identifies it and the query

@@ -216,11 +216,21 @@ func (s *Shell) bookmarkCard(c *ui.Context, theme *ui.Theme, rail RailTokens, in
 									TextColor(theme.TextMuted)
 							})
 							// The timestamp is the card's meta line: 11.5px, regular, right
-							// aligned, tertiary.
-							ui.Text(c, domain.FormatSavedAt(
-								domain.FormatTimestamp(row.SavedAt), string(s.t().Locale()))).
-								FontSize(CardStatFont).
-								TextColor(rail.TextTertiary).TextAlign(ui.End)
+							// aligned, tertiary. The unread dot sits beside it and takes the
+							// weight of the only question a reading queue asks about a card:
+							// has this been opened. Its box stays for read cards, from the
+							// ground colour up, so the time does not move when the dot goes.
+							ui.Row(c).GapX(CardUnreadDotGap).AlignItems(ui.Center).Children(func() {
+								dot := ui.Box(c).Width(CardUnreadDot).Height(CardUnreadDot).
+									Radius(RadiusPill)
+								if row.Unread() {
+									dot = dot.Background(theme.Accent)
+								}
+								ui.Text(c, domain.FormatSavedAt(
+									domain.FormatTimestamp(row.SavedAt), string(s.t().Locale()))).
+									FontSize(CardStatFont).
+									TextColor(rail.TextTertiary).TextAlign(ui.End)
+							})
 						})
 
 						// The copy wrap: `flex: 1 1 auto; min-height: calc(1.6em * 2.6)`. It is

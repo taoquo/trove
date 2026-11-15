@@ -202,9 +202,41 @@ func (s *Shell) showDetail(tweetID string) {
 	}
 	s.state.Selected = tweetID
 	s.state.DetailOpen = true
+	s.markRead(tweetID)
 	if s.window != nil {
 		s.window.Invalidate()
 	}
+}
+
+// markRead records that the reader opened a bookmark's detail.
+//
+// The list is not re-read here. With the unread condition on, the bookmark that was just
+// opened no longer matches it, and refreshing would remove the row, which keepSelection
+// reads as "the bookmark is gone" and closes the detail the reader just opened. The row's
+// copy in the loaded page is updated instead, so the dot behind the detail goes away, and
+// CloseDetail does the reload.
+func (s *Shell) markRead(tweetID string) {
+	if s.service == nil || tweetID == "" {
+		return
+	}
+	marked, err := s.service.MarkRead(context.Background(), []string{tweetID})
+	if err != nil {
+		// A failed write is not worth a toast over the detail: the bookmark opens, and the
+		// next open tries again.
+		s.reportErr(err)
+		return
+	}
+	if marked == 0 {
+		// Already read. Opening it again is not a write, so there is nothing to refresh.
+		return
+	}
+	for i := range s.state.Data.Bookmarks {
+		if s.state.Data.Bookmarks[i].TweetID == tweetID {
+			s.state.Data.Bookmarks[i].ReadAt = time.Now()
+			break
+		}
+	}
+	s.state.UnreadReloadPending = true
 }
 
 // leaveSettings takes the window off the settings page without redrawing.
@@ -234,6 +266,12 @@ func (s *Shell) CloseDetail() {
 	s.StopVideo()
 	s.state.DetailOpen = false
 	s.state.FocusSelected = true
+	// Opening the detail may have marked its bookmark read. The refresh was held back while
+	// the panel was open (markRead), so it happens now, once the reader has finished with it.
+	if s.state.UnreadReloadPending {
+		s.state.UnreadReloadPending = false
+		s.ReloadAsync(context.Background())
+	}
 	s.invalidate()
 }
 

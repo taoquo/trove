@@ -24,10 +24,10 @@ import (
 
 // bookmarkContextMenu is the menu on a bookmark card.
 //
-// Five actions, in the order a reader reaches for them: open it, open it on X, copy what
-// it says, copy its link, tick it for a bulk action. The card's own controls do three of
-// these for the *selected* card; the menu acts on the card under the pointer, which is the
-// point of a context menu.
+// Six actions, in the order a reader reaches for them: open it, open it on X, copy what
+// it says, copy its link, put it away in the archive, tick it for a bulk action. The card's
+// own controls do three of these for the *selected* card; the menu acts on the card under
+// the pointer, which is the point of a context menu.
 func (s *Shell) bookmarkContextMenu(c *ui.Context, m *ui.Menu, row workspace.BookmarkRow) {
 	if m.Item(s.t().T(i18n.ActionOpenBookmark)).Chosen() {
 		s.showDetail(row.TweetID)
@@ -45,6 +45,18 @@ func (s *Shell) bookmarkContextMenu(c *ui.Context, m *ui.Menu, row workspace.Boo
 	if copyLink.Chosen() {
 		s.state.Selected = row.TweetID
 		s.CopySourceLink(c)
+	}
+	m.Separator()
+
+	// The archive is one row of this menu and no control on the card: it is a decision the
+	// reader makes about a bookmark, not an action the card offers, and the row leaves the
+	// list as it runs. In the archive the same row is the way back out.
+	archiveLabel := i18n.ActionArchive
+	if row.Archived() {
+		archiveLabel = i18n.ActionUnarchive
+	}
+	if m.Item(s.t().T(archiveLabel)).Chosen() {
+		s.SetArchived(context.Background(), row.TweetID, !row.Archived())
 	}
 	m.Separator()
 

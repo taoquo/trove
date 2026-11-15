@@ -96,6 +96,15 @@ type BookmarkRepository interface {
 	// many rows it added.
 	AssignMissingToInbox(ctx context.Context, now time.Time) (int, error)
 
+	// MarkRead records when the reader first opened the given bookmarks and
+	// returns how many were still unread. An already-read bookmark is left
+	// alone, so opening the detail again is not a write.
+	MarkRead(ctx context.Context, tweetIDs []string, at time.Time) (int, error)
+
+	// SetArchived moves one bookmark into or out of the archive. A zero time
+	// takes it back out.
+	SetArchived(ctx context.Context, tweetID string, at time.Time) error
+
 	// Counts returns the sidebar aggregates.
 	Counts(ctx context.Context) (domain.WorkspaceCounts, error)
 

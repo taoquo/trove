@@ -410,10 +410,9 @@ func (s *Shell) ToggleFilterPopover() {
 
 // filterPopover draws the filter conditions.
 //
-// Four conditions are listed and only two work: `unread` and `archived` are rendered
-// disabled, which is the honest way to show a condition that does not exist yet --
-// hiding them would leave a user wondering whether the feature is missing or the filter
-// is elsewhere.
+// Every row here is also a row in filterFlags, which is what the chips, the badge and
+// "clear all" read. The panel is a rendering of that table, not a second list of
+// conditions to keep in step.
 func (s *Shell) filterPopover(c *ui.Context, theme *ui.Theme, rail RailTokens, panel, anchor ui.Element) {
 	// The panel: a card ground, an 11-point radius, one hairline and the palette's
 	// popover shadow, at 262 width and 4 inset.
@@ -453,10 +452,12 @@ func (s *Shell) filterPopover(c *ui.Context, theme *ui.Theme, rail RailTokens, p
 			ui.Checkbox(c, &s.state.OnlyLongform, s.t().T(i18n.FilterLongform)).OnChange(func() {
 				s.ReloadAsync(context.Background())
 			})
-			// Both are disabled: neither condition exists yet. They share one backing field
-			// because neither can be toggled.
-			ui.Checkbox(c, &s.state.UnavailableFilter, s.t().T(i18n.FilterUnread)).Disabled(true)
-			ui.Checkbox(c, &s.state.UnavailableFilter, s.t().T(i18n.FilterArchived)).Disabled(true)
+			ui.Checkbox(c, &s.state.OnlyUnread, s.t().T(i18n.FilterUnread)).OnChange(func() {
+				s.ReloadAsync(context.Background())
+			})
+			ui.Checkbox(c, &s.state.OnlyArchived, s.t().T(i18n.FilterArchived)).OnChange(func() {
+				s.ReloadAsync(context.Background())
+			})
 		})
 	})
 }

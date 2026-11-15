@@ -34,6 +34,7 @@ var migrations = []migration{
 	{version: 2, name: "denormalize the longform flag", sql: schemaV2, post: backfillLongform},
 	{version: 3, name: "sortable copy of the X creation time", sql: schemaV3, post: backfillCreatedAt},
 	{version: 4, name: "remember locally deleted bookmarks", sql: schemaV4},
+	{version: 5, name: "read and archive state", sql: schemaV5},
 }
 
 // TargetSchemaVersion is the version this build expects.
@@ -220,6 +221,20 @@ CREATE TABLE deleted_bookmarks (
   tweet_id   TEXT PRIMARY KEY,
   deleted_at TEXT NOT NULL
 );
+`
+
+// schemaV5 adds the two states the reader owns.
+//
+// Both are NULL until something local sets them, and both survive a sync: they are not
+// in the upsert's update list, so the newest payload cannot clear them. There is no
+// backfill, and there cannot be one -- a bookmark saved before this column existed was
+// never opened, so "unread" is the correct value for every existing row, and NULL is
+// that value.
+const schemaV5 = `
+ALTER TABLE bookmarks ADD COLUMN read_at TEXT;
+ALTER TABLE bookmarks ADD COLUMN archived_at TEXT;
+CREATE INDEX bookmarks_unread_idx ON bookmarks(read_at) WHERE read_at IS NULL;
+CREATE INDEX bookmarks_archived_idx ON bookmarks(archived_at);
 `
 
 // EnsureInbox makes sure the system list exists. It is idempotent, so it is safe
