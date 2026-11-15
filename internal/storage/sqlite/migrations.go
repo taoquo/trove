@@ -35,6 +35,7 @@ var migrations = []migration{
 	{version: 3, name: "sortable copy of the X creation time", sql: schemaV3, post: backfillCreatedAt},
 	{version: 4, name: "remember locally deleted bookmarks", sql: schemaV4},
 	{version: 5, name: "read and archive state", sql: schemaV5},
+	{version: 6, name: "drop the unread flag", sql: schemaV6},
 }
 
 // TargetSchemaVersion is the version this build expects.
@@ -223,18 +224,33 @@ CREATE TABLE deleted_bookmarks (
 );
 `
 
-// schemaV5 adds the two states the reader owns.
+// schemaV5 added the two reader-owned states. It is kept as it was applied -- v6 takes
+// read_at back out.
 //
 // Both are NULL until something local sets them, and both survive a sync: they are not
-// in the upsert's update list, so the newest payload cannot clear them. There is no
-// backfill, and there cannot be one -- a bookmark saved before this column existed was
-// never opened, so "unread" is the correct value for every existing row, and NULL is
-// that value.
+// in the upsert's update list, so the newest payload cannot clear them. There was no
+// backfill, and there could not be one: a bookmark saved before these columns existed was
+// never opened, so NULL -- unread -- is the value every existing row got.
 const schemaV5 = `
 ALTER TABLE bookmarks ADD COLUMN read_at TEXT;
 ALTER TABLE bookmarks ADD COLUMN archived_at TEXT;
 CREATE INDEX bookmarks_unread_idx ON bookmarks(read_at) WHERE read_at IS NULL;
 CREATE INDEX bookmarks_archived_idx ON bookmarks(archived_at);
+`
+
+// schemaV6 removes read_at, which did not earn its place.
+//
+// It was set automatically the first time a detail was opened and could not be set back,
+// so it was a one-way switch with nothing to show for it: the reader saw a dot until they
+// opened a bookmark and no mark at all afterwards, and a library that had never been read
+// through showed the dot on every card. Archiving changes what the list holds and stays;
+// unread only decorated it. Dropping the column rather than ignoring it keeps a schema a
+// future build can trust.
+//
+// The index goes first: SQLite refuses to drop a column an index mentions.
+const schemaV6 = `
+DROP INDEX IF EXISTS bookmarks_unread_idx;
+ALTER TABLE bookmarks DROP COLUMN read_at;
 `
 
 // EnsureInbox makes sure the system list exists. It is idempotent, so it is safe

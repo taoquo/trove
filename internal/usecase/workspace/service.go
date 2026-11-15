@@ -458,28 +458,6 @@ func (s *Service) MoveToList(ctx context.Context, tweetIDs []string, listID stri
 	return nil
 }
 
-// MarkRead records that the reader opened these bookmarks.
-//
-// It returns how many were newly read. Zero is the common answer -- every open after
-// the first one -- and the caller uses it to avoid a reload that would change nothing.
-func (s *Service) MarkRead(ctx context.Context, tweetIDs []string) (int, error) {
-	if len(tweetIDs) == 0 {
-		return 0, nil
-	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	marked, err := s.repos.Bookmarks.MarkRead(ctx, tweetIDs, s.clock.Now())
-	if err != nil {
-		return 0, err
-	}
-	if marked > 0 {
-		_ = s.bumpGeneration()
-	}
-	return marked, nil
-}
-
 // SetArchived moves a bookmark into or out of the archive.
 //
 // The generation moves even when the write changed nothing else, because every view

@@ -132,8 +132,6 @@ gap 已经映射回去：6→8、10→12、14 和 18→16。
 | 详情 | 一张竖图 | 高度封顶 420，整张不裁，水平居中；横图仍撑满阅读区 | `TestATallPictureIsShownWholeAtTheCap`、`TestAWidePictureFillsThePane` |
 | 详情 | 多图 | 3:2 等高格子，方形图和宽图同样大小 | `TestTheGalleryTilesShareOneShape` |
 | 详情 | 没有正文 | 媒体直接贴内边距，不留那一段间距 | `TestAPostWithNoWordsStartsWithItsPicture` |
-| 未读 | 卡片 | 时间戳旁一枚 6pt 朱红圆点；已读后该位置留空，时间戳不移位 | `TestOpeningTheDetailMarksItRead` |
-| 未读 | 打开详情 | 打开即标记已读；未读筛选下列表的刷新推迟到详情关闭，刚打开的那一行不会当场消失 | `TestOpeningTheDetailMarksItRead` |
 | 归档 | 已归档 | 默认不出现在任何列表；面板「已归档」是视图的模式而非叠加的开关；卡片菜单「归档 / 移出归档」，没有确认 | `TestArchivingTakesTheRowOutOfTheListAndTheArchiveShowsIt` |
 | 媒体 | 视频与 GIF | 海报中央一枚**主题朱红**的播放盘（跟随明暗外观，不写死红色），一处画法三处尺寸：网格卡片 46、列表缩略图 30、详情 64，glyph 同比缩；卡片与详情是同一个盘 | `TestAVideoCardCarriesTheMarkCentredOnItsPoster`、`TestTheListThumbnailUsesASmallerDisc`、`TestTheDetailKeepsItsOwnDisc`、`TestAGifCardCarriesTheMarkToo` |
 | 媒体 | 照片 | 不加任何标记——没有盘就是照片的样子 | `TestAPhotoCardCarriesNoMark` |

@@ -108,7 +108,6 @@ func TestFilterIsZero(t *testing.T) {
 		{OnlyWithPendingSuggestions: true},
 		{OnlyWithMedia: true},
 		{OnlyLongform: true},
-		{OnlyUnread: true},
 		{Archived: ArchivedOnly},
 		{TimeRange: Range7d},
 	}
@@ -137,12 +136,11 @@ func TestFilterActiveCountMatchesTheSpec(t *testing.T) {
 		{"media only", LibraryFilter{OnlyWithMedia: true}, 1},
 		{"longform only", LibraryFilter{OnlyLongform: true}, 1},
 		{"both", LibraryFilter{OnlyWithMedia: true, OnlyLongform: true}, 2},
-		{"unread only", LibraryFilter{OnlyUnread: true}, 1},
 		// The archive is a mode rather than a toggle, but it selects a different set, which
 		// is exactly what the badge warns about.
 		{"the archive", LibraryFilter{Archived: ArchivedOnly}, 1},
 		{"hidden archive is not a condition", LibraryFilter{Archived: ArchivedHidden}, 0},
-		{"unread in the archive", LibraryFilter{OnlyUnread: true, Archived: ArchivedOnly}, 2},
+		{"media in the archive", LibraryFilter{OnlyWithMedia: true, Archived: ArchivedOnly}, 2},
 		// These are visible in the toolbar, so they do not inflate the badge.
 		{"a query does not count", LibraryFilter{Query: "rust"}, 0},
 		{"tags do not count", LibraryFilter{TagIDs: []string{"t1"}}, 0},

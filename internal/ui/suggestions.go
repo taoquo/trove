@@ -30,12 +30,6 @@ func (s *Shell) closePanels() {
 	// overlays leave two Escape handlers registered, and whichever the framework sees
 	// first closes.
 	s.state.DetailOpen = false
-	// Opening the detail may have marked a bookmark read, and that refresh waits for the
-	// detail to go away. This is one of the ways it goes away, so the wait ends here.
-	if s.state.UnreadReloadPending {
-		s.state.UnreadReloadPending = false
-		s.ReloadAsync(context.Background())
-	}
 }
 
 // refreshSuggestions re-reads the pending suggestions.

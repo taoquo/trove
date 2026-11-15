@@ -36,13 +36,11 @@ type State struct {
 	Selection string
 	Query     string
 	Sort      domain.SortOrder
-	// OnlyWithMedia, OnlyLongform and OnlyUnread are the filter toggles. They are kept
-	// here because the view binds controls to them, and the filter they produce is
-	// derived on each load rather than stored.
+	// OnlyWithMedia and OnlyLongform are the filter toggles. They are kept here because the
+	// view binds controls to them, and the filter they produce is derived on each load
+	// rather than stored.
 	OnlyWithMedia bool
 	OnlyLongform  bool
-	// OnlyUnread narrows the list to bookmarks whose detail has never been opened here.
-	OnlyUnread bool
 	// OnlyArchived shows the archive instead of the lists in play. It is a mode and not a
 	// switch that stacks with the others: a bookmark is in one place or the other, so
 	// "archived and not archived" is never a question the list can answer.
@@ -512,10 +510,6 @@ type State struct {
 	// Closing the overlay (Escape, the backdrop, 完成) clears only this flag. The id stays so
 	// the list keeps a cursor for the arrow keys and Enter.
 	DetailOpen bool
-	// UnreadReloadPending says opening the detail marked a bookmark read and the list has
-	// not been re-read since. The reload waits for the detail to close: with the unread
-	// condition on, refreshing now would remove the row and take the panel with it.
-	UnreadReloadPending bool
 
 	// MiddleWidth is the results pane's width, which is what the inner split binds to: a
 	// split sizes its first pane. The inspector's width is derived from it so the persisted
@@ -760,7 +754,6 @@ func (s *Shell) filter() domain.LibraryFilter {
 		Query:         s.state.Query,
 		OnlyWithMedia: s.state.OnlyWithMedia,
 		OnlyLongform:  s.state.OnlyLongform,
-		OnlyUnread:    s.state.OnlyUnread,
 		// The review row is a filter too, so a query carrying it must reach storage.
 		OnlyWithPendingSuggestions: s.state.OnlyPendingSuggestions,
 	}
@@ -836,9 +829,6 @@ func (s *Shell) keepSelection() {
 	if s.state.Selected != "" && !present[s.state.Selected] {
 		s.state.Selected = ""
 		s.state.DetailOpen = false
-		// The page this selection was dropped from has just been read, so a read that was
-		// waiting for the detail to close has nothing left to refresh.
-		s.state.UnreadReloadPending = false
 	}
 
 	if len(s.state.SelectedIDs) > 0 {

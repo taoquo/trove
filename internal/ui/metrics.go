@@ -259,11 +259,6 @@ const (
 	// The card header's gap: 12px on the card and 10px in the list layout.
 	CardHeaderGapGrid = 12
 	CardHeaderGapList = 10
-	// The unread mark beside the timestamp: a 6-point dot, 6 from the time. The dot's box
-	// stays in the row for read cards, so every timestamp keeps one x position whether or
-	// not its bookmark has been opened.
-	CardUnreadDot    = 6
-	CardUnreadDotGap = 6
 	// The list layout's own body padding: 12px 14px.
 	CardListBodyPadV = 12
 	CardListBodyPadH = 14

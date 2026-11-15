@@ -159,7 +159,6 @@ const (
 	FilterConditions   Key = "filterConditions"
 	FilterDescription  Key = "filterDescription"
 	FilterHasMedia     Key = "hasMedia"
-	FilterUnread       Key = "unread"
 	FilterArchived     Key = "archived"
 	ToolbarShowingOf   Key = "toolbar.showingOf"
 	// ToolbarRefreshing is the quiet note beside the count while a background refresh
@@ -740,7 +739,6 @@ var catalogs = map[Locale]map[Key]string{
 		FilterDescription:      "Choose the filters to apply.",
 		FilterHasMedia:         "Has media",
 		FilterLongform:         "Longform",
-		FilterUnread:           "Unread",
 		FilterArchived:         "Archived",
 		ToolbarShowingOf:       "%d / %d",
 		ToolbarRefreshing:      "Updating…",
@@ -1208,7 +1206,6 @@ var catalogs = map[Locale]map[Key]string{
 		FilterConditions:       "筛选条件",
 		FilterDescription:      "选择要应用的过滤条件。",
 		FilterHasMedia:         "包含媒体",
-		FilterUnread:           "未读",
 		FilterArchived:         "已归档",
 		ToolbarShowingOf:       "%d / %d",
 		ToolbarRefreshing:      "更新中…",

@@ -134,11 +134,6 @@ type LibraryFilter struct {
 	OnlyWithMedia bool
 	OnlyLongform  bool
 
-	// OnlyUnread keeps bookmarks whose detail has never been opened here.
-	//
-	// It is a condition rather than a scope because it combines: "unread videos" is a
-	// question a reader asks, and a scope cannot stack.
-	OnlyUnread bool
 	// Archived decides whether the view shows the archive. The zero value is filled by
 	// Normalize with ArchivedHidden.
 	Archived ArchiveScope
@@ -207,7 +202,6 @@ func (f LibraryFilter) IsZero() bool {
 		!normalized.OnlyWithPendingSuggestions &&
 		!normalized.OnlyWithMedia &&
 		!normalized.OnlyLongform &&
-		!normalized.OnlyUnread &&
 		normalized.Archived == ArchivedHidden &&
 		normalized.TimeRange == RangeAll
 }
@@ -224,9 +218,6 @@ func (f LibraryFilter) ActiveCount() int {
 		count++
 	}
 	if f.OnlyLongform {
-		count++
-	}
-	if f.OnlyUnread {
 		count++
 	}
 	// The archive mode is a setting of the list rather than a switch with its own

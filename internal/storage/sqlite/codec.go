@@ -102,9 +102,9 @@ func nullString(value string) sql.NullString {
 }
 
 // nullTimestamp renders the zero time as SQL NULL, for the columns whose absence is a
-// state rather than missing data: read_at unset is "unread", archived_at unset is "in
-// play". Storing them as ” would parse back as a zero time anyway, but NULL is what the
-// partial index and the IS NULL conditions are written against.
+// state rather than missing data: archived_at unset is "in play". Storing it as the empty
+// string would parse back as a zero time anyway, but NULL is what the IS NULL conditions
+// are written against.
 func nullTimestamp(value time.Time) sql.NullString {
 	if value.IsZero() {
 		return sql.NullString{}
@@ -117,7 +117,7 @@ func nullTimestamp(value time.Time) sql.NullString {
 // It is a constant because scanning by hand-written index is how a column gets
 // silently swapped for another of the same type.
 const bookmarkColumns = `tweet_id, tweet_url, author_name, author_handle, author_avatar_url,
-	text, created_at_on_x, saved_at, last_seen_at, timeline_rank, read_at, archived_at,
+	text, created_at_on_x, saved_at, last_seen_at, timeline_rank, archived_at,
 	hashtags_json, source_kind, media_json, metrics_json, updated_at, is_longform`
 
 // scanBookmark reads one bookmark row.
@@ -128,7 +128,6 @@ func scanBookmark(scanner interface{ Scan(...any) error }) (domain.Bookmark, err
 		savedAt      string
 		lastSeenAt   sql.NullString
 		timelineRank sql.NullInt64
-		readAt       sql.NullString
 		archivedAt   sql.NullString
 		hashtagsJSON sql.NullString
 		mediaJSON    sql.NullString
@@ -140,7 +139,7 @@ func scanBookmark(scanner interface{ Scan(...any) error }) (domain.Bookmark, err
 	err := scanner.Scan(
 		&bookmark.TweetID, &bookmark.TweetURL, &bookmark.AuthorName, &bookmark.AuthorHandle,
 		&avatarURL, &bookmark.Text, &bookmark.CreatedAtOnX, &savedAt, &lastSeenAt,
-		&timelineRank, &readAt, &archivedAt, &hashtagsJSON, &bookmark.SourceKind,
+		&timelineRank, &archivedAt, &hashtagsJSON, &bookmark.SourceKind,
 		&mediaJSON, &metricsJSON, &updatedAt, &isLongform,
 	)
 	if err != nil {
@@ -153,11 +152,7 @@ func scanBookmark(scanner interface{ Scan(...any) error }) (domain.Bookmark, err
 	if lastSeenAt.Valid && lastSeenAt.String != "" {
 		bookmark.LastSeenAt = domain.MustParseTimestamp(lastSeenAt.String)
 	}
-	// Both are NULL until something local sets them, and NULL is the zero time: unread
-	// and not archived.
-	if readAt.Valid && readAt.String != "" {
-		bookmark.ReadAt = domain.MustParseTimestamp(readAt.String)
-	}
+	// NULL until the reader archives it, and NULL is the zero time: in play.
 	if archivedAt.Valid && archivedAt.String != "" {
 		bookmark.ArchivedAt = domain.MustParseTimestamp(archivedAt.String)
 	}

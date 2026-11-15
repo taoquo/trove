@@ -38,18 +38,17 @@ var _ ports.BookmarkRepository = (*BookmarkRepository)(nil)
 // first saw the post, and a later sync must never move it. Every other field is
 // refreshed from the newest payload.
 //
-// read_at and archived_at are absent for the same reason, one step further: they are the
-// reader's own state, not the payload's. They are written on insert -- so a restore into
-// an empty library brings them back -- and never on conflict, so a sync or an import into
-// a library that already holds the post cannot mark it unread again or pull it out of the
-// archive.
+// archived_at is absent for the same reason, one step further: it is the reader's own
+// state, not the payload's. It is written on insert -- so a restore into an empty library
+// brings it back -- and never on conflict, so a sync or an import into a library that
+// already holds the post cannot pull it out of the archive.
 const upsertSQL = `
 INSERT INTO bookmarks (
   tweet_id, tweet_url, author_name, author_handle, author_avatar_url, text,
   created_at_on_x, created_at_on_x_ts, saved_at, last_seen_at, timeline_rank,
-  read_at, archived_at,
+  archived_at,
   hashtags_json, source_kind, media_json, metrics_json, updated_at, is_longform
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(tweet_id) DO UPDATE SET
   tweet_url          = excluded.tweet_url,
   author_name        = excluded.author_name,
@@ -155,8 +154,7 @@ func bookmarkArgs(bookmark domain.Bookmark) ([]any, error) {
 		timelineRank = sql.NullInt64{Int64: int64(*bookmark.TimelineRank), Valid: true}
 	}
 
-	// The two reader-owned states: the zero time is NULL, which is unread and in play.
-	readAt := nullTimestamp(bookmark.ReadAt)
+	// The reader-owned state: the zero time is NULL, which is in play.
 	archivedAt := nullTimestamp(bookmark.ArchivedAt)
 
 	sourceKind := bookmark.SourceKind
@@ -179,7 +177,7 @@ func bookmarkArgs(bookmark domain.Bookmark) ([]any, error) {
 		nullString(bookmark.AuthorAvatarURL), bookmark.Text,
 		bookmark.CreatedAtOnX, domain.FormatXTimestampOrEmpty(bookmark.CreatedAtOnX),
 		domain.FormatTimestamp(bookmark.SavedAt), lastSeenAt, timelineRank,
-		readAt, archivedAt,
+		archivedAt,
 		hashtagsJSON, sourceKind, mediaJSON, metricsJSON,
 		domain.FormatTimestamp(updatedAt), isLongform,
 	}, nil
@@ -505,11 +503,6 @@ func bookmarkFilterSQL(filter domain.LibraryFilter, now time.Time) (string, []an
 		clauses = append(clauses, `b.archived_at IS NULL`)
 	}
 
-	if normalized.OnlyUnread {
-		// NULL is unread, and the partial index on read_at is built for exactly this.
-		clauses = append(clauses, `b.read_at IS NULL`)
-	}
-
 	// The cutoff comes from the domain, so the filter's rule exists once. Timestamps
 	// are fixed-width UTC ISO strings, so TEXT comparison is chronological, and
 	// passing the cutoff as a bound value keeps the comparison index-friendly.
@@ -671,36 +664,6 @@ func (r *BookmarkRepository) AssignMissingToInbox(ctx context.Context, now time.
 		return 0, err
 	}
 	return int(affected), nil
-}
-
-// MarkRead records the first time the reader opened these bookmarks.
-//
-// Only rows that are still unread are written. read_at answers "when was this first
-// opened", and re-opening a bookmark must not move it; skipping the row also keeps a
-// detail-view open from counting as a write every time. The count that comes back is
-// how many were newly read, so the caller can skip a reload when nothing changed.
-func (r *BookmarkRepository) MarkRead(ctx context.Context, tweetIDs []string, at time.Time) (int, error) {
-	if len(tweetIDs) == 0 {
-		return 0, nil
-	}
-
-	stamp := domain.FormatTimestamp(at)
-	marked := 0
-	for _, batch := range chunkStrings(tweetIDs, 500) {
-		args := append([]any{stamp}, argsFor(batch)...)
-		result, err := r.db.ExecContext(ctx,
-			`UPDATE bookmarks SET read_at = ? WHERE read_at IS NULL AND tweet_id IN (`+
-				placeholders(len(batch))+`)`, args...)
-		if err != nil {
-			return marked, fmt.Errorf("sqlite: mark bookmarks read: %w", err)
-		}
-		affected, err := result.RowsAffected()
-		if err != nil {
-			return marked, err
-		}
-		marked += int(affected)
-	}
-	return marked, nil
 }
 
 // SetArchived moves one bookmark into or out of the archive.

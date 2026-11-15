@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"database/sql"
 	"errors"
 	"os"
 	"path/filepath"
@@ -91,6 +92,86 @@ func TestRefusesNewerSchema(t *testing.T) {
 	_, err = Open(path)
 	if !errors.Is(err, ErrSchemaTooNew) {
 		t.Fatalf("Open on a newer schema returned %v, want ErrSchemaTooNew", err)
+	}
+}
+
+// TestTheUnreadColumnLeavesAnOlderLibrary is the upgrade a real v5 file takes: the column
+// and its index are dropped, and the rows written while it existed keep their payload.
+func TestTheUnreadColumnLeavesAnOlderLibrary(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "trove.db")
+
+	// Build a v5 file by replaying the real history up to 5, because that is the shape a
+	// reader's library actually has: Open would take it all the way to the target version.
+	handle, err := sql.Open("sqlite", "file:"+path+"?_pragma=foreign_keys(1)")
+	if err != nil {
+		t.Fatalf("open raw: %v", err)
+	}
+	db := &DB{DB: handle, path: path}
+	if err := db.ensureMigrationTable(); err != nil {
+		t.Fatalf("create the migration table: %v", err)
+	}
+	for _, m := range migrations {
+		if m.version > 5 {
+			break
+		}
+		if err := db.applyMigration(m); err != nil {
+			t.Fatalf("apply migration %d: %v", m.version, err)
+		}
+	}
+	if err := db.EnsureInbox(clockBase); err != nil {
+		t.Fatalf("EnsureInbox: %v", err)
+	}
+	// A bookmark opened while the column existed, which is what v6 has to let go of.
+	insertBookmark(t, db, "opened")
+	if _, err := db.Exec("UPDATE bookmarks SET read_at = ? WHERE tweet_id = 'opened'",
+		domain.FormatTimestamp(clockBase)); err != nil {
+		t.Fatalf("mark the v5 bookmark read: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	db, err = Open(path)
+	if err != nil {
+		t.Fatalf("Open at v5: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	if version, err := db.SchemaVersion(); err != nil {
+		t.Fatalf("SchemaVersion: %v", err)
+	} else if version != TargetSchemaVersion() {
+		t.Errorf("schema version %d, want %d", version, TargetSchemaVersion())
+	}
+
+	rows, err := db.Query("PRAGMA table_info(bookmarks)")
+	if err != nil {
+		t.Fatalf("table_info: %v", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var (
+			index      int
+			name, kind string
+			notNull    int
+			fallback   sql.NullString
+			primaryKey int
+		)
+		if err := rows.Scan(&index, &name, &kind, &notNull, &fallback, &primaryKey); err != nil {
+			t.Fatalf("scan table_info: %v", err)
+		}
+		if name == "read_at" {
+			t.Error("read_at is still in the schema after the upgrade")
+		}
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("table_info rows: %v", err)
+	}
+
+	if scalarInt(t, db, "SELECT COUNT(*) FROM sqlite_master WHERE name = 'bookmarks_unread_idx'") != 0 {
+		t.Error("the unread index outlived its column")
+	}
+	if scalarInt(t, db, "SELECT COUNT(*) FROM bookmarks WHERE tweet_id = 'opened'") != 1 {
+		t.Error("the upgrade lost a bookmark")
 	}
 }
 

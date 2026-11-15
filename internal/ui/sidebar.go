@@ -452,9 +452,6 @@ func (s *Shell) filterPopover(c *ui.Context, theme *ui.Theme, rail RailTokens, p
 			ui.Checkbox(c, &s.state.OnlyLongform, s.t().T(i18n.FilterLongform)).OnChange(func() {
 				s.ReloadAsync(context.Background())
 			})
-			ui.Checkbox(c, &s.state.OnlyUnread, s.t().T(i18n.FilterUnread)).OnChange(func() {
-				s.ReloadAsync(context.Background())
-			})
 			ui.Checkbox(c, &s.state.OnlyArchived, s.t().T(i18n.FilterArchived)).OnChange(func() {
 				s.ReloadAsync(context.Background())
 			})

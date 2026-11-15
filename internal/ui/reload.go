@@ -176,7 +176,6 @@ func sameLibraryQuery(a, b domain.LibraryQuery) bool {
 		af.OnlyUnclassified == bf.OnlyUnclassified &&
 		af.OnlyWithMedia == bf.OnlyWithMedia &&
 		af.OnlyLongform == bf.OnlyLongform &&
-		af.OnlyUnread == bf.OnlyUnread &&
 		af.Archived == bf.Archived
 }
 

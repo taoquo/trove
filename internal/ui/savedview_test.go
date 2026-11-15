@@ -1184,7 +1184,7 @@ func TestTheFilterPopover(t *testing.T) {
 
 	for _, key := range []i18n.Key{
 		i18n.FilterConditions, i18n.FilterDescription,
-		i18n.FilterHasMedia, i18n.FilterLongform, i18n.FilterUnread, i18n.FilterArchived,
+		i18n.FilterHasMedia, i18n.FilterLongform, i18n.FilterArchived,
 	} {
 		if !tester.HasText(shell.t().T(key)) {
 			t.Errorf("the popover is missing %q; texts: %q", shell.t().T(key), tester.Texts())
