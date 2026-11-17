@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/taoquo/trove/internal/domain"
+	"github.com/taoquo/trove/internal/ports"
 )
 
 // tombstonedIDs returns which of the given ids the user deleted locally.
@@ -153,6 +154,77 @@ func (r *BookmarkRepository) ClearTombstones(ctx context.Context, tweetIDs []str
 			argsFor(batch)...); err != nil {
 			return fmt.Errorf("sqlite: clear bookmark tombstones: %w", err)
 		}
+	}
+	return nil
+}
+
+// Tombstones returns the record of posts deleted locally, oldest id first.
+//
+// The order is stable so an export is reproducible: two backups of an unchanged
+// library must differ only in the timestamp they record.
+func (r *BookmarkRepository) Tombstones(ctx context.Context) ([]ports.Tombstone, error) {
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT tweet_id, deleted_at FROM deleted_bookmarks ORDER BY tweet_id`)
+	if err != nil {
+		return nil, fmt.Errorf("sqlite: list bookmark tombstones: %w", err)
+	}
+	defer rows.Close()
+
+	var tombstones []ports.Tombstone
+	for rows.Next() {
+		var tombstone ports.Tombstone
+		if err := rows.Scan(&tombstone.TweetID, &tombstone.DeletedAt); err != nil {
+			return nil, fmt.Errorf("sqlite: scan bookmark tombstone: %w", err)
+		}
+		tombstones = append(tombstones, tombstone)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("sqlite: list bookmark tombstones: %w", err)
+	}
+	return tombstones, nil
+}
+
+// AddTombstones records deletes that happened elsewhere.
+//
+// It is the write half of a restore: the bundle carries the record of what its
+// device deleted, and without it the next sync brings those posts back. Nothing is
+// deleted here -- the bookmarks themselves are the bundle's business -- and an
+// existing tombstone keeps the earlier date, because the delete already happened
+// once and a later copy of the record is not a new one.
+func (r *BookmarkRepository) AddTombstones(ctx context.Context, tombstones []ports.Tombstone) error {
+	if len(tombstones) == 0 {
+		return nil
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("sqlite: begin add bookmark tombstones: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck // no-op once committed
+
+	statement, err := tx.PrepareContext(ctx,
+		`INSERT INTO deleted_bookmarks (tweet_id, deleted_at) VALUES (?, ?)
+		 ON CONFLICT(tweet_id) DO NOTHING`)
+	if err != nil {
+		return fmt.Errorf("sqlite: prepare bookmark tombstone: %w", err)
+	}
+	defer statement.Close()
+
+	for _, tombstone := range tombstones {
+		if tombstone.TweetID == "" {
+			continue
+		}
+		deletedAt := tombstone.DeletedAt
+		if deletedAt == "" {
+			deletedAt = domain.FormatTimestamp(r.now())
+		}
+		if _, err := statement.ExecContext(ctx, tombstone.TweetID, deletedAt); err != nil {
+			return fmt.Errorf("sqlite: record tombstone for %s: %w", tombstone.TweetID, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("sqlite: commit add bookmark tombstones: %w", err)
 	}
 	return nil
 }

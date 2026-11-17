@@ -401,6 +401,108 @@ func TestAnthropicAdapterUsesAToolCall(t *testing.T) {
 	}
 }
 
+// TestAnthropicAdapterUsesTheRequestedCeiling is the fixed 1024 this adapter used to
+// send: a full batch of 25 needs room for 25 verdicts, and a reply cut off mid-JSON
+// looks like a bad answer rather than a small request.
+func TestAnthropicAdapterUsesTheRequestedCeiling(t *testing.T) {
+	recorder := &recorder{}
+	adapter, _ := AdapterFor(APIAnthropicMessages)
+	ceiling := DeriveMaxOutputTokens(25)
+
+	if _, err := adapter.ChatJSON(context.Background(), ChatRequest{
+		Prompt: "tag this", MaxOutputTokens: &ceiling,
+	}, AdapterEnv{
+		Model:  "claude-3-5-sonnet",
+		APIKey: "k",
+		HTTPClient: adapterClient(recorder, jsonResponse(200,
+			`{"content":[{"type":"tool_use","name":"emit_tags","input":{"results":[]}}]}`, nil)),
+	}); err != nil {
+		t.Fatalf("ChatJSON: %v", err)
+	}
+
+	body := recorder.lastBody(t)
+	if got, want := asInt(body["max_tokens"]), ceiling; got != want {
+		t.Errorf("max_tokens = %d, want %d (the derived ceiling, not the old fixed 1024)", got, want)
+	}
+	if got := asInt(body["max_tokens"]); got == anthropicDefaultMaxTokens {
+		t.Error("the adapter ignored the requested ceiling")
+	}
+}
+
+// TestAdaptersReportUsage pins the four spellings of the same two numbers. The run
+// summary reads them, and a provider that reports nothing must stay at zero rather
+// than be guessed at.
+func TestAdaptersReportUsage(t *testing.T) {
+	tests := []struct {
+		name     string
+		api      string
+		env      AdapterEnv
+		response string
+		want     TokenUsage
+	}{
+		{
+			name: "openai",
+			api:  APIOpenAIChat,
+			env:  AdapterEnv{Model: "gpt-4o", APIKey: "k", BaseURL: "https://api.openai.com"},
+			response: `{"choices":[{"message":{"content":"{}"}}],
+			            "usage":{"prompt_tokens":120,"completion_tokens":45}}`,
+			want: TokenUsage{InputTokens: 120, OutputTokens: 45},
+		},
+		{
+			name: "anthropic",
+			api:  APIAnthropicMessages,
+			env:  AdapterEnv{Model: "claude-3-5-sonnet", APIKey: "k", BaseURL: "https://api.anthropic.com"},
+			response: `{"content":[{"type":"tool_use","name":"emit_tags","input":{"results":[]}}],
+			            "usage":{"input_tokens":300,"output_tokens":20}}`,
+			want: TokenUsage{InputTokens: 300, OutputTokens: 20},
+		},
+		{
+			name: "google",
+			api:  APIGoogleGenerativeAI,
+			env:  AdapterEnv{Model: "gemini-1.5-flash", APIKey: "k", BaseURL: "https://generativelanguage.googleapis.com"},
+			response: `{"candidates":[{"content":{"parts":[{"text":"{}"}]}}],
+			            "usageMetadata":{"promptTokenCount":90,"candidatesTokenCount":12}}`,
+			want: TokenUsage{InputTokens: 90, OutputTokens: 12},
+		},
+		{
+			name: "azure",
+			api:  APIAzureOpenAIChat,
+			env: AdapterEnv{Model: "gpt-4o", APIKey: "k", BaseURL: "https://example.openai.azure.com",
+				DeploymentName: "my-deployment"},
+			response: `{"choices":[{"message":{"content":"{}"}}],
+			            "usage":{"prompt_tokens":77,"completion_tokens":8}}`,
+			want: TokenUsage{InputTokens: 77, OutputTokens: 8},
+		},
+		{
+			name:     "a provider that reports nothing",
+			api:      APIOpenAIChat,
+			env:      AdapterEnv{Model: "local", BaseURL: "http://localhost:11434"},
+			response: `{"choices":[{"message":{"content":"{}"}}]}`,
+			want:     TokenUsage{},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			recorder := &recorder{}
+			adapter, err := AdapterFor(tc.api)
+			if err != nil {
+				t.Fatalf("AdapterFor: %v", err)
+			}
+			env := tc.env
+			env.HTTPClient = adapterClient(recorder, jsonResponse(200, tc.response, nil))
+
+			result, err := adapter.ChatJSON(context.Background(), ChatRequest{Prompt: "hi"}, env)
+			if err != nil {
+				t.Fatalf("ChatJSON: %v", err)
+			}
+			if result.Usage != tc.want {
+				t.Errorf("usage = %+v, want %+v", result.Usage, tc.want)
+			}
+		})
+	}
+}
+
 func TestAnthropicAdapterRejectsAMissingToolCall(t *testing.T) {
 	recorder := &recorder{}
 	adapter, _ := AdapterFor(APIAnthropicMessages)

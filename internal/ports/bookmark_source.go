@@ -37,4 +37,8 @@ type Page struct {
 	// unless raw capture is enabled, and nothing but the diagnostics table reads
 	// it: the list must render without any raw JSON.
 	RawPayloads map[string]json.RawMessage
+	// Unrecognized counts tweet-shaped entries on this page that could not be
+	// parsed. A page with some of these lost bookmarks: the run is still useful,
+	// but it must not be recorded as a clean full sync.
+	Unrecognized int
 }

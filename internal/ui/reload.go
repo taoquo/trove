@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"slices"
+	"time"
 
 	"github.com/taoquo/trove/internal/domain"
 	"github.com/taoquo/trove/internal/i18n"
@@ -51,13 +52,33 @@ type reloadData struct {
 	pending []suggestions.PendingRow
 }
 
-// reloadQuery is the first page under the current filters.
+// reloadQuery is the read under the current filters.
+//
+// A background refresh is not a first load. When the reader has paged past the first
+// window, re-reading only the first page would shorten the list under them and leave the
+// scroll offset pointing past its new end, which reads as "the library lost rows". The
+// window therefore stays at least as large as what is on screen, up to a single read's
+// cap; past that the top of the list stays and scrolling continues the list from there.
+//
+// A changed condition is the exception: that is a new list, and it starts at the first
+// page.
 func (s *Shell) reloadQuery() domain.LibraryQuery {
-	return domain.LibraryQuery{
-		Filter: s.filter(),
-		Sort:   s.state.Sort,
-		Limit:  domain.DefaultLibraryPageSize,
+	query := domain.LibraryQuery{Filter: s.filter(), Sort: s.state.Sort}
+	// The stored query has been through Normalize, which fills the match modes; comparing
+	// it with raw state would say "changed" on every refresh.
+	if normalized, err := query.Normalize(); err == nil {
+		query = normalized
 	}
+
+	limit := domain.DefaultLibraryPageSize
+	// sameLibraryQuery ignores the window, so it answers "is this the same list" here.
+	if s.state.Loaded && sameLibraryQuery(s.state.Data.Query, query) {
+		if loaded := len(s.state.Data.Bookmarks); loaded > limit {
+			limit = min(loaded, domain.MaxLibraryPageSize)
+		}
+	}
+	query.Limit = limit
+	return query
 }
 
 // gatherReload reads the workspace without touching state.
@@ -132,14 +153,19 @@ func (s *Shell) applyReload(data reloadData) {
 	// with the grid's automatic page anchors cleared. Keeping the previous window's limit
 	// drew 400 cards for a filter that had never been scrolled, and keeping the offset
 	// showed the middle of a list the reader had not seen the start of.
-	if s.state.Loaded && !sameLibraryQuery(s.state.Data.Query, data.view.Query) {
+	queryChanged := s.state.Loaded && !sameLibraryQuery(s.state.Data.Query, data.view.Query)
+	if queryChanged {
 		s.state.RenderLimit = ResultsRenderLimit
 		s.state.autoLoadY, s.state.renderGrewY = -1, -1
 		s.resultsScroll.Y = 0
 	}
 
 	s.state.Data = data.view
-	s.keepSelection()
+	// Only a new list re-answers "what is selected". A refresh of the same list that comes
+	// back shorter -- a row removed elsewhere, a page that did not refill -- must not
+	// silently drop ids the reader picked: they are still their selection, and the batch
+	// actions still name them.
+	s.keepSelection(queryChanged)
 	s.state.Loaded = true
 	s.state.Err = ""
 
@@ -175,8 +201,47 @@ func sameLibraryQuery(a, b domain.LibraryQuery) bool {
 		af.OnlyWithPendingSuggestions == bf.OnlyWithPendingSuggestions &&
 		af.OnlyUnclassified == bf.OnlyUnclassified &&
 		af.OnlyWithMedia == bf.OnlyWithMedia &&
+		af.OnlyWithVideo == bf.OnlyWithVideo &&
 		af.OnlyLongform == bf.OnlyLongform &&
 		af.Archived == bf.Archived
+}
+
+// SearchDebounce is how long the search field waits after a keystroke.
+//
+// A keystroke is not a question. Typing "kubernetes" used to read the library ten times,
+// once per character, and each read owns the only database connection for as long as it
+// runs -- so the list lagged behind the field it was answering. One short pause per burst
+// asks once, for what the reader actually meant.
+const SearchDebounce = 150 * time.Millisecond
+
+// searchChanged schedules the read for what the search field says now.
+//
+// Every keystroke takes a new sequence number; a timer whose number is no longer the
+// newest does nothing. That is what makes the debounce one query rather than a queue of
+// them, and it also covers the stale case: a read already running for an older query is
+// dropped by ReloadAsync's own sequence check.
+func (s *Shell) searchChanged() {
+	if s.service == nil {
+		return
+	}
+	seq := s.searchSeq.Add(1)
+	if !s.state.Searching {
+		s.state.Searching = true
+		s.invalidate()
+	}
+	after := s.after
+	if after == nil {
+		after = time.AfterFunc
+	}
+	after(SearchDebounce, func() {
+		s.publish(func() {
+			if s.searchSeq.Load() != seq {
+				return
+			}
+			s.state.Searching = false
+			s.ReloadAsync(context.Background())
+		})
+	})
 }
 
 // reloadRequest is one queued refresh: the sequence that identifies it and the query

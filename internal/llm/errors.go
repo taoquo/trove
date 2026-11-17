@@ -172,12 +172,40 @@ func classifyStatus(status int, body string) ErrorKind {
 // maxErrorDetail bounds how much of a provider's error body is kept.
 const maxErrorDetail = 200
 
+// requestSecrets lists the credential values a request carries, for redaction.
+//
+// The header names are the shapes the adapters use. Authorization is listed both whole
+// and without its "Bearer " scheme, because a provider that quotes the header may drop
+// one or the other, and a provider that echoes only the token must still match. An
+// empty value is skipped: replacing "" would redact everything.
+func requestSecrets(headers map[string]string) []string {
+	var secrets []string
+	for name, value := range headers {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		switch strings.ToLower(name) {
+		case "authorization":
+			secrets = append(secrets, value)
+			if token, found := strings.CutPrefix(value, "Bearer "); found {
+				secrets = append(secrets, strings.TrimSpace(token))
+			}
+		case "api-key", "x-api-key", "x-goog-api-key":
+			secrets = append(secrets, value)
+		}
+	}
+	return secrets
+}
+
 // normalizeHTTPError builds a classified error from a non-2xx response.
 //
-// The detail is truncated and redacted; the message keeps the "HTTP <status>"
-// shape the older engine produced, because some callers match on it.
-func normalizeHTTPError(status int, body string, apiKey string) *LlmError {
-	detail := redactSecret(extractErrorDetail(body), apiKey)
+// The detail is truncated and redacted with every credential the request carried -- a
+// provider that echoes the Authorization header in its refusal must not put the key in
+// front of a reader or into app_settings. The message keeps the "HTTP <status>" shape the
+// older engine produced, because some callers match on it.
+func normalizeHTTPError(status int, body string, secrets []string) *LlmError {
+	detail := redactSecrets(extractErrorDetail(body), secrets)
 	kind := classifyStatus(status, detail)
 
 	message := ""
@@ -308,11 +336,31 @@ func redactBaseUrl(value string) string {
 // A short secret is left alone: replacing every occurrence of two or three
 // characters would mangle ordinary text without protecting anything.
 func redactSecret(value, secret string) string {
-	if len(secret) < 6 {
-		return redactBaseUrl(value)
+	return redactSecrets(value, []string{secret})
+}
+
+// redactSecrets removes every known secret and any URL query credential from a string.
+//
+// The URL pass is unconditional: a key the caller does not know about can still sit in a
+// query string, and that is the one shape every adapter can produce.
+func redactSecrets(value string, secrets []string) string {
+	value = redactBaseUrl(value)
+	for _, secret := range secrets {
+		if len(secret) < 6 {
+			continue
+		}
+		value = strings.ReplaceAll(value, secret, "[redacted]")
 	}
-	value = strings.ReplaceAll(value, secret, "[redacted]")
-	return redactBaseUrl(value)
+	return value
+}
+
+// RedactCredentials removes credentials from text bound for storage or a log.
+//
+// It is the string-level half of SanitizeLlmError, for the callers that hold a message
+// rather than an error -- a run summary written to app_settings, say. The secrets it is
+// given are scrubbed by value; URL query credentials are scrubbed regardless.
+func RedactCredentials(text string, secrets ...string) string {
+	return redactSecrets(text, secrets)
 }
 
 // SanitizeLlmError turns any error into a redacted, classified one.

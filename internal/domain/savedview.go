@@ -54,9 +54,15 @@ type SavedView struct {
 	ActiveTagIDs        []string
 	ActiveAuthorHandles []string
 	OnlyWithMedia       bool
+	OnlyWithVideo       bool
 	OnlyLongform        bool
-	SortOrder           SortOrder
-	ViewMode            ViewMode
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
+	// OnlyArchived stores the view's archive mode. A view saved in the archive is a
+	// view of the archive: the reader who returns to it meant that list, not the
+	// library the archive hides. Applying any other view returns to the library,
+	// because that is the state those views were saved in.
+	OnlyArchived bool
+	SortOrder    SortOrder
+	ViewMode     ViewMode
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }

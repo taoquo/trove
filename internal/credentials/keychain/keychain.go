@@ -36,6 +36,14 @@ func IsLLMAccount(account string) bool { return strings.HasPrefix(account, llmAc
 // ErrNotFound reports that no item is stored for the account.
 var ErrNotFound = errors.New("keychain: no stored item")
 
+// ErrLocked reports that the secure store exists but refused the operation
+// because it is locked, or because the prompt asking to unlock it was dismissed.
+//
+// It is deliberately not ErrUnavailable: a locked keychain still holds the
+// credentials, and the fix is to unlock it, not to re-enter them. Reporting it as
+// "nothing stored" is what made a locked Keychain look like an expired X session.
+var ErrLocked = errors.New("keychain: the secure store is locked")
+
 // ErrUnavailable reports that the secure store cannot be used at all, for example
 // because the platform has none or the tool is missing.
 var ErrUnavailable = errors.New("keychain: unavailable")

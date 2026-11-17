@@ -696,3 +696,66 @@ func TestDroppedOptionFromMatchesTheLegacySpellings(t *testing.T) {
 		}
 	}
 }
+
+// TestARefusedRequestRedactsEveryCarrier is item 14's table.
+//
+// The transport knows every credential a request carried because it set the headers
+// itself. A provider that quotes one back -- the commonest shape is a 401 body repeating
+// the Authorization header -- must not put it in front of a reader or into app_settings,
+// whatever spelling carried it.
+func TestARefusedRequestRedactsEveryCarrier(t *testing.T) {
+	const key = "sk-testredaction-0123456789"
+
+	cases := []struct {
+		name    string
+		headers map[string]string
+		body    string
+	}{
+		{
+			name:    "authorization header echoed whole",
+			headers: map[string]string{"Authorization": "Bearer " + key},
+			body:    `{"error":{"message":"invalid key from header Authorization: Bearer ` + key + `"}}`,
+		},
+		{
+			name:    "the bearer token alone",
+			headers: map[string]string{"Authorization": "Bearer " + key},
+			body:    `{"error":{"message":"token ` + key + ` is not valid"}}`,
+		},
+		{
+			name:    "api-key header",
+			headers: map[string]string{"api-key": key},
+			body:    `{"error":{"message":"bad api key ` + key + `"}}`,
+		},
+		{
+			name:    "x-api-key header",
+			headers: map[string]string{"x-api-key": key},
+			body:    `{"error":{"message":"x-api-key ` + key + ` rejected"}}`,
+		},
+		{
+			name:    "x-goog-api-key header",
+			headers: map[string]string{"x-goog-api-key": key},
+			body:    `{"error":{"message":"key ` + key + ` rejected"}}`,
+		},
+		{
+			name: "credential in a URL query",
+			body: `{"error":{"message":"POST https://api.example.com/v1/chat?key=` + key + ` failed"}}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			classified := normalizeHTTPError(401, tc.body, requestSecrets(tc.headers))
+			if strings.Contains(classified.Message, key) {
+				t.Errorf("the refusal echoes the credential: %q", classified.Message)
+			}
+			if !strings.Contains(classified.Message, "[redacted]") {
+				t.Errorf("the refusal does not mark the removal: %q", classified.Message)
+			}
+		})
+	}
+
+	// An empty header value is skipped: replacing "" would redact every word.
+	if got := requestSecrets(map[string]string{"Authorization": "  "}); len(got) != 0 {
+		t.Errorf("requestSecrets kept an empty value: %q", got)
+	}
+}

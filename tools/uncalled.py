@@ -32,7 +32,12 @@ ROOTS = ["."]
 # method on Shell with no call site is invisible otherwise: two checkers report a clean
 # tree while Export, AskBundleImport and three other bundle actions have no button -- they
 # are outside the only layer being swept.
-LAYERS = ["internal/usecase", "internal/ui"]
+# internal/llm is here because a helper with a test and no production caller reads as wired:
+# DeriveMaxOutputTokens had a table-driven test and nothing that asked for it, so every batch
+# ran at the adapter's fixed 1024. The same sweep finds a resolver that the adapters each
+# restated instead (ResolveBaseURL), which is why the check is about callers rather than
+# coverage.
+LAYERS = ["internal/usecase", "internal/ui", "internal/llm"]
 WALK_SKIP = {".git", ".toolchain", ".claude", ".codex", ".superpowers", "docs", "testdata", "resources", "assets", "build", "dist"}
 
 

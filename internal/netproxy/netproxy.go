@@ -6,9 +6,13 @@
 // else. A .app launched from Finder inherits no such variables, so on a machine
 // where x.com is only reachable through a local proxy every request went direct
 // and died at the TLS handshake -- which the sync reported as a network failure
-// while the cookies were perfectly good. macOS keeps the proxy in
-// SystemConfiguration, reachable through `scutil --proxy`, and that is what this
-// package reads.
+// while the cookies were perfectly good.
+//
+// Where the setting lives is the platform's business: macOS keeps it in
+// SystemConfiguration (read through `scutil --proxy`), Windows in the current
+// user's Internet Settings registry key, and the other builds have no reader and
+// go direct. What each reader returns is the same Config, so the rest of the app
+// does not know which one answered.
 //
 // The environment still wins when it is set: a user who exports HTTPS_PROXY
 // means it, and it is also how the test suite points the transport at a local
@@ -122,16 +126,6 @@ func envConfigured() bool {
 		}
 	}
 	return false
-}
-
-// system reads the machine's proxy configuration.
-func system(ctx context.Context) Config {
-	runner := ScutilRunner{}
-	output, err := runner.Run(ctx, ScutilBinary, []string{"--proxy"})
-	if err != nil {
-		return Config{}
-	}
-	return ParseScutil(output)
 }
 
 // ParseScutil reads the dictionary `scutil --proxy` prints.
@@ -307,10 +301,12 @@ func (r *Resolver) Config(ctx context.Context) Config {
 	if runner == nil {
 		runner = ScutilRunner{}
 	}
-	output, err := runner.Run(ctx, ScutilBinary, []string{"--proxy"})
-	config := Config{}
-	if err == nil {
-		config = ParseScutil(output)
+	config, err := readSystemProxy(ctx, runner)
+	if err != nil {
+		// Unreadable is not a proxy: a machine whose setting cannot be read is the
+		// same as one with none, and the error path must not leave the previous
+		// answer standing.
+		config = Config{}
 	}
 
 	r.config, r.readAt, r.loaded = config, now, true

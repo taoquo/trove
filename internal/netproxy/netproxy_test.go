@@ -72,6 +72,59 @@ func TestParseScutilIgnoresDisabledSchemes(t *testing.T) {
 	}
 }
 
+// TestParseScutilKeepsProxyCredentials covers the shape that used to produce an
+// unusable URL: an authenticated proxy, which macOS stores as one host string with
+// the user info in front. Joining that whole string with a port brackets the user
+// info as though it were an IPv6 address, so the split has to happen first. The
+// values are invented; nothing here reads a real configuration.
+func TestParseScutilKeepsProxyCredentials(t *testing.T) {
+	const want = "http://proxyuser:proxy-pass-for-the-test@10.0.0.5:7890"
+	for _, tc := range []struct {
+		name   string
+		output string
+	}{
+		{
+			name: "an expanded dictionary",
+			output: `<dictionary> {
+  HTTPEnable : 0
+  HTTPPort : 0
+  HTTPSEnable : 1
+  HTTPSPort : 7890
+  HTTPSProxy : proxyuser:proxy-pass-for-the-test@10.0.0.5
+}`,
+		},
+		{
+			// scutil joins the last entry and the closing brace when it prints
+			// compactly, so the brace must not become part of the port.
+			name: "a compact rendition",
+			output: `<dictionary> {
+  HTTPEnable : 0
+  HTTPPort : 0
+  HTTPSEnable : 1
+  HTTPSPort : 7890
+  HTTPSProxy : proxyuser:proxy-pass-for-the-test@10.0.0.5}`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			config := ParseScutil(tc.output)
+			if config.HTTPS != want {
+				t.Fatalf("HTTPS = %q, want %q", config.HTTPS, want)
+			}
+			parsed := config.For(mustURL(t, "https://x.com/"))
+			if parsed == nil {
+				t.Fatal("the proxy was not used")
+			}
+			if parsed.Host != "10.0.0.5:7890" {
+				t.Errorf("host = %q", parsed.Host)
+			}
+			password, set := parsed.User.Password()
+			if parsed.User.Username() != "proxyuser" || !set || password != "proxy-pass-for-the-test" {
+				t.Errorf("user info = %v", parsed.User)
+			}
+		})
+	}
+}
+
 // TestParseScutilWithoutAProxy is the machine with nothing configured: no
 // proxy, and requests must go direct rather than to an empty host.
 func TestParseScutilWithoutAProxy(t *testing.T) {

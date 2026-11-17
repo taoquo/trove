@@ -21,13 +21,44 @@ func decode(t *testing.T, raw string) map[string]any {
 	return payload
 }
 
+// mustParse parses a fixture that models a page as X sends one.
+//
+// Every real bookmark page ends with a cursor-bottom entry, an empty value on
+// the last page, so a fixture without one models a response X never produces.
+// The fixtures below focus on the posts; addBottomCursor supplies the envelope
+// detail rather than repeating it in each. The rule that a page with posts and
+// no cursor is a schema change has its own test, which calls the parser
+// directly so nothing is added for it.
 func mustParse(t *testing.T, raw string) ParseResult {
 	t.Helper()
-	result, err := ParseBookmarkEntries(decode(t, raw), ParseOptions{SeenAt: testTime()})
+	result, err := ParseBookmarkEntries(addBottomCursor(decode(t, raw)), ParseOptions{SeenAt: testTime()})
 	if err != nil {
 		t.Fatalf("ParseBookmarkEntries: %v", err)
 	}
 	return result
+}
+
+// addBottomCursor appends the bottom cursor entry unless the page already has
+// one. It is a no-op on a payload whose shape does not match, so a fixture meant
+// to test a missing instruction is left alone.
+func addBottomCursor(payload map[string]any) map[string]any {
+	for _, instruction := range timelineInstructions(payload) {
+		if str(instruction["type"]) != "TimelineAddEntries" {
+			continue
+		}
+		entries := slice(instruction["entries"])
+		for _, entry := range entries {
+			if strings.HasPrefix(str(obj(entry)["entryId"]), entryCursorPrefix) {
+				return payload
+			}
+		}
+		instruction["entries"] = append(entries, map[string]any{
+			"entryId": entryCursorPrefix + "end",
+			"content": map[string]any{"value": ""},
+		})
+		return payload
+	}
+	return payload
 }
 
 func testTime() time.Time {
@@ -191,6 +222,49 @@ func TestParseAcceptsRecognizableEmptyTimeline(t *testing.T) {
 	}
 	if result.NextCursor != "" {
 		t.Errorf("NextCursor = %q, want empty", result.NextCursor)
+	}
+}
+
+// TestParseRejectsAPageWithPostsButNoCursor pins the end-of-timeline signal.
+//
+// X always closes a page with a cursor-bottom entry, empty on the last page. A
+// page that carried posts and no cursor therefore means the entry prefix moved:
+// reading it as "the timeline ended" recorded a completed first sync from page
+// one and froze the library at it. The end of the timeline is the empty cursor
+// entry, not its absence.
+func TestParseRejectsAPageWithPostsButNoCursor(t *testing.T) {
+	_, err := ParseBookmarkEntries(decode(t, `{"data":{"bookmark_timeline_v2":{"timeline":{"instructions":[
+		{"type":"TimelineAddEntries","entries":[
+			{"entryId":"tweet-1","content":{"itemContent":{"tweet_results":{"result":{
+				"rest_id":"1","legacy":{"full_text":"hello"}}}}}}
+		]}]}}}}`), ParseOptions{SeenAt: testTime()})
+	if err == nil {
+		t.Fatal("a page with posts and no bottom cursor must be reported, not read as the end")
+	}
+	if kind := KindOf(err); kind != domain.ErrResponseSchemaChanged {
+		t.Errorf("kind = %q, want %q", kind, domain.ErrResponseSchemaChanged)
+	}
+}
+
+// TestParseTreatsAnEmptyCursorAsTheEnd is the counterweight: the real final
+// page carries a cursor-bottom entry whose value is empty, and that is a clean
+// end of the timeline, not a schema change.
+func TestParseTreatsAnEmptyCursorAsTheEnd(t *testing.T) {
+	result := mustParse(t, `{"data":{"bookmark_timeline_v2":{"timeline":{"instructions":[
+		{"type":"TimelineAddEntries","entries":[
+			{"entryId":"tweet-1","content":{"itemContent":{"tweet_results":{"result":{
+				"rest_id":"1","legacy":{"full_text":"hello"}}}}}},
+			{"entryId":"cursor-bottom-end","content":{"value":""}}
+		]}]}}}}`)
+
+	if len(result.Bookmarks) != 1 {
+		t.Fatalf("got %d bookmarks, want 1", len(result.Bookmarks))
+	}
+	if result.NextCursor != "" {
+		t.Errorf("NextCursor = %q, want empty", result.NextCursor)
+	}
+	if !result.CursorSeen {
+		t.Error("CursorSeen = false, want true: the page did carry a bottom cursor")
 	}
 }
 

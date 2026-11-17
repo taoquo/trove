@@ -1,11 +1,17 @@
 package main
 
 import (
+	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/taoquo/trove/internal/bundle"
+	"github.com/taoquo/trove/internal/domain"
+	syncer "github.com/taoquo/trove/internal/usecase/syncer"
 )
 
 // TestOnlyTheCommandsOpenNoWindow is about the dispatch: anything the app does not know,
@@ -97,5 +103,70 @@ func TestTheOpenerRefusesAnythingButTheWeb(t *testing.T) {
 		if err := openWebURL(rawURL); err == nil {
 			t.Errorf("openWebURL(%q) opened it; only http and https may be handed to the system", rawURL)
 		}
+	}
+}
+
+// TestAPartialSyncIsNotAFailure pins the exit rule a scheduler reads.
+//
+// A partial run stores what it fetched and returns its page failure as well. The
+// command used to check the error first, so a run that saved thousands of
+// bookmarks exited non-zero and the scheduler recorded a working sync as broken.
+func TestAPartialSyncIsNotAFailure(t *testing.T) {
+	var out bytes.Buffer
+	run := domain.SyncRun{
+		Status: domain.SyncPartialSuccess, InsertedCount: 12, UpdatedCount: 3,
+		PagesCompleted: 4, FailedCount: 1,
+	}
+	pageErr := errors.New("xsource: fetch: 429")
+
+	if err := reportSyncResult(&out, false, run, pageErr, 2*time.Second); err != nil {
+		t.Fatalf("a partial run must exit 0, got %v", err)
+	}
+	line := out.String()
+	if !strings.Contains(line, "saved 12 new") || !strings.Contains(line, "partial: 1 page(s) failed") {
+		t.Errorf("output = %q, want the saved counts and the failed page count", line)
+	}
+}
+
+// TestAFailedSyncExitsNonZero is the other half: nothing stored and no partial
+// status must still wake whoever owns the scheduler.
+func TestAFailedSyncExitsNonZero(t *testing.T) {
+	var out bytes.Buffer
+	run := domain.SyncRun{Status: domain.SyncError, ErrorKind: domain.ErrNetwork, ErrorSummary: "no route"}
+	if err := reportSyncResult(&out, false, run, errors.New("no route"), time.Second); err == nil {
+		t.Fatal("a failed run must exit non-zero")
+	}
+}
+
+// TestAFailedSyncSaysItOnce covers the shape a credential failure takes: the run's
+// summary and the returned error are the same sentence, and the line used to print both.
+//
+// `trove sync` with no session said "sync failed: …(x.auth_token): …(x.auth_token)", which
+// reads as two faults. The summary is only worth a second clause when it says something the
+// error does not -- a cancelled context, for instance.
+func TestAFailedSyncSaysItOnce(t *testing.T) {
+	var out bytes.Buffer
+	const message = "xsource: credentials: unauthorized: credentials: nothing stored (x.auth_token)"
+	run := domain.SyncRun{Status: domain.SyncError, ErrorKind: domain.ErrUnauthorized, ErrorSummary: message}
+
+	err := reportSyncResult(&out, false, run, errors.New(message), time.Second)
+	if err == nil {
+		t.Fatal("a failed run must exit non-zero")
+	}
+	if count := strings.Count(err.Error(), message); count != 1 {
+		t.Errorf("error = %q, want the reason once, got %d", err.Error(), count)
+	}
+}
+
+// TestASecondSyncIsNotAFailure pins the refusal: nothing was attempted, so the
+// scheduler must not record a fault.
+func TestASecondSyncIsNotAFailure(t *testing.T) {
+	var out bytes.Buffer
+	run := domain.SyncRun{Status: domain.SyncError, ErrorKind: domain.ErrSyncInProgress}
+	if err := reportSyncResult(&out, false, run, syncer.ErrSyncAlreadyRunning, time.Second); err != nil {
+		t.Fatalf("a refused run must exit 0, got %v", err)
+	}
+	if !strings.Contains(out.String(), "another sync is running") {
+		t.Errorf("output = %q, want the reason printed", out.String())
 	}
 }

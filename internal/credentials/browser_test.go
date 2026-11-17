@@ -5,8 +5,110 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/steipete/sweetcookie"
+
 	"github.com/taoquo/trove/internal/xsource"
 )
+
+// browserCookie builds one cookie as the library would report it, with the source
+// that says which profile it came from.
+func browserCookie(browser sweetcookie.Browser, profile, name, value string) sweetcookie.Cookie {
+	return sweetcookie.Cookie{
+		Name:   name,
+		Value:  value,
+		Source: sweetcookie.Source{Browser: browser, Profile: profile},
+	}
+}
+
+// TestAPairComesFromOneProfile is the rule the merged read got wrong.
+//
+// X's two cookies authenticate as a pair. Taking auth_token from Chrome and ct0
+// from Safari produces a set that no single session ever had, and the failure the
+// user sees is a CSRF rejection with no explanation.
+func TestAPairComesFromOneProfile(t *testing.T) {
+	t.Run("the first complete profile wins", func(t *testing.T) {
+		found, ok := pairFromProfiles([]sweetcookie.Cookie{
+			// Interleaved on purpose: the reader does not group for us.
+			browserCookie(sweetcookie.BrowserChrome, "Default", "auth_token", "chrome-auth"),
+			browserCookie(sweetcookie.BrowserSafari, "", "auth_token", "safari-auth"),
+			browserCookie(sweetcookie.BrowserChrome, "Default", "ct0", "chrome-csrf"),
+			browserCookie(sweetcookie.BrowserSafari, "", "ct0", "safari-csrf"),
+		})
+		if !ok {
+			t.Fatal("two complete profiles produced no pair")
+		}
+		if found.AuthToken != "chrome-auth" || found.CSRFToken != "chrome-csrf" {
+			t.Errorf("pair = %+v, want Chrome's two", found)
+		}
+	})
+
+	t.Run("two halves are not a pair", func(t *testing.T) {
+		_, ok := pairFromProfiles([]sweetcookie.Cookie{
+			browserCookie(sweetcookie.BrowserChrome, "Default", "auth_token", "chrome-auth"),
+			browserCookie(sweetcookie.BrowserSafari, "", "ct0", "safari-csrf"),
+		})
+		if ok {
+			t.Fatal("a pair assembled from two profiles was accepted")
+		}
+	})
+
+	t.Run("a blank value is not a cookie", func(t *testing.T) {
+		_, ok := pairFromProfiles([]sweetcookie.Cookie{
+			browserCookie(sweetcookie.BrowserChrome, "Default", "auth_token", "  "),
+			browserCookie(sweetcookie.BrowserChrome, "Default", "ct0", "chrome-csrf"),
+		})
+		if ok {
+			t.Fatal("a blank auth_token completed a pair")
+		}
+	})
+
+	t.Run("a second profile still counts when the first is half filled", func(t *testing.T) {
+		found, ok := pairFromProfiles([]sweetcookie.Cookie{
+			browserCookie(sweetcookie.BrowserChrome, "Profile 1", "auth_token", "one"),
+			browserCookie(sweetcookie.BrowserChrome, "Profile 2", "auth_token", "two"),
+			browserCookie(sweetcookie.BrowserChrome, "Profile 2", "ct0", "csrf-two"),
+		})
+		if !ok {
+			t.Fatal("a complete second profile was not found")
+		}
+		if found.AuthToken != "two" || found.CSRFToken != "csrf-two" {
+			t.Errorf("pair = %+v, want Profile 2's two", found)
+		}
+	})
+}
+
+// TestAHalfPairIsRejectedAndNotWritten is the negative sample end to end: the
+// reader that produces it is the real BrowserCookies, and the store must neither
+// accept the result nor write anything.
+func TestAHalfPairIsRejectedAndNotWritten(t *testing.T) {
+	original := loadBrowserCookies
+	t.Cleanup(func() { loadBrowserCookies = original })
+	loadBrowserCookies = func(context.Context, sweetcookie.Options) (sweetcookie.Result, error) {
+		return sweetcookie.Result{Cookies: []sweetcookie.Cookie{
+			browserCookie(sweetcookie.BrowserChrome, "Default", "auth_token", "chrome-auth"),
+			browserCookie(sweetcookie.BrowserSafari, "", "ct0", "safari-csrf"),
+		}}, nil
+	}
+
+	keychain := newFakeKeychain()
+	store := &Store{Keychain: keychain}
+	changed, err := store.RefreshXCredentialsFromBrowser(context.Background())
+	if err == nil {
+		t.Fatal("a half pair was accepted")
+	}
+	if changed {
+		t.Error("a half pair reported a change")
+	}
+	if !errors.Is(err, ErrBrowserNoCookies) {
+		t.Errorf("err = %v, want ErrBrowserNoCookies", err)
+	}
+	if !errors.Is(err, ErrIncompleteCredentials) {
+		t.Errorf("err = %v, want it to wrap ErrIncompleteCredentials", err)
+	}
+	if len(keychain.values) != 0 {
+		t.Errorf("a half pair was written: %v", keychain.values)
+	}
+}
 
 // TestPermissionDenialIsToldApartFromNoCookies covers the two failures that both look like
 // "found nothing" from the caller's side.

@@ -103,7 +103,7 @@ func TestPaginateReachingTheLimitIsNotCompletion(t *testing.T) {
 		t.Errorf("Termination = %q, want %q so the caller does not mark a full sync complete",
 			result.Termination, TermHitLimit)
 	}
-	if domain.CompletesFullSync(result.Termination, result.FailedCount) {
+	if domain.CompletesFullSync(result.Termination, result.FailedCount, result.Unrecognized) {
 		t.Error("hitting the cap must never count as a completed full sync")
 	}
 }
@@ -256,8 +256,13 @@ func TestPaginateCancellation(t *testing.T) {
 	if result.Termination != TermCancelled {
 		t.Errorf("Termination = %q, want %q", result.Termination, TermCancelled)
 	}
-	if !domain.CompletesFullSync(TermEndOfPages, 0) || domain.CompletesFullSync(result.Termination, 0) {
+	if !domain.CompletesFullSync(TermEndOfPages, 0, 0) || domain.CompletesFullSync(result.Termination, 0, 0) {
 		t.Error("a cancelled run must not mark a full sync complete")
+	}
+	// The page that arrived before the cancel leaves a place to resume. A cancel
+	// that threw the cursor away restarted the whole walk next time.
+	if result.NextCursor != "c2" {
+		t.Errorf("NextCursor = %q, want c2 so the next run continues where this one stopped", result.NextCursor)
 	}
 }
 
@@ -405,6 +410,103 @@ func TestPaginateKeepsEarlierPagesWhenRetriesAreExhausted(t *testing.T) {
 	if result.FailedCount != 1 {
 		t.Errorf("FailedCount = %d, want 1", result.FailedCount)
 	}
+	// The page after the good one is where the walk stopped, and it is kept: a
+	// 9,000-bookmark walk that died at page 450 used to restart from the top and
+	// fail at the same page again.
+	if result.NextCursor != "c2" {
+		t.Errorf("NextCursor = %q, want c2 so the next run continues rather than restarts", result.NextCursor)
+	}
+}
+
+// TestPaginateDropsTheCursorItWasLoopingOn is the exception to the rule above: a
+// repeated cursor is a cycle, and resuming from it would repeat the cycle.
+func TestPaginateDropsTheCursorItWasLoopingOn(t *testing.T) {
+	fetch := queueFetcher(t, []step{
+		{expectCursor: "", page: ports.Page{Items: []domain.Bookmark{bm("1")}, NextCursor: "c2"}},
+		{expectCursor: "c2", page: ports.Page{Items: []domain.Bookmark{bm("2")}, NextCursor: "c3"}},
+		{expectCursor: "c3", page: ports.Page{Items: []domain.Bookmark{bm("3")}, NextCursor: "c2"}},
+	})
+
+	result, err := Paginate(context.Background(), Options{FetchPage: fetch})
+	if err == nil {
+		t.Fatal("expected the repeated cursor to be reported")
+	}
+	if result.NextCursor != "" {
+		t.Errorf("NextCursor = %q, want empty: resuming from a cycling cursor loops again", result.NextCursor)
+	}
+}
+
+// TestPaginateCountsUnrecognizedEntries checks that what a page could not read
+// reaches the caller, so a run with unreadable posts is not recorded as clean.
+func TestPaginateCountsUnrecognizedEntries(t *testing.T) {
+	fetch := queueFetcher(t, []step{
+		{expectCursor: "", page: ports.Page{Items: []domain.Bookmark{bm("1")}, NextCursor: "c2", Unrecognized: 2}},
+		{expectCursor: "c2", page: ports.Page{Items: []domain.Bookmark{bm("2")}, Unrecognized: 1}},
+	})
+
+	result, err := Paginate(context.Background(), Options{FetchPage: fetch})
+	if err != nil {
+		t.Fatalf("Paginate: %v", err)
+	}
+	if result.Unrecognized != 3 {
+		t.Errorf("Unrecognized = %d, want 3 summed over the walk", result.Unrecognized)
+	}
+}
+
+// TestPaginateWaitsOutARateLimitWindow covers the long wait: X states its reset
+// in minutes, which is far past an ordinary Retry-After cap. Refusing the wait
+// kills the run and the next one starts over; the rate-limit budget is what
+// makes the wait possible without letting a bogus header park the app.
+func TestPaginateWaitsOutARateLimitWindow(t *testing.T) {
+	var slept []time.Duration
+
+	fetch := queueFetcher(t, []step{
+		{expectCursor: "", err: &Error{Kind: domain.ErrRateLimited, Status: 429, RetryAfter: 5 * time.Minute}},
+		{expectCursor: "", page: ports.Page{Items: []domain.Bookmark{bm("1")}}},
+	})
+
+	result, err := Paginate(context.Background(), Options{
+		FetchPage: fetch,
+		Sleep:     instantSleep(&slept),
+		Retry: RetryPolicy{
+			MaxAttempts: 3, BaseDelay: time.Second, MaxDelay: 30 * time.Second,
+			MaxRetryAfter: 30 * time.Second, MaxRateLimitWait: 15 * time.Minute,
+		},
+	})
+	if err != nil {
+		t.Fatalf("Paginate: %v", err)
+	}
+	if len(result.Bookmarks) != 1 {
+		t.Errorf("got %d bookmarks, want the page fetched after the window", len(result.Bookmarks))
+	}
+	if len(slept) != 1 || slept[0] != 5*time.Minute {
+		t.Errorf("delays = %v, want the 5m window to be waited out", slept)
+	}
+}
+
+// TestPaginateStopsWhenTheRateLimitBudgetRunsOut bounds that wait.
+func TestPaginateStopsWhenTheRateLimitBudgetRunsOut(t *testing.T) {
+	var slept []time.Duration
+
+	fetch := queueFetcher(t, []step{
+		{expectCursor: "", err: &Error{Kind: domain.ErrRateLimited, Status: 429, RetryAfter: 10 * time.Minute}},
+		{expectCursor: "", err: &Error{Kind: domain.ErrRateLimited, Status: 429, RetryAfter: 10 * time.Minute}},
+	})
+
+	_, err := Paginate(context.Background(), Options{
+		FetchPage: fetch,
+		Sleep:     instantSleep(&slept),
+		Retry: RetryPolicy{
+			MaxAttempts: 4, BaseDelay: time.Second, MaxDelay: 30 * time.Second,
+			MaxRetryAfter: 30 * time.Second, MaxRateLimitWait: 12 * time.Minute,
+		},
+	})
+	if err == nil {
+		t.Fatal("expected the run to stop once the window exceeded the budget")
+	}
+	if len(slept) != 1 || slept[0] != 10*time.Minute {
+		t.Errorf("delays = %v, want one 10m wait and then the error", slept)
+	}
 }
 
 func TestPaginateReportsProgress(t *testing.T) {
@@ -454,7 +556,7 @@ func TestPaginateEmptyFirstPageEndsCleanly(t *testing.T) {
 		t.Errorf("got %d bookmarks, want none", len(result.Bookmarks))
 	}
 	// An empty timeline that ran to the end is a legitimate completed full sync.
-	if !domain.CompletesFullSync(result.Termination, result.FailedCount) {
+	if !domain.CompletesFullSync(result.Termination, result.FailedCount, result.Unrecognized) {
 		t.Error("an empty library that paginated cleanly is a completed full sync")
 	}
 }

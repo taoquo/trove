@@ -446,15 +446,24 @@ func (s *Shell) filterPopover(c *ui.Context, theme *ui.Theme, rail RailTokens, p
 			ui.Text(c, s.t().T(i18n.FilterConditions)).FontSize(FontSmall).Bold().TextColor(theme.Text)
 			ui.Text(c, s.t().T(i18n.FilterDescription)).FontSize(FontTiny).TextColor(theme.TextMuted)
 
-			ui.Checkbox(c, &s.state.OnlyWithMedia, s.t().T(i18n.FilterHasMedia)).OnChange(func() {
-				s.ReloadAsync(context.Background())
-			})
-			ui.Checkbox(c, &s.state.OnlyLongform, s.t().T(i18n.FilterLongform)).OnChange(func() {
-				s.ReloadAsync(context.Background())
-			})
-			ui.Checkbox(c, &s.state.OnlyArchived, s.t().T(i18n.FilterArchived)).OnChange(func() {
-				s.ReloadAsync(context.Background())
-			})
+			for _, flag := range s.filterFlags() {
+				if !flag.inPanel {
+					continue
+				}
+				// The box is bound to a per-frame copy and writes back through the
+				// table, so the panel cannot drift from the chips: a condition added
+				// there gains a row here by saying so, and no row can mean something
+				// the chip does not.
+				on := flag.on(s)
+				label := s.t().T(flag.key)
+				if flag.panelLabel != nil {
+					label = flag.panelLabel(s)
+				}
+				ui.Checkbox(c, &on, label).OnChange(func() {
+					flag.set(s, on)
+					s.ReloadAsync(context.Background())
+				})
+			}
 		})
 	})
 }

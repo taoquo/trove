@@ -290,6 +290,19 @@ func (s *Shell) batchBar(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 					s.clearSelection()
 				})
 
+				// The archive, offered where a batch is already assembled. Its label says
+				// which direction, because the same button in the archive is the way out:
+				// the bar belongs to the view it was opened in.
+				archiveLabel := s.t().T(i18n.ActionArchive)
+				if s.state.OnlyArchived {
+					archiveLabel = s.t().T(i18n.ActionUnarchive)
+				}
+				settingsAction(c, theme, rail, archiveLabel, false, false, func() {
+					if err := s.ArchiveSelection(context.Background(), !s.state.OnlyArchived); err != nil {
+						s.reportErr(err)
+					}
+				})
+
 				// Deleting a batch goes through the same fail-closed confirmation as
 				// a single deletion.
 				IconChip(c, theme, rail, "trash", s.t().T(i18n.ActionDelete), func() {
@@ -337,7 +350,7 @@ func (s *Shell) toolbar(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 		ui.Row(c).FillWidth().GapX(SpaceBase).Children(func() {
 			searchField(c, theme, rail, &s.state.Query,
 				s.t().T(i18n.SearchPlaceholder), s.t().T(i18n.ActionClear), &s.searchField,
-				func() { s.ReloadAsync(context.Background()) },
+				s.searchChanged,
 				func() { s.ExitSearch(context.Background()) })
 
 			// The active filters, in the search's own row and on its right.
@@ -449,6 +462,8 @@ func (s *Shell) toolbar(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 		switch {
 		case s.state.MutationNote != "":
 			status = append(status, s.state.MutationNote)
+		case s.state.Searching:
+			status = append(status, s.t().T(i18n.ToolbarSearching))
 		case s.state.Refreshing:
 			status = append(status, s.t().T(i18n.ToolbarRefreshing))
 		}

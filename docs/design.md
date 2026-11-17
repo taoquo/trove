@@ -121,12 +121,15 @@ gap 已经映射回去：6→8、10→12、14 和 18→16。
 | 设置 | 搜索无结果 | 页签让位，跨分区结果带分区名，空态在流内 | `TestTheSettingsFindFieldSearchesEveryTab`、`TestTheSettingsFindFieldSaysWhenNothingMatches` |
 | 设置 | API Key 未存 | 行说明“尚未存密钥”，字段为空、无掩码 | `TestAStoredKeyStillReadsAsStoredAfterReopening` |
 | 设置 | API Key 已存 | 行说明“已保存”，字段空但显示掩码占位 | `TestAStoredKeyStillReadsAsStoredAfterReopening` |
+| 设置 | 自动备份 | 数据安全卡第一行；缺字段的旧偏好按打开；启动副本的结果写在卡片下方 | `TestTheDataSafetySwitchTurnsTheLaunchCopyOff`、`TestTheLaunchCopiesTheLibraryOnceAndSaysSo` |
+| 设置 | 诊断日志 | 默认关闭；打开后写 `logs/trove.log`，三份各 1 MB，只记事件与计数；打不开时开关保留并说明原因 | `TestTheDataSafetySwitchRemembersTheLog`、`TestAFailedLogSwitchSaysWhy`、`TestASecretNeverReachesTheDisk` |
 | 自动打标 | 运行中 | 进度分母是本轮工作量；预算秒数与在途数可见 | `TestTheModelPhaseMeasuresItsOwnWorkload` |
 | 自动打标 | 取消 | 进度条显示“正在停止”并禁用；页面与侧栏不再有第二个停止按钮；在途批次保留 | `TestAutoTagStoppingOffersNoSecondStopButton`、`TestAutoTagStopKeepsTheBatchItIsOn` |
 | 自动打标 | 恢复 | 重启后按状态记为 interrupted / cancelled；有剩余且开关允许时续跑，预算跨重启累计 | `TestHealStaleRun`、`TestHealingACancelledRunKeepsItCancelled`、`TestAutoTagPanelReportsTheInterruptedRun`、`TestAutoTagResumeDecision` |
 | 确认 | 键盘 | 焦点在取消，回车与 Esc 都拒绝；选中确认动作才执行 | `TestTheConfirmationCardPutsReturnOnCancel` |
 | 确认 | 危险动作悬停 | 静止为危险墨 + 危险浅底；指针下填实危险色 | `TestTheDestructiveAnswerFillsUnderThePointer` |
 | 同步 | 未配置凭据 | 失败原因可读，不显示空列表 | `TestSyncFailureSaysWhatToDo` |
+| 同步 | 限流等待 | 状态行换成「已限流，等待 N 秒」并每秒递减，等待结束回到页数句；页间 250ms 节奏不显示 | `TestTheSyncLineCountsDownARateLimitWait`、`TestARateLimitWaitCountsDownInARunningSync` |
 | 详情 | 媒体缺失 | 占位而不是空白 | `TestTheDetailKeepsAFrameForAPictureThatNeverArrives` |
 | 详情 | 正文 | 600 的阅读宽度，不随窗口变宽 | `TestTheDetailBodyKeepsItsOwnMeasure` |
 | 详情 | 一张竖图 | 高度封顶 420，整张不裁，水平居中；横图仍撑满阅读区 | `TestATallPictureIsShownWholeAtTheCap`、`TestAWidePictureFillsThePane` |
@@ -135,7 +138,15 @@ gap 已经映射回去：6→8、10→12、14 和 18→16。
 | 归档 | 已归档 | 默认不出现在任何列表；面板「已归档」是视图的模式而非叠加的开关；卡片菜单「归档 / 移出归档」，没有确认 | `TestArchivingTakesTheRowOutOfTheListAndTheArchiveShowsIt` |
 | 媒体 | 视频与 GIF | 海报中央一枚**主题朱红**的播放盘（跟随明暗外观，不写死红色），一处画法三处尺寸：网格卡片 46、列表缩略图 30、详情 64，glyph 同比缩；卡片与详情是同一个盘 | `TestAVideoCardCarriesTheMarkCentredOnItsPoster`、`TestTheListThumbnailUsesASmallerDisc`、`TestTheDetailKeepsItsOwnDisc`、`TestAGifCardCarriesTheMarkToo` |
 | 媒体 | 照片 | 不加任何标记——没有盘就是照片的样子 | `TestAPhotoCardCarriesNoMark` |
+| 筛选 | 包含视频 | 面板「包含视频」只留会播放的帖子：`video` 与 `animated_gif`，是「包含媒体」的子集；不认识的附件仍算媒体，但不算视频 | `TestTheVideoRowInTheFilterPanelKeepsOnlyPostsThatPlay`、`TestTheVideoFilterIsInsideTheMediaFilter` |
 | 筛选 | 无匹配 | 空态在流内，说明当前筛选 | `TestTheEmptyResultNamesEveryCondition`、`TestTheEmptyResultOffersAWayOut` |
+| 列表 | Tab | 结果列只有**一个** Tab 站：卡片与卡片上的动作都不是站，进入后方向键选卡、回车开详情；卡片动作的键盘路径是详情的同名按钮 | `TestTheResultsListIsOneTabStop`、`TestTheCardActionStaysReachableFromTheKeyboard` |
+| 侧栏 | 方向键 | 标签/作者行仍可 Tab 到达、回车按下；上下键在行之间直接走，两端不环绕 | `TestUpAndDownWalkTheTagRows`、`TestUpAndDownWalkTheAuthorRows` |
+| 筛选 | Esc | 浮层是 MyGo 的 overlay，Esc 先关浮层，不落到列表（不清搜索） | `TestEscapeClosesTheFilterPopover` |
+| 搜索 | 连打 | 一串按键只读一次（150ms），期间状态行说「搜索中…」 | `TestFiveKeystrokesAskOneQuery` |
+| 归档 | 批量 / 撤销 | 批量栏与 Shift-Cmd-E 归档当前卡；回执带「撤销」，撤销后回到原顺序 | `TestTheBatchBarArchivesTheSelectionAndUndoPutsItBack`、`TestTheArchiveShortcutMovesTheOpenCardBothWays` |
+| 归档 | 存档行 | 筛选面板里的「已归档（N）」带数量；空归档有自己的空态 | `TestTheArchiveRowNamesHowMuchIsInIt`、`TestAnEmptyArchiveSaysItIsEmpty` |
+| 保存视图 | 归档模式 | 保存视图带 `only_archived`；应用时两个方向都覆盖；旧 bundle 缺字段按书库 | `TestASavedViewKeepsTheArchive`、`TestASavedViewFromAnOlderBundleOpensTheLibrary` |
 
 ## 4. 品牌标记
 

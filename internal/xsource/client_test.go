@@ -357,7 +357,8 @@ func TestTestConnectionSurfacesBadCredentials(t *testing.T) {
 const validTimelinePage = `{"data":{"bookmark_timeline_v2":{"timeline":{"instructions":[
 	{"type":"TimelineAddEntries","entries":[
 		{"entryId":"tweet-1","content":{"itemContent":{"tweet_results":{"result":{
-			"rest_id":"1","legacy":{"full_text":"hello"}}}}}}
+			"rest_id":"1","legacy":{"full_text":"hello"}}}}}},
+		{"entryId":"cursor-bottom-end","content":{"value":""}}
 	]}]}}}}`
 
 func TestParseRetryAfterForms(t *testing.T) {
@@ -381,6 +382,35 @@ func TestParseRetryAfterForms(t *testing.T) {
 	future := time.Now().Add(30 * time.Second).UTC().Format(http.TimeFormat)
 	if got := parseRetryAfter(future); got <= 0 {
 		t.Errorf("parseRetryAfter(%q) = %v, want a positive wait", future, got)
+	}
+}
+
+// TestRateLimitResetBecomesAWait pins the second 429 header X sends.
+//
+// x-rate-limit-reset is the epoch second a window reopens. Without reading it a
+// 429 with no Retry-After waited only the backoff and hit the same window again,
+// which is the run that died at page 101.
+func TestRateLimitResetBecomesAWait(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0)
+
+	tests := []struct {
+		name  string
+		value string
+		want  time.Duration
+	}{
+		{"a window in the future", "1800000090", 90 * time.Second},
+		{"a window that already passed", "1799999990", 0},
+		{"the current second", "1800000000", 0},
+		{"empty", "", 0},
+		{"not a number", "soon", 0},
+		{"negative", "-1", 0},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := parseRateLimitReset(tc.value, now); got != tc.want {
+				t.Errorf("parseRateLimitReset(%q) = %v, want %v", tc.value, got, tc.want)
+			}
+		})
 	}
 }
 

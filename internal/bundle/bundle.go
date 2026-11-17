@@ -30,7 +30,11 @@ import (
 const Format = "trove-bundle"
 
 // FormatVersion is the version this build writes and the highest it reads.
-const FormatVersion = 1
+//
+// Version 2 added tombstones.json. A version 1 bundle is still read: every file it may
+// carry is a subset of this list, and the tombstone file, when absent, means "nothing was
+// deleted locally", which is exactly what a version 1 backup knew.
+const FormatVersion = 2
 
 // The file names a bundle may contain.
 //
@@ -51,13 +55,14 @@ const (
 	FileSettings       = "settings.json"
 	FileSyncRuns       = "sync-runs.json"
 	FileRawPayloads    = "raw-payloads.json"
+	FileTombstones     = "tombstones.json"
 )
 
 // KnownFiles is the whitelist.
 var KnownFiles = []string{
 	FileManifest, FileBookmarks, FileTags, FileBookmarkTags, FileLists,
 	FileBookmarkLists, FileTagSuggestions, FileLLMAnalysis, FileSavedViews,
-	FileClassification, FileSettings, FileSyncRuns, FileRawPayloads,
+	FileClassification, FileSettings, FileSyncRuns, FileRawPayloads, FileTombstones,
 }
 
 // Limits bound what a bundle may expand to.
@@ -134,6 +139,7 @@ type Counts struct {
 	SavedViews     int `json:"savedViews"`
 	SyncRuns       int `json:"syncRuns"`
 	RawPayloads    int `json:"rawPayloads"`
+	Tombstones     int `json:"tombstones"`
 }
 
 // Manifest describes a bundle.

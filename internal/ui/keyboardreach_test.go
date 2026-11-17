@@ -26,9 +26,9 @@ func tabUntil(tester *ui.Tester, want string) bool {
 
 // TestTheTagLibrariesRowControlsTakeTheKeyboard covers every target in a library row.
 //
-// The tag's name, the parent cell and the row's rename/delete icons were clickable boxes
-// with no focus stop: a keyboard reader could see them and never use them. They now carry
-// a Label and Focusable(), like the table's own action icons.
+// The tag's name and the row's rename/delete icons were clickable boxes with no focus
+// stop: a keyboard reader could see them and never use them. They now carry a Label and
+// Focusable(), like the table's own action icons.
 func TestTheTagLibrariesRowControlsTakeTheKeyboard(t *testing.T) {
 	shell, db := newShell(t)
 	ctx := context.Background()
@@ -42,7 +42,6 @@ func TestTheTagLibrariesRowControlsTakeTheKeyboard(t *testing.T) {
 
 	for _, want := range []string{
 		"rust",
-		shell.t().T(i18n.TagParentNone),
 		shell.t().Tf(i18n.TagRenameFor, "rust"),
 		shell.t().Tf(i18n.TagDeleteFor, "rust"),
 	} {

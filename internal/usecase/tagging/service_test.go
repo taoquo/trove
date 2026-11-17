@@ -3,6 +3,7 @@ package tagging
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -1079,5 +1080,57 @@ func TestCapabilityFieldsRoundTripThroughTheStore(t *testing.T) {
 	}
 	if learned.JsonStrategy != llm.JsonSchemaStrict {
 		t.Errorf("learned = %+v", learned)
+	}
+}
+
+// TestTheStoredSummaryCarriesNoCredential is item 14's persistence half.
+//
+// The summary is written to app_settings and read back into the panel. A failure that
+// quotes the request URL -- which is how a provider that puts the key in the query fails
+// -- must reach storage with the credential already scrubbed, or the leak is at rest.
+func TestTheStoredSummaryCarriesNoCredential(t *testing.T) {
+	const key = "sk-testredaction-0123456789"
+
+	client := &fakeClient{respond: func(engine.TagRequest) ([]engine.TagVerdict, error) {
+		return nil, fmt.Errorf("POST https://api.example.com/v1/chat?key=%s: 401 unauthorized", key)
+	}}
+	service, db := newService(t, client)
+	ctx := context.Background()
+	seedBookmark(t, db, "1", "ada", "a post that fails to analyse")
+
+	if _, err := service.Run(ctx, enabledSettings()); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+
+	// The run failed a batch, so there is something stored to leak.
+	summary, found, err := service.LastSummary(ctx)
+	if err != nil || !found {
+		t.Fatalf("LastSummary = found %v, err %v", found, err)
+	}
+	if summary.LLMFailedBatchCount == 0 || summary.Error == "" {
+		t.Fatalf("the run recorded no failure to inspect: %+v", summary)
+	}
+	if !strings.Contains(summary.Error, "[redacted]") {
+		t.Errorf("the stored failure does not mark the removal: %q", summary.Error)
+	}
+
+	// A full scan, not just the summary: a credential in any row of app_settings is at
+	// rest and outlives this test database.
+	rows, err := db.QueryContext(ctx, `SELECT key, value_json FROM app_settings`)
+	if err != nil {
+		t.Fatalf("scan app_settings: %v", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name, value string
+		if err := rows.Scan(&name, &value); err != nil {
+			t.Fatalf("scan app_settings: %v", err)
+		}
+		if strings.Contains(value, key) {
+			t.Errorf("app_settings[%s] carries the credential", name)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("scan app_settings: %v", err)
 	}
 }

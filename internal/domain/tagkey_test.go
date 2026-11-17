@@ -275,30 +275,3 @@ func TestIsSameTagNameEmptyKeyNeverMatches(t *testing.T) {
 		t.Error(`"#" and "##" both normalize to "#", but an empty key must not match`)
 	}
 }
-
-func TestValidateTagHierarchy(t *testing.T) {
-	tags := []Tag{
-		{ID: "root"},
-		{ID: "child", ParentID: "root"},
-		{ID: "other"},
-	}
-
-	if err := ValidateTagHierarchy(tags, "other", "root"); err != nil {
-		t.Errorf("a free tag may join a root: %v", err)
-	}
-	if err := ValidateTagHierarchy(tags, "other", ""); err != nil {
-		t.Errorf("clearing a parent is always legal: %v", err)
-	}
-	if err := ValidateTagHierarchy(tags, "other", "other"); err == nil {
-		t.Error("a tag must not be its own parent")
-	}
-	if err := ValidateTagHierarchy(tags, "other", "missing"); err == nil {
-		t.Error("a missing parent must be rejected")
-	}
-	if err := ValidateTagHierarchy(tags, "other", "child"); err == nil {
-		t.Error("a tag must not take a child as its parent (would make three levels)")
-	}
-	if err := ValidateTagHierarchy(tags, "root", "other"); err == nil {
-		t.Error("a tag with children must not become a child")
-	}
-}

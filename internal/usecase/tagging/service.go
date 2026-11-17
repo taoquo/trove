@@ -373,6 +373,10 @@ func (s *Service) recordSummary(ctx context.Context, summary engine.RunSummary) 
 	if s.repos.Settings == nil {
 		return nil
 	}
+	// The summary is the one run record that reaches app_settings, and its error text can
+	// carry a provider's own words. Scrubbing it at the write is the last point before the
+	// value is at rest, so a caller that forgot upstream cannot leak a credential.
+	summary.Error = engine.SanitizeSummaryError(summary.Error)
 	encoded, err := json.Marshal(summary)
 	if err != nil {
 		return fmt.Errorf("tagging: encode summary: %w", err)

@@ -89,7 +89,27 @@ quiet "CGO_ENABLED=0 build" sh -c 'CGO_ENABLED=0 go build -o /dev/null ./cmd/tro
 
 echo "tests:"
 step "go test" go test -count=1 -timeout 20m ./...
+
+# The budgets are measured here and only here. "go test ./..." above runs packages in
+# parallel, and a query or a frame timed while another package fills a database reads that
+# contention, not the code: a run with both steps showed search at 366 ms against its 320 ms
+# ceiling and a frame over its own, while both were under budget in a quiet process. So the
+# wall-clock tests skip unless TROVE_BUDGETS=1, which this step sets -- and they are named,
+# so a skip and a pass stay distinguishable in the step's single line. -p 1 keeps the query
+# budget and the frame budget from being measured beside each other.
+#
+# Before the race run on purpose: wall-clock ceilings measured while the detector's process is
+# still being reaped read the machine's flush rather than the code, and the first gate with this
+# step failed on a 7.4 ms sample of a path whose median is 1.9 ms.
+step "the time budgets still hold" env TROVE_BUDGETS=1 go test -p 1 -count=1 -timeout 5m -run 'TestPerformanceBudget|TestUIRenderBudget|TestTheSidebarCacheIsWhatMakesAFilterCheap' ./internal/usecase/workspace ./internal/ui
+
 step "go test -race" go test -race -count=1 -timeout 20m ./...
+
+# The page parser reads bytes from the network. Thirty seconds of mutation finds the panics a
+# table of hand-written payloads cannot; the window is short on purpose, so this is a smoke
+# screen rather than a proof. Only a failing input is written to testdata (the rest stays in the
+# build cache), so a green run leaves the tree alone.
+step "the parser survives arbitrary bytes for 30s" go test -count=1 -timeout 2m ./internal/xsource -run FuzzParsePage -fuzz FuzzParsePage -fuzztime 30s
 
 echo "app:"
 step "mygo build" go tool mygo build -skip-dmg

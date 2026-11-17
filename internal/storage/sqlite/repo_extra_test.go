@@ -259,6 +259,69 @@ func TestExistingForComparesTheContentHash(t *testing.T) {
 	}
 }
 
+// TestAFailedBatchIsStoredWithItsKind covers the row that keeps the next run from
+// re-sending a batch the provider refused.
+//
+// The kind is what survives the round trip rather than the provider's sentence: the
+// sentence can carry a response body, the kind is what the candidate filter and a
+// reader use.
+func TestAFailedBatchIsStoredWithItsKind(t *testing.T) {
+	db := openTestDB(t)
+	repo := NewAnalysisRepository(db)
+	ctx := context.Background()
+
+	if _, err := NewBookmarkRepository(db).UpsertMany(ctx,
+		[]domain.Bookmark{bookmarkFixture("refused", clockBase)}); err != nil {
+		t.Fatalf("UpsertMany bookmarks: %v", err)
+	}
+
+	hash := domain.HashAnalyzedContent("the text the provider refused")
+	if _, err := repo.UpsertMany(ctx, []domain.LlmAnalysis{{
+		BookmarkID: "refused", AnalyzedAt: domain.FormatTimestamp(clockBase),
+		PromptVersion: domain.LlmPromptVersion, Model: "gpt-4o",
+		ContentHash: hash, Outcome: domain.OutcomeError, ErrorKind: "content-filter",
+	}}); err != nil {
+		t.Fatalf("UpsertMany analysis: %v", err)
+	}
+
+	records, err := repo.List(ctx)
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(records) != 1 {
+		t.Fatalf("List returned %d rows, want 1", len(records))
+	}
+	if records[0].Outcome != domain.OutcomeError || records[0].ErrorKind != "content-filter" {
+		t.Errorf("row = %+v, want an error row carrying its kind", records[0])
+	}
+
+	// A refusal is not a verdict, so the repository must not call it reusable; which
+	// failures are worth remembering is the pipeline's decision, made from the kind.
+	reusable, err := repo.ExistingFor(ctx, "gpt-4o", domain.LlmPromptVersion, map[string]string{"refused": hash})
+	if err != nil {
+		t.Fatalf("ExistingFor: %v", err)
+	}
+	if _, present := reusable["refused"]; present {
+		t.Error("a failed batch was reported as a reusable verdict")
+	}
+
+	// A later answer replaces the failure rather than sitting beside it.
+	if _, err := repo.UpsertMany(ctx, []domain.LlmAnalysis{{
+		BookmarkID: "refused", AnalyzedAt: domain.FormatTimestamp(clockBase),
+		PromptVersion: domain.LlmPromptVersion, Model: "gpt-4o",
+		ContentHash: hash, Outcome: domain.OutcomeTagged, TagCount: 1,
+	}}); err != nil {
+		t.Fatalf("UpsertMany over the failure: %v", err)
+	}
+	records, err = repo.List(ctx)
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(records) != 1 || records[0].Outcome != domain.OutcomeTagged || records[0].ErrorKind != "" {
+		t.Errorf("rows = %+v, want the verdict only and no leftover kind", records)
+	}
+}
+
 func TestAnalysisDeleteAll(t *testing.T) {
 	db := openTestDB(t)
 	repo := NewAnalysisRepository(db)
@@ -298,7 +361,7 @@ func TestSavedViewRoundTrip(t *testing.T) {
 	view := domain.SavedView{
 		ID: "v1", Name: "Unread", Query: "kubernetes",
 		ActiveTagIDs: []string{"t1", "t2"}, ActiveAuthorHandles: []string{"ada"},
-		OnlyWithMedia: true, OnlyLongform: true,
+		OnlyWithMedia: true, OnlyWithVideo: true, OnlyLongform: true,
 		SortOrder: domain.SortLikesDesc, ViewMode: domain.ViewList,
 		CreatedAt: clockBase, UpdatedAt: clockBase,
 	}
@@ -316,7 +379,7 @@ func TestSavedViewRoundTrip(t *testing.T) {
 	if len(stored.ActiveTagIDs) != 2 || len(stored.ActiveAuthorHandles) != 1 {
 		t.Errorf("filters did not round-trip: %+v", stored)
 	}
-	if !stored.OnlyWithMedia || !stored.OnlyLongform {
+	if !stored.OnlyWithMedia || !stored.OnlyWithVideo || !stored.OnlyLongform {
 		t.Error("the boolean filters did not round-trip")
 	}
 	// Every sort order the schema allows must survive, which is why the
@@ -357,6 +420,58 @@ func TestSavedViewRoundTrip(t *testing.T) {
 	}
 	if _, found, err := repo.Get(ctx, "v1"); err != nil || found {
 		t.Errorf("the deleted view must be gone: found=%v err=%v", found, err)
+	}
+}
+
+// TestASavedViewRemembersTheArchive pins the column the archive mode needed.
+//
+// A view saved in the archive reopened on the library: its filters came back but the
+// rows it was taken of did not. The column defaults to 0, which is the state every view
+// written before it existed was saved in.
+func TestASavedViewRemembersTheArchive(t *testing.T) {
+	db := openTestDB(t)
+	repo := NewSavedViewRepository(db)
+	ctx := context.Background()
+
+	view := domain.SavedView{
+		ID: "v-archived", Name: "Archive", OnlyArchived: true,
+		SortOrder: domain.SortTimeline, ViewMode: domain.ViewGrid,
+		CreatedAt: clockBase, UpdatedAt: clockBase,
+	}
+	if err := repo.Upsert(ctx, view); err != nil {
+		t.Fatalf("Upsert: %v", err)
+	}
+	stored, found, err := repo.Get(ctx, "v-archived")
+	if err != nil || !found {
+		t.Fatalf("Get: found=%v err=%v", found, err)
+	}
+	if !stored.OnlyArchived {
+		t.Error("the archive mode did not round-trip")
+	}
+
+	// Flipping it back is stored too: a view redefined on the library must not keep
+	// opening the archive.
+	view.OnlyArchived = false
+	if err := repo.Upsert(ctx, view); err != nil {
+		t.Fatalf("Upsert(back): %v", err)
+	}
+	if stored, _, err := repo.Get(ctx, "v-archived"); err != nil {
+		t.Fatalf("Get(back): %v", err)
+	} else if stored.OnlyArchived {
+		t.Error("the library view came back as an archive view")
+	}
+
+	// A row written before the column existed reads as the library view.
+	timestamp := domain.FormatTimestamp(clockBase)
+	if _, err := db.Exec(
+		`INSERT INTO saved_views (id, name, sort_order, view_mode, created_at, updated_at)
+		 VALUES ('old', 'Old', 'timeline', 'grid', ?, ?)`, timestamp, timestamp); err != nil {
+		t.Fatalf("insert legacy view: %v", err)
+	}
+	if stored, found, err := repo.Get(ctx, "old"); err != nil || !found {
+		t.Fatalf("Get(old): found=%v err=%v", found, err)
+	} else if stored.OnlyArchived {
+		t.Error("a view from before the archive opened in the archive")
 	}
 }
 

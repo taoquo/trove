@@ -2635,49 +2635,6 @@ func TestMergeSelectedTagsFromTheScreen(t *testing.T) {
 	}
 }
 
-// TestSetTagThemeFromTheScreen covers the theme picker.
-func TestSetTagThemeFromTheScreen(t *testing.T) {
-	shell, db := newBatchShell(t)
-	ctx := context.Background()
-	tags := sqlite.NewTagRepository(db)
-
-	for _, spec := range []struct{ id, name string }{
-		{"theme", "languages"}, {"child", "go"},
-	} {
-		tag := domain.Tag{
-			ID: spec.id, Name: spec.name, CanonicalKey: domain.CanonicalTagKey(spec.name),
-			CreatedAt: domain.FormatTimestamp(clockBase), UpdatedAt: domain.FormatTimestamp(clockBase),
-		}
-		if err := tags.Create(ctx, tag); err != nil {
-			t.Fatalf("Create: %v", err)
-		}
-	}
-	shell.ReloadTagLibrary(ctx)
-
-	shell.State().TagFocus = "child"
-	shell.State().TagParentPick = "languages"
-	shell.SetTagTheme(ctx)
-
-	child, _, err := tags.Get(ctx, "child")
-	if err != nil {
-		t.Fatalf("Get: %v", err)
-	}
-	if child.ParentID != "theme" {
-		t.Errorf("the child's theme = %q, want theme", child.ParentID)
-	}
-
-	// Clearing the theme puts it back at the root.
-	shell.State().TagParentPick = shell.t().T(i18n.TagParentNone)
-	shell.SetTagTheme(ctx)
-	child, _, err = tags.Get(ctx, "child")
-	if err != nil {
-		t.Fatalf("Get: %v", err)
-	}
-	if child.ParentID != "" {
-		t.Errorf("clearing the theme left %q", child.ParentID)
-	}
-}
-
 // TestSaveTagAliasesFromTheScreen covers the alias editor's comma parsing.
 func TestSaveTagAliasesFromTheScreen(t *testing.T) {
 	shell, db := newBatchShell(t)
@@ -2712,7 +2669,6 @@ func TestTagActionWithoutAFocusDoesNothing(t *testing.T) {
 	shell, _ := newBatchShell(t)
 	ctx := context.Background()
 
-	shell.SetTagTheme(ctx)
 	shell.SaveTagAliases(ctx)
 	shell.AskMergeSelectedTags()
 

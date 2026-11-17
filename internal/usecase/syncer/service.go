@@ -37,6 +37,22 @@ const (
 // cursor, and each record a full history of a sync that only half happened.
 var ErrInProgress = errors.New("syncer: a sync is already in progress")
 
+// ErrSyncAlreadyRunning reports that another process owns this library's sync.
+//
+// The in-process ErrInProgress cannot see another process, and the window and
+// `trove sync` share one database. The running row's heartbeat is the shared
+// signal; this is the refusal that follows from it.
+var ErrSyncAlreadyRunning = errors.New("syncer: another sync is running in this library")
+
+// heartbeatStaleAfter is how quiet a running sync may be before another process
+// may take the library over.
+//
+// It has to be longer than any pause the walk itself takes. The longest is a
+// rate-limit window (up to fifteen minutes), which is why the heartbeat is also
+// moved while waiting rather than only per page: a run that is sleeping out a
+// 429 is still alive, and taking the library from it would start a second writer.
+const heartbeatStaleAfter = 90 * time.Second
+
 // persistContext returns a context for writing what a run already fetched.
 //
 // A cancelled run has pages in hand that the user paid for with their time. Writing
@@ -199,15 +215,24 @@ func (s *Service) Run(ctx context.Context, options RunOptions) (domain.SyncRun, 
 		// rules is distinguishable in history.
 		StrategyVersion: domain.SyncStrategyVersion,
 	}
-	if err := s.withBookkeeping(ctx, func(write context.Context) error {
-		return s.repos.SyncRuns.Start(write, run)
-	}); err != nil {
+	// The library admits one writer across processes, not just within this one.
+	// The refusal is not a failed run -- nothing was attempted -- so no row is
+	// written and the returned run exists only to tell the caller what to say.
+	claimed, err := s.claimRun(ctx, run)
+	if err != nil {
 		return run, err
+	}
+	if !claimed {
+		return domain.SyncRun{
+			Status:       domain.SyncError,
+			ErrorKind:    domain.ErrSyncInProgress,
+			ErrorSummary: ErrSyncAlreadyRunning.Error(),
+		}, ErrSyncAlreadyRunning
 	}
 
 	// Known ids drive the incremental early-stop rule. They must be read before
 	// the run inserts anything, or every page looks new.
-	existing, err := s.repos.Bookmarks.AllIDs(ctx)
+	existing, err := s.repos.Bookmarks.KnownIDs(ctx)
 	if err != nil {
 		return s.finishFailure(ctx, run, err)
 	}
@@ -259,7 +284,10 @@ func (s *Service) Run(ctx context.Context, options RunOptions) (domain.SyncRun, 
 		}
 		upserted.Inserted += written.Inserted
 		upserted.Updated += written.Updated
-		stored += len(pageBookmarks)
+		// Rows the upsert skipped -- a tombstoned post X still returns -- were
+		// fetched but not stored, and counting them inflated the report.
+		stored += written.Inserted + written.Updated
+		s.touchHeartbeat(ctx, run.ID)
 		return nil
 	}
 
@@ -273,6 +301,9 @@ func (s *Service) Run(ctx context.Context, options RunOptions) (domain.SyncRun, 
 			OnPage:                         writePage,
 			OnProgress: func(progress xsource.Progress) {
 				s.setProgress(progress)
+				// Progress includes the waits, so a run sleeping out a rate-limit
+				// window keeps its claim.
+				s.touchHeartbeat(ctx, run.ID)
 				if options.OnProgress != nil {
 					options.OnProgress(progress)
 				}
@@ -329,7 +360,7 @@ func (s *Service) Run(ctx context.Context, options RunOptions) (domain.SyncRun, 
 	run.UpdatedCount = upserted.Updated
 	run.FailedCount = result.FailedCount
 	run.PagesCompleted = result.PagesCompleted
-	run.Status = statusFor(result.Termination, result.FailedCount, stored)
+	run.Status = statusFor(result.Termination, result.FailedCount, result.Unrecognized, stored)
 
 	// A cancellation is not a failure, so it records no cause. Setting one would
 	// put an error reason beside a status the user chose themselves, and the UI
@@ -356,7 +387,7 @@ func (s *Service) Run(ctx context.Context, options RunOptions) (domain.SyncRun, 
 	// The first-full-sync flag is set only by a run that genuinely reached the end
 	// of the timeline with nothing failed. Setting it from a truncated run is the
 	// defect the explicit termination reason exists to prevent.
-	if !options.Incremental && domain.CompletesFullSync(result.Termination, result.FailedCount) {
+	if !options.Incremental && domain.CompletesFullSync(result.Termination, result.FailedCount, result.Unrecognized) {
 		if err := s.markFullSyncComplete(ctx); err != nil {
 			return run, err
 		}
@@ -403,18 +434,18 @@ func (s *Service) shouldRefreshCredentials(result xsource.Result, err error, ctx
 // 9,322 stored bookmarks: the status line said the sync had failed outright, and the
 // first-full-sync flag was never set, so every later run walked the whole timeline
 // again.
-func statusFor(reason domain.TerminationReason, failedCount, fetched int) domain.SyncStatus {
+func statusFor(reason domain.TerminationReason, failedCount, unrecognized, fetched int) domain.SyncStatus {
 	switch reason {
 	case domain.TermEndOfPages:
-		if failedCount > 0 {
-			// Pages were lost, so the library is incomplete even though the
-			// timeline ended.
+		if failedCount > 0 || unrecognized > 0 {
+			// Pages were lost, or posts on a page could not be read, so the
+			// library is incomplete even though the timeline ended.
 			return domain.SyncPartialSuccess
 		}
 		return domain.SyncSuccess
 
 	case domain.TermStoppedEarly:
-		if failedCount > 0 {
+		if failedCount > 0 || unrecognized > 0 {
 			return domain.SyncPartialSuccess
 		}
 		return domain.SyncSuccess
@@ -526,19 +557,45 @@ func (s *Service) storeRawPayloads(ctx context.Context, payloads map[string]json
 
 // recordResumeCursor keeps the continuation point in step with the walk.
 //
-// It is written only when the limit stopped the run, and cleared when the walk
-// reached the end: a stale cursor would ask X for a page it has already given
-// us, and the completed flag is what tells the next run to be incremental.
+// It is kept for every stop that leaves part of the timeline unread: the cap, a
+// failed page, and a cancellation. A failed page used to throw the cursor away,
+// so a 9,000-bookmark walk that died at page 450 restarted from the top and hit
+// the same page again on every run, never reaching the older bookmarks.
+//
+// It is cleared when the walk reached the end: a stale cursor would ask X for a
+// page it has already given us, and the completed flag is what tells the next
+// run to be incremental. That clear is a write like any other, so it goes
+// through the bookkeeping context -- a cancelled run's own context is already
+// dead, and the cursor would survive into the next run.
 func (s *Service) recordResumeCursor(ctx context.Context, result xsource.Result) {
-	if err := ctx.Err(); err != nil {
+	if s.repos.Settings == nil {
 		return
 	}
-	switch {
-	case result.Termination == domain.TermHitLimit && result.NextCursor != "":
-		_ = s.repos.Settings.Set(ctx, resumeCursorKey, result.NextCursor, s.clock.Now())
-	case result.Termination == domain.TermEndOfPages:
-		_, _ = s.repos.Settings.Delete(ctx, resumeCursorKey)
+	keep := result.NextCursor != "" &&
+		(result.Termination == domain.TermHitLimit ||
+			result.Termination == domain.TermFailed ||
+			result.Termination == domain.TermCancelled)
+
+	_ = s.withBookkeeping(ctx, func(write context.Context) error {
+		if keep {
+			return s.repos.Settings.Set(write, resumeCursorKey, result.NextCursor, s.clock.Now())
+		}
+		_, err := s.repos.Settings.Delete(write, resumeCursorKey)
+		return err
+	})
+}
+
+// ResumeOptions fills in the continuation point for a run.
+//
+// The window and `trove sync` each build their own options, and the CLI's copy
+// drifted: it never set StartCursor, so a first sync capped at the limit began
+// again from the top every night and never reached the older bookmarks. The rule
+// lives here so there is one place to keep right.
+func (s *Service) ResumeOptions(ctx context.Context, options RunOptions) RunOptions {
+	if !options.Incremental {
+		options.StartCursor = s.ResumeCursor(ctx)
 	}
+	return options
 }
 
 // ResumeCursor is where the next full sync should continue, empty when there is
@@ -605,7 +662,11 @@ func (s *Service) HealInterrupted(ctx context.Context) (int, error) {
 	if s.repos.SyncRuns == nil {
 		return 0, nil
 	}
-	return s.repos.SyncRuns.MarkInterrupted(ctx, s.clock.Now())
+	now := s.clock.Now()
+	// Only a run whose heartbeat stopped is dead. Closing every running row would
+	// also close one another process is working on -- the window and `trove sync`
+	// can overlap -- and would then let a second writer start on the same library.
+	return s.repos.SyncRuns.MarkInterrupted(ctx, now.Add(-heartbeatStaleAfter), now)
 }
 
 // Summary returns the headline result of the most recent sync.
@@ -662,6 +723,35 @@ func (s *Service) withBookkeeping(ctx context.Context, write func(context.Contex
 	bookkeeping, cancel := bookkeepingContext(ctx)
 	defer cancel()
 	return write(bookkeeping)
+}
+
+// claimRun records the run as running unless another process owns the library.
+func (s *Service) claimRun(ctx context.Context, run domain.SyncRun) (bool, error) {
+	if s.repos.SyncRuns == nil {
+		return true, nil
+	}
+	now := s.clock.Now()
+	claimed := false
+	err := s.withBookkeeping(ctx, func(write context.Context) error {
+		var claimErr error
+		claimed, claimErr = s.repos.SyncRuns.ClaimStart(write, run, now, now.Add(-heartbeatStaleAfter))
+		return claimErr
+	})
+	return claimed, err
+}
+
+// touchHeartbeat keeps this run's claim alive.
+//
+// Pages move it, and so do waits: a run sleeping out a rate-limit window can be
+// quiet for minutes, and a stale heartbeat would let another process take the
+// library from a run that is still working.
+func (s *Service) touchHeartbeat(ctx context.Context, runID string) {
+	if s.repos.SyncRuns == nil || runID == "" {
+		return
+	}
+	// Best effort: a lost heartbeat is not a reason to end a run that is working.
+	// The next page writes another.
+	_ = s.repos.SyncRuns.TouchHeartbeat(context.WithoutCancel(ctx), runID, s.clock.Now())
 }
 
 // recordSummary stores the headline result.

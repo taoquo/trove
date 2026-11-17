@@ -1,10 +1,10 @@
 package importexport
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/taoquo/trove/internal/bundle"
 	"github.com/taoquo/trove/internal/domain"
@@ -49,6 +49,17 @@ type LegacyExport struct {
 	BookmarkFolders []LegacyBookmarkFolder `json:"bookmarkFolders"`
 }
 
+// recordCount is how many rows the backup carries, across every array.
+func (l LegacyExport) recordCount() int {
+	return len(l.Bookmarks) + len(l.Tags) + len(l.BookmarkTags) +
+		len(l.Settings.SavedViews) + len(l.Folders) + len(l.BookmarkFolders)
+}
+
+// humanMegabytes renders a size for the refusal sentence, in whole megabytes.
+func humanMegabytes(bytes int64) string {
+	return fmt.Sprintf("%d MB", (bytes+(1<<20)-1)>>20)
+}
+
 // LegacySettings is the legacy settings blob.
 type LegacySettings struct {
 	SavedViews []SavedViewDTO `json:"savedViews"`
@@ -91,19 +102,48 @@ const (
 // It is a cheap prefix test, so a ZIP is never handed to the JSON reader and a
 // JSON file is never handed to the ZIP reader.
 func LooksLikeLegacy(data []byte) bool {
-	trimmed := strings.TrimLeft(string(data), " \t\r\n")
-	return strings.HasPrefix(trimmed, "{")
+	// Trimming the bytes rather than a string: the string conversion copied the whole
+	// file, which on a large bundle is a wasted copy of everything just to look at the
+	// first non-space byte.
+	trimmed := bytes.TrimLeft(data, " \t\r\n")
+	return len(trimmed) > 0 && trimmed[0] == '{'
 }
+
+// Limits on a flat backup.
+//
+// The legacy format is one JSON object, so it has to be unmarshalled whole: the
+// memory a file costs is a multiple of its size, and nothing in the format bounds
+// either. A real backup of a large library is tens of megabytes; these limits are
+// far above that and far below what would exhaust the app. Refusing up front is the
+// difference between a sentence and a crash.
+const (
+	// LegacyMaxBytes is the largest flat backup this build reads.
+	LegacyMaxBytes = 200 << 20
+	// LegacyMaxRecords bounds the rows across every array, because a compact file of
+	// tiny records can stay under the byte limit and still be absurd to import.
+	LegacyMaxRecords = 200_000
+)
 
 // ParseLegacy reads a flat backup, with the warnings it implies.
 func ParseLegacy(data []byte) (LegacyExport, []LegacyWarning, error) {
 	if !LooksLikeLegacy(data) {
 		return LegacyExport{}, nil, ErrNotLegacy
 	}
+	if len(data) > LegacyMaxBytes {
+		return LegacyExport{}, nil, fmt.Errorf(
+			"%w: the backup is %s, larger than the %s this build reads",
+			ErrValidation, humanMegabytes(int64(len(data))), humanMegabytes(LegacyMaxBytes))
+	}
 
 	var legacy LegacyExport
 	if err := json.Unmarshal(data, &legacy); err != nil {
 		return LegacyExport{}, nil, fmt.Errorf("%w: %v", ErrNotLegacy, err)
+	}
+
+	if records := legacy.recordCount(); records > LegacyMaxRecords {
+		return LegacyExport{}, nil, fmt.Errorf(
+			"%w: the backup holds %d records, more than the %d this build imports",
+			ErrValidation, records, LegacyMaxRecords)
 	}
 
 	// A missing exportVersion is not a version 1 backup: it is some other JSON

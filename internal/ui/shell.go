@@ -11,12 +11,15 @@ import (
 
 // currentViewSnapshot is the filter state a saved view captures.
 //
-// It holds the query, the tags, the authors, the two switches, the order and the layout.
+// It holds the query, the tags, the authors, the two switches, the archive mode, the
+// order and the layout.
 func (s *Shell) currentViewSnapshot() domain.SavedView {
 	snapshot := domain.SavedView{
 		Query:         s.state.Query,
 		OnlyWithMedia: s.state.OnlyWithMedia,
+		OnlyWithVideo: s.state.OnlyWithVideo,
 		OnlyLongform:  s.state.OnlyLongform,
+		OnlyArchived:  s.state.OnlyArchived,
 		SortOrder:     s.state.Sort,
 		ViewMode:      s.state.ViewMode,
 	}
@@ -137,6 +140,11 @@ func (s *Shell) View(c *ui.Context) {
 		// fire while the menu item would still swallow the key in the search field.
 		// Shift-Cmd-A is the same idea with a modifier the menu does not own.
 		c.OnShortcut(ui.Super|ui.Shift, ui.KeyA, func() { s.SelectAllResults(ctx) })
+		// Shift-Cmd-E is the open card's trip to the archive, and the same key in the
+		// archive is the way back out. Both directions are one action on the card the
+		// outline is on, so the key never needs the reader to remember which view they
+		// are in -- the list in front of them answers that.
+		c.OnShortcut(ui.Super|ui.Shift, ui.KeyE, func() { s.ArchiveSelectedCard(ctx) })
 		c.OnShortcut(0, ui.KeyEnter, func() { s.OpenSelectedDetail() })
 	}
 	// The sidebar hides from anywhere in the window, on its own binding:
@@ -407,15 +415,29 @@ func (s *Shell) View(c *ui.Context) {
 				Transform(ui.Translation(0, EntranceToast.OffsetYAt(toastEntrance))).
 				Children(func() {
 					// The tinted pill: the tone at 16% over the page, with the same tone at
-					// 30% as its inset hairline.
-					ui.Text(c, message).
-						FontSize(ToastFontSize).FontWeight(500).
-						MaxWidth(ToastMaxWidth).
-						TextColor(tone).
+					// 30% as its inset hairline. One row so a receipt can carry its way back
+					// inside the same sentence's deadline, rather than as a second control
+					// somewhere the reader has to look for.
+					ui.Row(c).GapX(10).AlignItems(ui.Center).
 						Background(tone.Alpha(0.16)).
 						Border(1, tone.Alpha(0.30)).
 						Padding(ToastPaddingY, ToastPaddingX).
-						Radius(ToastRadius)
+						Radius(ToastRadius).
+						Children(func() {
+							ui.Text(c, message).
+								FontSize(ToastFontSize).FontWeight(500).
+								MaxWidth(ToastMaxWidth).
+								TextColor(tone)
+							if label := s.state.ToastActionLabel; label != "" && s.state.ToastAction != nil {
+								textAction(c, theme, rail, textActionSpec{
+									label: label,
+									// The pill's own height: a settings-height button
+									// would grow the sentence into a card.
+									height:  22,
+									onClick: func() { s.RunToastAction() },
+								})
+							}
+						})
 				})
 		})
 	}

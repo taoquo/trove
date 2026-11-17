@@ -69,6 +69,64 @@ func TestSavingTheCurrentView(t *testing.T) {
 	}
 }
 
+// TestASavedViewKeepsTheArchive covers the archive as part of what a view is.
+//
+// A view is a named answer to "what am I looking at". Saved from the archive, it must
+// return to the archive; saved from the library, it must leave the archive when applied,
+// because applying a view replaces the state rather than merging with it.
+func TestASavedViewKeepsTheArchive(t *testing.T) {
+	shell, db := newShell(t)
+	ctx := context.Background()
+	seed(t, db, "1", "ada", "a post", clockBase)
+	shell.Reload(ctx)
+
+	shell.state.OnlyArchived = true
+	shell.state.SavedViewName = "Archive view"
+	shell.SaveCurrentView(ctx)
+
+	views, err := sqlite.NewSavedViewRepository(db).List(ctx)
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(views) != 1 || !views[0].OnlyArchived {
+		t.Fatalf("the saved view is %+v, want one with the archive on", views)
+	}
+	archiveView := views[0]
+
+	// Back in the library, applying the view returns to the archive.
+	shell.state.OnlyArchived = false
+	shell.ApplySavedView(ctx, archiveView)
+	if !shell.state.OnlyArchived {
+		t.Fatal("applying the archive view left the shell on the library")
+	}
+	if got := shell.filter().Archived; got != domain.ArchivedOnly {
+		t.Errorf("the applied view's archive scope is %q, want %q", got, domain.ArchivedOnly)
+	}
+
+	// A view saved on the library is applied over the archive and clears it.
+	shell.state.OnlyArchived = false
+	shell.state.SavedViewName = "Library view"
+	shell.SaveCurrentView(ctx)
+	views, err = sqlite.NewSavedViewRepository(db).List(ctx)
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	var libraryView domain.SavedView
+	for _, view := range views {
+		if view.Name == "Library view" {
+			libraryView = view
+		}
+	}
+	if libraryView.Name == "" {
+		t.Fatal("the library view was not saved")
+	}
+	shell.state.OnlyArchived = true
+	shell.ApplySavedView(ctx, libraryView)
+	if shell.state.OnlyArchived {
+		t.Error("applying a library view left the archive mode on")
+	}
+}
+
 // TestAnUnnamedViewGetsTheSourcesDefaultName covers the fallback.
 //
 // A blank name gets the default rather than being refused, and that constant is the
@@ -1491,23 +1549,15 @@ func TestThePendingSuggestionsRow(t *testing.T) {
 
 // TestTheTagLibrarySummary covers the counts the domain already computed.
 //
-// CountOrphanTags, CountUnparentedTags and CountLongTailTags all existed, and the screen
-// whose whole purpose is noticing drift rendered none of them.
+// CountOrphanTags and CountLongTailTags both existed, and the screen whose whole purpose is
+// noticing drift rendered none of them.
 func TestTheTagLibrarySummary(t *testing.T) {
 	shell, db := newShell(t)
 	ctx := context.Background()
 
-	// One tag used by a bookmark, one orphan, one unparented child.
+	// One tag used by a bookmark, one orphan.
 	seedTagged(t, db, "used", "kept")
 	seedTagOnly(t, db, "orphan", "unused")
-	child := domain.Tag{
-		ID: "child", Name: "child", CanonicalKey: domain.CanonicalTagKey("child"),
-		ParentID: "kept", CreatedAt: domain.FormatTimestamp(clockBase),
-		UpdatedAt: domain.FormatTimestamp(clockBase),
-	}
-	if err := sqlite.NewTagRepository(db).Create(ctx, child); err != nil {
-		t.Fatalf("Create: %v", err)
-	}
 	shell.ReloadTagLibrary(ctx)
 	shell.ToggleTagMode(ctx)
 
@@ -1515,44 +1565,11 @@ func TestTheTagLibrarySummary(t *testing.T) {
 	tester.Frame()
 
 	// The visible count, the orphan count and their nouns.
-	if !tester.HasText("3 " + shell.t().T(i18n.TagTagsSuffix)) {
+	if !tester.HasText("2 " + shell.t().T(i18n.TagTagsSuffix)) {
 		t.Errorf("the tag count is missing; texts: %q", tester.Texts())
 	}
-	// Two, not one: the child tag has no bookmark either, so both are orphans.
-	if !tester.HasText("2 " + shell.t().T(i18n.TagOrphanSuffix)) {
+	if !tester.HasText("1 " + shell.t().T(i18n.TagOrphanSuffix)) {
 		t.Errorf("the orphan count is missing; texts: %q", tester.Texts())
-	}
-	if !tester.HasText("1 " + shell.t().T(i18n.TagUnparentedSuffix)) {
-		t.Errorf("the unparented count is missing; texts: %q", tester.Texts())
-	}
-}
-
-// TestTheTagRowShowsItsChildCount covers another field that was counted and not shown.
-//
-// ChildCount was already on TagLibraryItem and the row rendered only the bookmark count,
-// so a theme with children looked the same as one without.
-func TestTheTagRowShowsItsChildCount(t *testing.T) {
-	shell, db := newShell(t)
-	ctx := context.Background()
-
-	seedTagOnly(t, db, "theme", "compilers")
-	// The parent is part of the tag, so the child is created with it rather than reparented.
-	childTag := domain.Tag{
-		ID: "child", Name: "rust", CanonicalKey: domain.CanonicalTagKey("rust"),
-		ParentID: "theme", CreatedAt: domain.FormatTimestamp(clockBase),
-		UpdatedAt: domain.FormatTimestamp(clockBase),
-	}
-	if err := sqlite.NewTagRepository(db).Create(ctx, childTag); err != nil {
-		t.Fatalf("Create: %v", err)
-	}
-	shell.ReloadTagLibrary(ctx)
-	shell.ToggleTagMode(ctx)
-
-	tester := ui.NewTester(shell.View, 1180, 760)
-	tester.Frame()
-
-	if !tester.HasText("1 " + shell.t().T(i18n.TagChildCountSuffix)) {
-		t.Errorf("the child count is not shown; texts: %q", tester.Texts())
 	}
 }
 
@@ -1852,59 +1869,6 @@ func TestTheSettingsPanelHasItsSections(t *testing.T) {
 // temp file and an import before the dialog is even reachable -- more machinery than the
 // claim needs. The change is covered by the build and the package's other tests; a
 // targeted assertion needs a seam that does not exist yet.
-
-// TestATagCanLoseItsTheme covers clearing a tag's theme.
-//
-// The option and the handler were both already in place; this pins them together, because
-// the pair is the kind of thing that comes apart silently. An earlier version of this
-// round claimed the picker did not offer "No theme" -- it did, on the line above the one
-// the reading started from, and a mutation that removed a duplicate showed the claim was
-// wrong.
-func TestATagCanLoseItsTheme(t *testing.T) {
-	shell, db := newShell(t)
-	ctx := context.Background()
-
-	theme := domain.Tag{
-		ID: "theme", Name: "compilers", CanonicalKey: domain.CanonicalTagKey("compilers"),
-		CreatedAt: domain.FormatTimestamp(clockBase), UpdatedAt: domain.FormatTimestamp(clockBase),
-	}
-	child := domain.Tag{
-		ID: "child", Name: "rust", CanonicalKey: domain.CanonicalTagKey("rust"),
-		ParentID: "theme", CreatedAt: domain.FormatTimestamp(clockBase),
-		UpdatedAt: domain.FormatTimestamp(clockBase),
-	}
-	repo := sqlite.NewTagRepository(db)
-	for _, tag := range []domain.Tag{theme, child} {
-		if err := repo.Create(ctx, tag); err != nil {
-			t.Fatalf("Create: %v", err)
-		}
-	}
-	shell.ReloadTagLibrary(ctx)
-
-	// The option has to be offered before it can be chosen, so the view is checked and
-	// not just the handler.
-	shell.State().TagFocus = "child"
-	shell.ToggleTagMode(ctx)
-	tester := ui.NewTester(shell.View, 1180, 760)
-	tester.Frame()
-	if !tester.HasText(shell.t().T(i18n.TagParentNone)) {
-		t.Errorf("the picker does not offer %q; texts: %q",
-			shell.t().T(i18n.TagParentNone), tester.Texts())
-	}
-
-	shell.State().TagParentPick = shell.t().T(i18n.TagParentNone)
-	shell.SetTagTheme(ctx)
-
-	tags, err := repo.List(ctx)
-	if err != nil {
-		t.Fatalf("List: %v", err)
-	}
-	for _, tag := range tags {
-		if tag.ID == "child" && tag.ParentID != "" {
-			t.Errorf("the theme survived; child still sits under %q", tag.ParentID)
-		}
-	}
-}
 
 // TestTheMergeButtonNamesTheAction pins the tag library's merge button.
 //

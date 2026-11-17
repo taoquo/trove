@@ -17,53 +17,12 @@ type Tag struct {
 	// ParentID is the owning tag for the two-level taxonomy. Empty means no
 	// parent; storage writes SQL NULL for it, because an empty string would
 	// violate the self-referencing foreign key.
+	//
+	// No screen sets or shows a theme any more: it was never used, so the entry
+	// points went away. The field and its storage stay because backups and
+	// imports still carry parents, and a merge repairs them rather than dropping
+	// the relation; the schema's triggers still bound the depth at two.
 	ParentID  string
 	CreatedAt string
 	UpdatedAt string
 }
-
-// TagHierarchyMaxDepth is the deepest allowed taxonomy: a tag may have a parent,
-// but that parent may not have one. It is enforced with triggers plus an
-// application-level check for the case triggers cannot see.
-const TagHierarchyMaxDepth = 2
-
-// ValidateTagHierarchy reports whether assigning parentID to the tag identified
-// by id is legal given the current library.
-//
-// It covers the path the SQL triggers cannot: giving a parent to a tag that
-// already has children would push those children to a third level.
-func ValidateTagHierarchy(tags []Tag, id, parentID string) error {
-	if parentID == "" {
-		return nil
-	}
-	if parentID == id {
-		return &HierarchyError{Reason: "a tag cannot be its own parent"}
-	}
-
-	byID := make(map[string]Tag, len(tags))
-	for _, tag := range tags {
-		byID[tag.ID] = tag
-	}
-
-	parent, ok := byID[parentID]
-	if !ok {
-		return &HierarchyError{Reason: "parent tag does not exist"}
-	}
-	if parent.ParentID != "" {
-		return &HierarchyError{Reason: "the taxonomy is at most two levels deep"}
-	}
-
-	// The tag being re-parented must not already have children.
-	for _, tag := range tags {
-		if tag.ParentID == id {
-			return &HierarchyError{Reason: "a tag with children cannot become a child"}
-		}
-	}
-
-	return nil
-}
-
-// HierarchyError is returned for an illegal tag parent assignment.
-type HierarchyError struct{ Reason string }
-
-func (e *HierarchyError) Error() string { return "tag hierarchy: " + e.Reason }

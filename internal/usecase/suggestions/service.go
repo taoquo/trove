@@ -75,15 +75,13 @@ func (s *Service) Pending(ctx context.Context) ([]PendingRow, error) {
 
 	// A suggestion whose bookmark is gone is still listed: dropping it silently
 	// would hide a pending row the user cannot clear.
-	bookmarks := make(map[string]domain.Bookmark, len(ids))
-	for _, id := range ids {
-		bookmark, found, err := s.repos.Bookmarks.Get(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-		if found {
-			bookmarks[id] = bookmark
-		}
+	//
+	// One read for the whole page. This used to be a Get per suggestion, so a
+	// backlog of a few thousand suggestions cost a few thousand statements before
+	// the panel could draw.
+	bookmarks, err := s.repos.Bookmarks.GetMany(ctx, ids)
+	if err != nil {
+		return nil, err
 	}
 
 	rows := make([]PendingRow, 0, len(suggestions))

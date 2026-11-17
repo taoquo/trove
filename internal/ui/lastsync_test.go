@@ -89,6 +89,32 @@ func TestSyncFailureWithCookiesSaysTheLoginExpired(t *testing.T) {
 	}
 }
 
+// TestALockedStoreIsNotReportedAsAnExpiredLogin is the sentence boundary.
+//
+// A locked Keychain leaves the startup check saying "no session stored", so the
+// empty-store branch would print "sync needs an X session" and send the reader to
+// paste cookies that are already in the store. The stored kind knows better, and the
+// keychain sentence is what has to win.
+func TestALockedStoreIsNotReportedAsAnExpiredLogin(t *testing.T) {
+	shell, _ := newShell(t)
+	shell.UseCredentials(credentials.New(&memKeychain{}))
+	shell.state.XCredentialsStored = false
+	shell.state.LastSyncStatus = domain.SyncError
+	shell.state.LastSyncErrorKind = string(domain.ErrCredentialStore)
+	shell.state.LastSyncErrorSummary = "xsource: credentials: credential_store: credentials: the secure store is locked"
+
+	line := shell.syncProblemLine()
+	if line == shell.t().T(i18n.SyncNeedsXCredentials) {
+		t.Fatalf("a locked store is reported as missing credentials: %q", line)
+	}
+	if line == shell.t().T(i18n.SyncErrorAuthExpired) {
+		t.Fatalf("a locked store is reported as an expired login: %q", line)
+	}
+	if want := shell.t().T(i18n.SyncErrorCredentialStore); line != want {
+		t.Errorf("the failure line reads %q, want %q", line, want)
+	}
+}
+
 // TestAnUnclassifiedFailureKeepsTheRunsOwnMessage follows the `?? summary` branch: an unknown
 // kind is not guessed at.
 func TestAnUnclassifiedFailureKeepsTheRunsOwnMessage(t *testing.T) {

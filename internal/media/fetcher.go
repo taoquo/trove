@@ -39,9 +39,15 @@ const (
 	// slow half of a first screen off, which is the "some pictures never arrive" report.
 	// The retry below covers what this still misses.
 	Timeout = 45 * time.Second
-	// MaxEntries bounds the cache. A bookmark list can be thousands of rows and each
-	// entry holds a decoded image.
+	// MaxEntries bounds the cache by count. A bookmark list can be thousands of rows
+	// and each entry holds a decoded image.
 	MaxEntries = 64
+	// MaxCacheBytes bounds the same cache by what its pictures cost once decoded.
+	//
+	// The count alone measured the wrong thing: 64 avatars and 64 photographs of the
+	// same count differ by two orders of magnitude in memory, and the second is what
+	// makes the app grow. The estimate is four bytes per pixel (see decodedBytes).
+	MaxCacheBytes = 64 << 20 // 64 MiB
 	// MaxConcurrent bounds the requests in flight.
 	//
 	// A rendered grid asks for every picture on screen at once -- 92 distinct URLs in this
@@ -75,6 +81,10 @@ type Fetcher struct {
 	cache   map[string]*Image
 	order   []string
 	loading map[string]bool
+	// cacheBytes is the estimate of what cache holds, and cacheBudget is the bound
+	// on it. The pair replaces measuring by count alone.
+	cacheBytes  int64
+	cacheBudget int64
 	// slots holds MaxConcurrent tokens, one per request on the wire.
 	slots chan struct{}
 }
@@ -95,10 +105,11 @@ func NewFetcherWithClient(client *http.Client) *Fetcher {
 		client = netproxy.NewClient(Timeout)
 	}
 	return &Fetcher{
-		client:  client,
-		cache:   map[string]*Image{},
-		loading: map[string]bool{},
-		slots:   make(chan struct{}, MaxConcurrent),
+		client:      client,
+		cache:       map[string]*Image{},
+		loading:     map[string]bool{},
+		cacheBudget: MaxCacheBytes,
+		slots:       make(chan struct{}, MaxConcurrent),
 	}
 }
 
@@ -128,6 +139,14 @@ func (f *Fetcher) Size() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return len(f.cache)
+}
+
+// CachedBytes reports what the cached pictures cost, by the same estimate eviction
+// uses. It never exceeds the cache's budget.
+func (f *Fetcher) CachedBytes() int64 {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.cacheBytes
 }
 
 // UseDiskCache gives the fetcher a persistent cache.
@@ -250,22 +269,47 @@ func decodeImage(body []byte) (*Image, error) {
 	return &Image{Pixels: pixels, Width: bounds.Dx(), Height: bounds.Dy()}, nil
 }
 
-// store puts an image in the cache, evicting the least recently used entry past the limit.
+// store puts an image in the cache, evicting the least recently used entries past
+// either bound.
 func (f *Fetcher) store(url string, image *Image) {
+	size := decodedBytes(image)
+
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
-	if _, exists := f.cache[url]; !exists {
+	// A replaced entry already occupies the cache: charge the new picture and credit
+	// the old one, or repeatedly refreshing one URL would exhaust the budget.
+	if previous, exists := f.cache[url]; exists {
+		f.cacheBytes -= decodedBytes(previous)
+		f.touch(url)
+	} else {
 		f.order = append(f.order, url)
 	}
 	f.cache[url] = image
-	f.touch(url)
+	f.cacheBytes += size
 
-	for len(f.order) > MaxEntries {
+	// One picture can be larger than the whole budget. Evicting it immediately is the
+	// honest outcome: the bound holds, and the caller still has the image it asked for.
+	for len(f.order) > 0 && (len(f.order) > MaxEntries || f.cacheBytes > f.cacheBudget) {
 		oldest := f.order[0]
 		f.order = f.order[1:]
-		delete(f.cache, oldest)
+		if evicted, ok := f.cache[oldest]; ok {
+			delete(f.cache, oldest)
+			f.cacheBytes -= decodedBytes(evicted)
+		}
 	}
+}
+
+// decodedBytes estimates what a picture costs once decoded: four bytes per pixel.
+//
+// That is what a decoded RGBA frame holds and an upper bound for the packed formats,
+// which is the right direction for a budget: over-counting evicts a little early,
+// under-counting would let the process grow past the number the budget promises.
+func decodedBytes(image *Image) int64 {
+	if image == nil {
+		return 0
+	}
+	return int64(image.Width) * int64(image.Height) * 4
 }
 
 // touch moves an entry to the recent end of the eviction order.

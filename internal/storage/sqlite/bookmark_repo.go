@@ -47,8 +47,9 @@ INSERT INTO bookmarks (
   tweet_id, tweet_url, author_name, author_handle, author_avatar_url, text,
   created_at_on_x, created_at_on_x_ts, saved_at, last_seen_at, timeline_rank,
   archived_at,
-  hashtags_json, source_kind, media_json, metrics_json, updated_at, is_longform
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  hashtags_json, source_kind, media_json, media_kind, metrics_json, updated_at,
+  is_longform
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(tweet_id) DO UPDATE SET
   tweet_url          = excluded.tweet_url,
   author_name        = excluded.author_name,
@@ -62,6 +63,7 @@ ON CONFLICT(tweet_id) DO UPDATE SET
   hashtags_json      = excluded.hashtags_json,
   source_kind        = excluded.source_kind,
   media_json         = excluded.media_json,
+  media_kind         = excluded.media_kind,
   metrics_json       = excluded.metrics_json,
   updated_at         = excluded.updated_at,
   is_longform        = excluded.is_longform
@@ -178,7 +180,8 @@ func bookmarkArgs(bookmark domain.Bookmark) ([]any, error) {
 		bookmark.CreatedAtOnX, domain.FormatXTimestampOrEmpty(bookmark.CreatedAtOnX),
 		domain.FormatTimestamp(bookmark.SavedAt), lastSeenAt, timelineRank,
 		archivedAt,
-		hashtagsJSON, sourceKind, mediaJSON, metricsJSON,
+		hashtagsJSON, sourceKind, mediaJSON, domain.SummarizeMediaKind(bookmark.Media),
+		metricsJSON,
 		domain.FormatTimestamp(updatedAt), isLongform,
 	}, nil
 }
@@ -222,11 +225,71 @@ func (r *BookmarkRepository) Get(ctx context.Context, tweetID string) (domain.Bo
 	return bookmark, true, nil
 }
 
+// GetMany returns the bookmarks with any of the given ids, keyed by id.
+//
+// One statement per batch of 400 ids, the same bound the tag read uses: SQLite's
+// variable limit is per statement, and a page of suggestions can be longer than one
+// statement may bind.
+func (r *BookmarkRepository) GetMany(ctx context.Context, tweetIDs []string) (map[string]domain.Bookmark, error) {
+	bookmarks := make(map[string]domain.Bookmark, len(tweetIDs))
+	if len(tweetIDs) == 0 {
+		return bookmarks, nil
+	}
+
+	for _, batch := range chunkStrings(tweetIDs, 400) {
+		query := `SELECT ` + bookmarkColumns + ` FROM bookmarks AS b WHERE b.tweet_id IN (` +
+			placeholders(len(batch)) + `)`
+		rows, err := r.db.QueryContext(ctx, query, argsFor(batch)...)
+		if err != nil {
+			return nil, fmt.Errorf("sqlite: get bookmarks: %w", err)
+		}
+		for rows.Next() {
+			bookmark, err := scanBookmark(rows)
+			if err != nil {
+				rows.Close()
+				return nil, fmt.Errorf("sqlite: scan bookmark: %w", err)
+			}
+			bookmarks[bookmark.TweetID] = bookmark
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		rows.Close()
+	}
+	return bookmarks, nil
+}
+
 // AllIDs returns every stored tweet id.
 func (r *BookmarkRepository) AllIDs(ctx context.Context) ([]string, error) {
 	rows, err := r.db.QueryContext(ctx, `SELECT tweet_id FROM bookmarks`)
 	if err != nil {
 		return nil, fmt.Errorf("sqlite: list bookmark ids: %w", err)
+	}
+	defer rows.Close()
+
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
+// KnownIDs returns every id this device has seen, tombstones included.
+//
+// The sync's early stop asks "have I seen this post before". A locally deleted
+// post was seen: X still returns it, upsert skips it, and treating it as new
+// would keep the walk from stopping for as many pages as there are tombstones
+// near the top of the timeline.
+func (r *BookmarkRepository) KnownIDs(ctx context.Context) ([]string, error) {
+	rows, err := r.db.QueryContext(ctx,
+		`SELECT tweet_id FROM bookmarks UNION SELECT tweet_id FROM deleted_bookmarks`)
+	if err != nil {
+		return nil, fmt.Errorf("sqlite: list known bookmark ids: %w", err)
 	}
 	defer rows.Close()
 
@@ -339,182 +402,6 @@ func chunkRawPayloads(payloads []ports.RawPayload, size int) [][]ports.RawPayloa
 		chunks = append(chunks, payloads)
 	}
 	return chunks
-}
-
-// Count returns how many bookmarks match a filter.
-func (r *BookmarkRepository) Count(ctx context.Context, filter domain.LibraryFilter) (int, error) {
-	where, args := bookmarkFilterSQL(filter, r.now())
-	query := `SELECT COUNT(*) FROM bookmarks AS b` + where
-
-	var count int
-	if err := r.db.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
-		return 0, fmt.Errorf("sqlite: count bookmarks: %w", err)
-	}
-	return count, nil
-}
-
-// Query returns the bookmarks matching a filter, in the requested order.
-func (r *BookmarkRepository) Query(ctx context.Context, query domain.LibraryQuery) ([]domain.Bookmark, error) {
-	normalized, err := query.Normalize()
-	if err != nil {
-		return nil, err
-	}
-
-	where, args := bookmarkFilterSQL(normalized.Filter, r.now())
-	// The order is chosen from a fixed map, never built from the caller's string:
-	// an ORDER BY assembled from input is an injection point, and this one is
-	// reachable from a restored saved view.
-	orderBy, ok := bookmarkOrderSQL[normalized.Sort]
-	if !ok {
-		return nil, fmt.Errorf("sqlite: no ordering for sort %q", normalized.Sort)
-	}
-
-	statement := `SELECT ` + bookmarkColumns + ` FROM bookmarks AS b` + where +
-		` ORDER BY ` + orderBy + ` LIMIT ? OFFSET ?`
-	args = append(args, normalized.Limit, normalized.Offset)
-
-	rows, err := r.db.QueryContext(ctx, statement, args...)
-	if err != nil {
-		return nil, fmt.Errorf("sqlite: query bookmarks: %w", err)
-	}
-	defer rows.Close()
-
-	var bookmarks []domain.Bookmark
-	for rows.Next() {
-		bookmark, err := scanBookmark(rows)
-		if err != nil {
-			return nil, fmt.Errorf("sqlite: scan bookmark: %w", err)
-		}
-		bookmarks = append(bookmarks, bookmark)
-	}
-	return bookmarks, rows.Err()
-}
-
-// bookmarkOrderSQL maps a sort order to its ORDER BY clause.
-//
-// Every clause ends with the tweet id so paging is stable: without a total order,
-// two rows that compare equal can swap between pages and a bookmark is shown
-// twice while another is never shown.
-var bookmarkOrderSQL = map[domain.SortOrder]string{
-	// Rank ascending, but a known rank always beats an unknown one. In SQLite
-	// `rank IS NULL` is 0 for a known rank and 1 for NULL, so ascending puts the
-	// known ranks first. The tie-break is saved_at descending, matching that
-	// order.
-	domain.SortTimeline:  `b.timeline_rank IS NULL, b.timeline_rank ASC, b.saved_at DESC, b.tweet_id ASC`,
-	domain.SortSavedDesc: `b.saved_at DESC, b.tweet_id ASC`,
-	domain.SortSavedAsc:  `b.saved_at ASC, b.tweet_id ASC`,
-	// Sorted on the parsed copy, never on the verbatim X rendering: that text
-	// begins with a weekday name, so sorting it orders by weekday.
-	domain.SortCreatedDesc: `b.created_at_on_x_ts DESC, b.tweet_id ASC`,
-	// A post with no metrics counts as zero likes.
-	domain.SortLikesDesc: `COALESCE(json_extract(b.metrics_json, '$.likes'), 0) DESC, b.tweet_id ASC`,
-}
-
-// bookmarkFilterSQL renders the WHERE clause for a filter.
-//
-// Every value is bound, never interpolated. The only text spliced in is a run of
-// placeholders, whose length comes from the number of values.
-func bookmarkFilterSQL(filter domain.LibraryFilter, now time.Time) (string, []any) {
-	normalized := filter.Normalize()
-
-	var clauses []string
-	var args []any
-
-	if normalized.Query != "" {
-		// Search covers text, author name, author handle and the post URL, so a
-		// pasted link finds its own bookmark.
-		like := "%" + escapeLike(strings.ToLower(normalized.Query)) + "%"
-		clauses = append(clauses, `(trove_fold(b.text) LIKE ? ESCAPE '\'`+
-			` OR trove_fold(b.author_name) LIKE ? ESCAPE '\'`+
-			` OR trove_fold(b.author_handle) LIKE ? ESCAPE '\'`+
-			` OR trove_fold(b.tweet_url) LIKE ? ESCAPE '\')`)
-		args = append(args, like, like, like, like)
-	}
-
-	if normalized.OnlyWithPendingSuggestions {
-		clauses = append(clauses, `EXISTS (SELECT 1 FROM tag_suggestions ts
-			WHERE ts.bookmark_id = b.tweet_id AND ts.status = 'pending')`)
-	}
-
-	if len(normalized.TagIDs) > 0 {
-		if normalized.TagMatchMode == domain.MatchAny {
-			clauses = append(clauses, `EXISTS (SELECT 1 FROM bookmark_tags bt
-				WHERE bt.bookmark_id = b.tweet_id AND bt.tag_id IN (`+placeholders(len(normalized.TagIDs))+`))`)
-			args = append(args, argsFor(normalized.TagIDs)...)
-		} else {
-			// A separate EXISTS per tag is what makes "all" mean all: a single IN
-			// would match a bookmark carrying any one of them.
-			for _, tagID := range normalized.TagIDs {
-				clauses = append(clauses, `EXISTS (SELECT 1 FROM bookmark_tags bt
-					WHERE bt.bookmark_id = b.tweet_id AND bt.tag_id = ?)`)
-				args = append(args, tagID)
-			}
-		}
-	}
-
-	if len(normalized.AuthorHandles) > 0 {
-		// Matched against the handle and the display name together, so either
-		// one resolves an author.
-		if normalized.AuthorMatchMode == domain.MatchAll {
-			for _, handle := range normalized.AuthorHandles {
-				clauses = append(clauses, `(trove_fold(b.author_handle) = ? OR trove_fold(b.author_name) = ?)`)
-				args = append(args, handle, handle)
-			}
-		} else {
-			clauses = append(clauses, `(trove_fold(b.author_handle) IN (`+placeholders(len(normalized.AuthorHandles))+`)`+
-				` OR trove_fold(b.author_name) IN (`+placeholders(len(normalized.AuthorHandles))+`))`)
-			args = append(args, argsFor(normalized.AuthorHandles)...)
-			args = append(args, argsFor(normalized.AuthorHandles)...)
-		}
-	}
-
-	if normalized.ListID != "" {
-		clauses = append(clauses, `EXISTS (SELECT 1 FROM bookmark_lists bl
-			WHERE bl.bookmark_id = b.tweet_id AND bl.list_id = ?)`)
-		args = append(args, normalized.ListID)
-	}
-
-	if normalized.OnlyUnclassified {
-		clauses = append(clauses, `NOT EXISTS (SELECT 1 FROM bookmark_tags bt
-			WHERE bt.bookmark_id = b.tweet_id)`)
-	}
-
-	if normalized.OnlyWithMedia {
-		// The column is a JSON array that is never null, so an empty library value
-		// is exactly "[]".
-		clauses = append(clauses, `b.media_json <> '[]'`)
-	}
-
-	if normalized.OnlyLongform {
-		// The denormalized flag, not length(text): SQLite counts code points while
-		// the rule counts UTF-16 code units, and the two disagree on any post with
-		// an emoji.
-		clauses = append(clauses, `b.is_longform = 1`)
-	}
-
-	// The archive is a mode of the view rather than a toggle, but it is applied here
-	// with every other condition so no caller can forget it: a list that quietly kept
-	// showing archived rows would make the archive unreachable rather than merely
-	// optional. Hidden is unconditional rather than spliced out of the clause list,
-	// because "everything except the archive" is what the app shows by default.
-	if normalized.Archived == domain.ArchivedOnly {
-		clauses = append(clauses, `b.archived_at IS NOT NULL`)
-	} else {
-		clauses = append(clauses, `b.archived_at IS NULL`)
-	}
-
-	// The cutoff comes from the domain, so the filter's rule exists once. Timestamps
-	// are fixed-width UTC ISO strings, so TEXT comparison is chronological, and
-	// passing the cutoff as a bound value keeps the comparison index-friendly.
-	if cutoff := normalized.SavedAfter(now); !cutoff.IsZero() {
-		clauses = append(clauses, `b.saved_at >= ?`)
-		args = append(args, domain.FormatTimestamp(cutoff))
-	}
-
-	// There is never an empty clause list now that the archive decides every view, so
-	// the result is always a WHERE. Callers that append a condition of their own can
-	// therefore append it with AND.
-	return "\n WHERE " + strings.Join(clauses, "\n   AND "), args
 }
 
 // TagsByBookmark returns the tags on each of the given bookmarks.
@@ -687,6 +574,26 @@ func (r *BookmarkRepository) SetArchived(ctx context.Context, tweetID string, at
 	return nil
 }
 
+// SetArchivedMany moves a batch into or out of the archive in one write per chunk.
+//
+// One UPDATE over the chunked id set rather than a call per row: the batch bar can name
+// a few thousand ids, and a transaction per bookmark would take the only connection for
+// as long as the reader's click takes to become a list.
+func (r *BookmarkRepository) SetArchivedMany(ctx context.Context, tweetIDs []string, at time.Time) error {
+	if len(tweetIDs) == 0 {
+		return nil
+	}
+	archivedAt := nullTimestamp(at)
+	for _, batch := range chunkStrings(tweetIDs, 500) {
+		if _, err := r.db.ExecContext(ctx,
+			`UPDATE bookmarks SET archived_at = ? WHERE tweet_id IN (`+placeholders(len(batch))+`)`,
+			append([]any{archivedAt}, argsFor(batch)...)...); err != nil {
+			return fmt.Errorf("sqlite: set archived for %d bookmarks: %w", len(batch), err)
+		}
+	}
+	return nil
+}
+
 // Counts returns the sidebar aggregates in one round trip.
 func (r *BookmarkRepository) Counts(ctx context.Context) (domain.WorkspaceCounts, error) {
 	var counts domain.WorkspaceCounts
@@ -699,7 +606,8 @@ func (r *BookmarkRepository) Counts(ctx context.Context) (domain.WorkspaceCounts
 		     WHERE NOT EXISTS (SELECT 1 FROM bookmark_tags bt WHERE bt.bookmark_id = b.tweet_id)),
 		  (SELECT COUNT(*) FROM tag_suggestions WHERE status = 'pending'),
 		  (SELECT COUNT(*) FROM tags),
-		  (SELECT COUNT(*) FROM lists)`
+		  (SELECT COUNT(*) FROM lists),
+		  (SELECT COUNT(*) FROM bookmarks WHERE archived_at IS NOT NULL)`
 
 	if err := r.db.QueryRowContext(ctx, query).Scan(
 		&counts.TotalBookmarks,
@@ -707,6 +615,7 @@ func (r *BookmarkRepository) Counts(ctx context.Context) (domain.WorkspaceCounts
 		&counts.PendingSuggestions,
 		&counts.TagCount,
 		&counts.ListCount,
+		&counts.ArchivedCount,
 	); err != nil {
 		return domain.WorkspaceCounts{}, fmt.Errorf("sqlite: workspace counts: %w", err)
 	}

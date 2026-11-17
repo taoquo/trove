@@ -22,6 +22,15 @@ type RawPayload struct {
 	CapturedAt  string
 }
 
+// Tombstone is one recorded local delete.
+//
+// It exists so a sync cannot resurrect a post the user removed: the upsert skips a
+// tombstoned id, and a backup carries the record so a restore does not lose it.
+type Tombstone struct {
+	TweetID   string
+	DeletedAt string
+}
+
 // UpsertResult reports what a bulk write changed.
 //
 // Inserted and Updated are counted separately because the sync report shows them
@@ -41,6 +50,12 @@ type BookmarkRepository interface {
 	// Get returns a bookmark and whether it exists.
 	Get(ctx context.Context, tweetID string) (domain.Bookmark, bool, error)
 
+	// GetMany returns the bookmarks with any of the given ids, keyed by id. An id
+	// that no longer exists is simply absent. It is the read the suggestion panel
+	// needs: one statement for the page rather than one per row, and the count of
+	// statements no longer grows with the number of suggestions.
+	GetMany(ctx context.Context, tweetIDs []string) (map[string]domain.Bookmark, error)
+
 	// Query returns the bookmarks matching a filter, in the requested order.
 	Query(ctx context.Context, query domain.LibraryQuery) ([]domain.Bookmark, error)
 
@@ -49,6 +64,11 @@ type BookmarkRepository interface {
 
 	// AllIDs returns every stored tweet id, for detecting deletions.
 	AllIDs(ctx context.Context) ([]string, error)
+	// KnownIDs returns every id this device has already seen, including the
+	// tombstones of locally deleted posts. The sync's early stop must treat a
+	// tombstoned id as known: X still returns it, but upsert skips it, so
+	// counting it as new would walk the whole timeline every run.
+	KnownIDs(ctx context.Context) ([]string, error)
 
 	// All returns every bookmark.
 	//
@@ -72,6 +92,14 @@ type BookmarkRepository interface {
 	// authoritative. A restore does not need it; emptying the library clears
 	// every tombstone first.
 	ClearTombstones(ctx context.Context, tweetIDs []string) error
+
+	// Tombstones returns the record of posts deleted locally.
+	Tombstones(ctx context.Context) ([]Tombstone, error)
+
+	// AddTombstones records local deletes without deleting anything. A restore
+	// calls it with the bundle's record: the file is the new library, so the posts
+	// the exporting device had deleted must stay deleted here too.
+	AddTombstones(ctx context.Context, tombstones []Tombstone) error
 
 	// RawPayloads returns the stored response bodies for the given bookmarks.
 	RawPayloads(ctx context.Context, tweetIDs []string) ([]RawPayload, error)
@@ -99,6 +127,11 @@ type BookmarkRepository interface {
 	// SetArchived moves one bookmark into or out of the archive. A zero time
 	// takes it back out.
 	SetArchived(ctx context.Context, tweetID string, at time.Time) error
+
+	// SetArchivedMany moves a batch into or out of the archive in one write. A zero
+	// time takes them back out. Ids the library does not hold are ignored: a batch is
+	// a selection, and a row that left between the click and the write is not an error.
+	SetArchivedMany(ctx context.Context, tweetIDs []string, at time.Time) error
 
 	// Counts returns the sidebar aggregates.
 	Counts(ctx context.Context) (domain.WorkspaceCounts, error)
@@ -243,6 +276,19 @@ type SavedViewRepository interface {
 // SyncRunRepository stores the sync history.
 type SyncRunRepository interface {
 	Start(ctx context.Context, run domain.SyncRun) error
+	// ClaimStart records a run as running only if no run still owns the library.
+	//
+	// "Owns" means a running row whose heartbeat is newer than staleBefore. Older
+	// ones are closed out as interrupted first, so a crash does not lock the
+	// library forever. It returns false when another live run owns it, which is how
+	// the window and a scheduled `trove sync` refuse to write the same database at
+	// the same time.
+	ClaimStart(ctx context.Context, run domain.SyncRun, now, staleBefore time.Time) (bool, error)
+	// TouchHeartbeat moves a running run's heartbeat.
+	//
+	// The heartbeat is what tells another process the run is alive. A run that
+	// dies stops moving it, and only then may the next one take the library over.
+	TouchHeartbeat(ctx context.Context, runID string, now time.Time) error
 	Finish(ctx context.Context, run domain.SyncRun) error
 	Get(ctx context.Context, id string) (domain.SyncRun, bool, error)
 	Latest(ctx context.Context) (domain.SyncRun, bool, error)
@@ -251,10 +297,13 @@ type SyncRunRepository interface {
 	// A backup carries a bounded slice of history rather than everything: a
 	// long-lived install accumulates thousands of runs.
 	Recent(ctx context.Context, limit int) ([]domain.SyncRun, error)
-	// MarkInterrupted closes out runs left in "running" by a crash.
+	// MarkInterrupted closes out running rows whose heartbeat stopped before
+	// cutoff.
 	//
 	// Without it a killed run leaves the UI claiming a sync is in flight forever.
-	MarkInterrupted(ctx context.Context, now time.Time) (int, error)
+	// The cutoff is what keeps it from closing a run another process is still
+	// making progress on.
+	MarkInterrupted(ctx context.Context, cutoff, now time.Time) (int, error)
 	Active(ctx context.Context) (domain.SyncRun, bool, error)
 }
 

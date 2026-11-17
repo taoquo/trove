@@ -32,20 +32,14 @@ type libFixture struct {
 			TagID                  string   `json:"tagId"`
 			Name                   string   `json:"name"`
 			Aliases                []string `json:"aliases"`
-			ParentID               string   `json:"parentId"`
-			ParentName             string   `json:"parentName"`
 			ChildCount             int      `json:"childCount"`
 			BookmarkCount          int      `json:"bookmarkCount"`
 			PendingSuggestionCount int      `json:"pendingSuggestionCount"`
 			UpdatedAt              string   `json:"updatedAt"`
 		} `json:"items"`
-		OrphanCount         int                 `json:"orphanCount"`
-		LongTailCount       int                 `json:"longTailCount"`
-		RemovableOrphanIDs  []string            `json:"removableOrphanIds"`
-		UnparentedCount     int                 `json:"unparentedCount"`
-		RootCandidateIDs    []string            `json:"rootCandidateIds"`
-		ParentCandidates    map[string][]string `json:"parentCandidates"`
-		HasParentCandidates map[string]bool     `json:"hasParentCandidates"`
+		OrphanCount        int      `json:"orphanCount"`
+		LongTailCount      int      `json:"longTailCount"`
+		RemovableOrphanIDs []string `json:"removableOrphanIds"`
 	} `json:"expected"`
 	Views []struct {
 		Filter      string   `json:"filter"`
@@ -117,10 +111,6 @@ func TestTagLibraryItemsMatchFixture(t *testing.T) {
 		if item.Name != expected.Name {
 			t.Errorf("%s name = %q, want %q", item.TagID, item.Name, expected.Name)
 		}
-		if item.ParentID != expected.ParentID || item.ParentName != expected.ParentName {
-			t.Errorf("%s parent = %q/%q, want %q/%q",
-				item.TagID, item.ParentID, item.ParentName, expected.ParentID, expected.ParentName)
-		}
 		if item.ChildCount != expected.ChildCount {
 			t.Errorf("%s childCount = %d, want %d", item.TagID, item.ChildCount, expected.ChildCount)
 		}
@@ -146,9 +136,6 @@ func TestTagLibraryItemsMatchFixture(t *testing.T) {
 	if got := CountLongTailTags(BuildTagLibraryItems(tags, relations, suggestions)); got != fixture.Expected.LongTailCount {
 		t.Errorf("long tail count = %d, want %d", got, fixture.Expected.LongTailCount)
 	}
-	if got := CountUnparentedTags(BuildTagLibraryItems(tags, relations, suggestions)); got != fixture.Expected.UnparentedCount {
-		t.Errorf("unparented count = %d, want %d", got, fixture.Expected.UnparentedCount)
-	}
 
 	if LongTailMaxBookmarks != fixture.LongTailMaxBookmarks {
 		t.Errorf("the long-tail threshold is %d, want %d",
@@ -156,36 +143,6 @@ func TestTagLibraryItemsMatchFixture(t *testing.T) {
 	}
 
 	compareIDs(t, "removable orphans", GetRemovableOrphanTagIDs(BuildTagLibraryItems(tags, relations, suggestions)), fixture.Expected.RemovableOrphanIDs)
-
-	roots := GetRootTagCandidates(BuildTagLibraryItems(tags, relations, suggestions))
-	rootIDs := make([]string, 0, len(roots))
-	for _, root := range roots {
-		rootIDs = append(rootIDs, root.TagID)
-	}
-	compareIDs(t, "root candidates", rootIDs, fixture.Expected.RootCandidateIDs)
-
-	for tagID, expected := range fixture.Expected.ParentCandidates {
-		candidates := GetParentCandidates(BuildTagLibraryItems(tags, relations, suggestions), tagID)
-		ids := make([]string, 0, len(candidates))
-		for _, candidate := range candidates {
-			ids = append(ids, candidate.TagID)
-		}
-		compareIDs(t, "parent candidates of "+tagID, ids, expected)
-	}
-
-	for tagID, expected := range fixture.Expected.HasParentCandidates {
-		items := BuildTagLibraryItems(tags, relations, suggestions)
-		var self TagLibraryItem
-		for _, item := range items {
-			if item.TagID == tagID {
-				self = item
-				break
-			}
-		}
-		if got := HasParentCandidates(GetRootTagCandidates(items), self); got != expected {
-			t.Errorf("hasParentCandidates(%s) = %v, want %v", tagID, got, expected)
-		}
-	}
 }
 
 // TestTagLibraryViewsMatchFixture covers every filter, sort and query.

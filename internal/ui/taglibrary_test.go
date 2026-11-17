@@ -154,56 +154,6 @@ func TestTheTagRowEditsAliasesInPlace(t *testing.T) {
 	}
 }
 
-// TestTheThemeCellOpensAPicker covers the third field's new home.
-//
-// A select in the row's parent cell writes on change. The cell shows the value until it is
-// clicked, which is what a table does with an editable cell.
-func TestTheThemeCellOpensAPicker(t *testing.T) {
-	shell, db := newShell(t)
-	ctx := context.Background()
-	seedTagOnly(t, db, "a", "rust")
-	seedTagOnly(t, db, "b", "languages")
-	shell.ReloadTagLibrary(ctx)
-	shell.ToggleTagMode(ctx)
-
-	tester := ui.NewTester(shell.View, 1180, 760)
-	tester.Frame()
-
-	none := shell.t().T(i18n.TagParentNone)
-	if err := tester.Click(none); err != nil {
-		t.Fatalf("clicking the theme cell: %v", err)
-	}
-	tester.Frame()
-	if shell.State().TagEditField != TagEditTheme {
-		t.Fatalf("the open field is %q, want the theme", shell.State().TagEditField)
-	}
-	edited := shell.State().TagFocus
-
-	// The picker writes on change, like a select does. It takes the keyboard
-	// when it opens: Down opens the list, Down moves to the other root tag, Enter chooses it.
-	tester.Key(0, ui.KeyDown)
-	tester.Key(0, ui.KeyDown)
-	tester.Key(0, ui.KeyEnter)
-	tester.Frame()
-	if shell.State().TagEditField != "" {
-		t.Error("the picker stayed open after a choice")
-	}
-	if edited == "" {
-		t.Fatal("the picker did not open on a row")
-	}
-	other := "a"
-	if edited == "a" {
-		other = "b"
-	}
-	tag, found, err := sqlite.NewTagRepository(db).Get(ctx, edited)
-	if err != nil || !found {
-		t.Fatalf("Get: %v found=%v", err, found)
-	}
-	if tag.ParentID != other {
-		t.Errorf("the theme of %q is %q, want %q", edited, tag.ParentID, other)
-	}
-}
-
 // TestTheSidebarSearchCostsNoSpaceUntilItIsOpened covers the row the field used to take.
 //
 // It sat above both lists on every frame, so the list always started 46 points down. The
@@ -338,7 +288,9 @@ func TestTheTagsPageLeavesThroughTheHeader(t *testing.T) {
 }
 
 // TestTheHeaderStatesTheLibraryInOneLine pins the density claim: the two count lines and the
-// 36-point total the header used to carry are one line now, and no fact was dropped with them.
+// 36-point total the header used to carry are one line now. The theme count left the line with
+// the theme itself -- no screen assigns one any more, so a count of zero themes was a fact about
+// a field nobody could use.
 func TestTheHeaderStatesTheLibraryInOneLine(t *testing.T) {
 	shell, db := newShell(t)
 	ctx := context.Background()
@@ -352,10 +304,9 @@ func TestTheHeaderStatesTheLibraryInOneLine(t *testing.T) {
 
 	// The two tags carry no bookmarks, and a long-tail tag is one with 1-2 bookmarks and no
 	// children (domain.IsLongTailTag), so that count is zero rather than two.
-	want := fmt.Sprintf("2 %s · 2 %s · 2 %s · 0 %s · %s",
+	want := fmt.Sprintf("2 %s · 2 %s · 0 %s · %s",
 		shell.t().T(i18n.TagTagsSuffix),
 		shell.t().T(i18n.TagOrphanSuffix),
-		shell.t().T(i18n.TagUnparentedSuffix),
 		shell.t().T(i18n.TagLongTailSuffix),
 		shell.t().T(i18n.TagHealthOk))
 	if !tester.HasText(want) {
@@ -523,11 +474,13 @@ func TestTheBulkBarCanBeDismissed(t *testing.T) {
 	}
 }
 
-// TestTheTableDropsTheTimestampWhenThePaneIsNarrow covers the one column that gives way.
+// TestTheMinimumWindowKeepsEveryColumn pins the table's space at the frame's floor.
 //
-// At the 900-point minimum window the fixed columns left the name column 43 points, so the
-// tags themselves read as ellipses. The timestamp is the column a reader can spare.
-func TestTheTableDropsTheTimestampWhenThePaneIsNarrow(t *testing.T) {
+// Dropping the theme column freed 120 points, which is what used to push the timestamp out at
+// the 900-point minimum window. With the sidebar at its widest share the pane is 548 and the
+// columns need 548, so the timestamp stays; if a column grows, this fails before a reader sees
+// a table of ellipses.
+func TestTheMinimumWindowKeepsEveryColumn(t *testing.T) {
 	shell, db := newShell(t)
 	ctx := context.Background()
 	seedTagOnly(t, db, "a", "rust")
@@ -540,13 +493,14 @@ func TestTheTableDropsTheTimestampWhenThePaneIsNarrow(t *testing.T) {
 		t.Errorf("the wide table has no timestamp column; texts: %q", wide.Texts())
 	}
 
+	shell.state.LeftSidebarWidth = WidthSidebarMax
 	narrow := ui.NewTester(shell.View, 900, 620)
 	narrow.Frame()
-	if narrow.HasText(strings.ToUpper(shell.t().T(i18n.TagTableUpdated))) {
-		t.Error("the narrow table keeps a column it has no room for")
+	if !narrow.HasText(strings.ToUpper(shell.t().T(i18n.TagTableUpdated))) {
+		t.Errorf("the minimum window lost the timestamp column; texts: %q", narrow.Texts())
 	}
 	if !narrow.HasText("rust") {
-		t.Errorf("the narrow table lost the tag name; texts: %q", narrow.Texts())
+		t.Errorf("the minimum window lost the tag name; texts: %q", narrow.Texts())
 	}
 }
 

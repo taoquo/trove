@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -85,6 +86,9 @@ func (s *Shell) StartSync(ctx context.Context) bool {
 		RawPayloads:     s.state.SaveRawPayloads,
 		Limit:           int(s.state.SyncPageLimit),
 		OnProgress: func(progress xsource.Progress) {
+			s.syncLastMu.Lock()
+			s.syncLast = progress
+			s.syncLastMu.Unlock()
 			s.publish(func() {
 				s.state.SyncProgress = syncProgressLabel(s.t(), progress)
 				// The service writes each page as it arrives, so the list can grow
@@ -98,12 +102,49 @@ func (s *Shell) StartSync(ctx context.Context) bool {
 			})
 		},
 	}
-	if !incremental {
-		// Continue a walk that stopped at the cap instead of starting over.
-		options.StartCursor = s.syncer.ResumeCursor(ctx)
-	}
+	// Continue a walk that stopped at the cap instead of starting over. The rule
+	// lives in the service so the CLI cannot drift from it again.
+	options = s.syncer.ResumeOptions(ctx, options)
+
+	// The countdown behind a rate-limit wait, one tick a second.
+	//
+	// The walk reports a wait once when it begins, and X's window is minutes long: without
+	// a tick the line would sit at "waiting 900 s" and look exactly like a hang. The ticker
+	// belongs to this run and stops with it.
+	stopTicking := make(chan struct{})
 
 	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		announced := false
+		for {
+			select {
+			case <-stopTicking:
+				return
+			case <-ticker.C:
+				s.syncLastMu.Lock()
+				progress := s.syncLast
+				s.syncLastMu.Unlock()
+				waiting := progress.WaitReason == xsource.WaitRateLimit &&
+					progress.WaitingUntil.After(time.Now())
+				if !waiting && !announced {
+					continue
+				}
+				// The tick that ends the wait publishes once more, so the line returns to
+				// the page sentence instead of freezing on "waiting 1 s".
+				announced = waiting
+				s.publish(func() {
+					if !s.state.SyncRunning {
+						return
+					}
+					s.state.SyncProgress = syncProgressLabel(s.t(), progress)
+				})
+			}
+		}
+	}()
+
+	go func() {
+		defer close(stopTicking)
 		run, err := s.syncer.Run(ctx, options)
 
 		if err == nil {
@@ -191,11 +232,25 @@ func (s *Shell) syncReloadDue() bool {
 	return true
 }
 
-// syncProgressLabel fills the progress template.
+// syncProgressLabel fills the progress template at the current time.
 //
 // A bare "%d fetched" would be English in both locales, and a number with no unit. The
 // template renders "Syncing... {pages} pages · {items} items".
 func syncProgressLabel(t *i18n.Translator, progress xsource.Progress) string {
+	return syncProgressLabelAt(t, progress, time.Now())
+}
+
+// syncProgressLabelAt is syncProgressLabel with the clock handed in.
+//
+// A rate-limit wait is announced once and then lasts minutes, so the line has to say how
+// much of the wait is left rather than a page count that no longer moves: "Rate limited —
+// waiting 240 s", one second smaller each tick. Any other progress -- including the
+// quarter-second pace between pages, which carries no reason -- keeps the page sentence.
+func syncProgressLabelAt(t *i18n.Translator, progress xsource.Progress, now time.Time) string {
+	if progress.WaitReason == xsource.WaitRateLimit && progress.WaitingUntil.After(now) {
+		left := int(math.Ceil(progress.WaitingUntil.Sub(now).Seconds()))
+		return t.Tf(i18n.SyncWaitLabel, left)
+	}
 	return strings.NewReplacer(
 		"{pages}", strconv.Itoa(progress.PagesCompleted),
 		"{items}", strconv.Itoa(progress.Fetched),

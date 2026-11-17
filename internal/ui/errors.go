@@ -57,7 +57,7 @@ func (s *Shell) localizeProviderError(kind string, retryAfterSeconds int) (strin
 
 // SummarizeRun renders a finished auto-tagging run in the user's language.
 //
-// The engine distinguishes twelve outcomes and reports the counts behind each. The
+// The engine distinguishes thirteen outcomes and reports the counts behind each. The
 // panel used to show one summary line, so a run that stopped because its budget ran out
 // looked the same as one that stopped because the key was missing -- and those need
 // different fixes. The second return value is the detail line, which carries the counts
@@ -89,6 +89,8 @@ func (s *Shell) SummarizeRun(outcome autotag.RunOutcome, summary autotag.RunSumm
 		headline = s.t().Tf(i18n.OutcomeInterrupted, number(summary.UnprocessedCount))
 	case autotag.OutcomeCancelled:
 		headline = s.t().Tf(i18n.OutcomeCancelled, number(summary.SuggestedCount), number(summary.UnprocessedCount))
+	case autotag.OutcomeErrorBudget:
+		headline = s.t().Tf(i18n.OutcomeErrorBudget, number(summary.SuggestedCount))
 	case autotag.OutcomeFailed:
 		headline = s.t().T(i18n.OutcomeFailed)
 		if summary.Error != "" {
@@ -117,6 +119,11 @@ func (s *Shell) SummarizeRun(outcome autotag.RunOutcome, summary autotag.RunSumm
 	}
 	if summary.BlockedTagKeyCount > 0 {
 		detail += " " + s.t().Tf(i18n.AutoTagBlocked, number(summary.BlockedTagKeyCount))
+	}
+	// Only when the provider said so. "0 tokens" for an endpoint that reports
+	// nothing would read as a free run rather than an unknown one.
+	if summary.InputTokens > 0 || summary.OutputTokens > 0 {
+		detail += " " + s.t().Tf(i18n.AutoTagTokens, number(summary.InputTokens), number(summary.OutputTokens))
 	}
 
 	return headline, detail
@@ -205,6 +212,8 @@ var syncErrorKindKeys = map[domain.SyncErrorKind]i18n.Key{
 	domain.ErrResponseSchemaChanged: i18n.SyncErrorSchemaChanged,
 	domain.ErrInterrupted:           i18n.SyncErrorInterrupted,
 	domain.ErrUnknown:               i18n.SyncErrorUnknown,
+	domain.ErrSyncInProgress:        i18n.SyncErrorInProgress,
+	domain.ErrCredentialStore:       i18n.SyncErrorCredentialStore,
 }
 
 // syncFailureMessage is what the status line shows for a failed run, or "" when the kind is not

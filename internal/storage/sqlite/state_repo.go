@@ -28,7 +28,7 @@ func NewAnalysisRepository(db *DB) *AnalysisRepository { return &AnalysisReposit
 
 var _ ports.AnalysisRepository = (*AnalysisRepository)(nil)
 
-const analysisColumns = `bookmark_id, analyzed_at, prompt_version, model, content_hash, outcome, tag_count`
+const analysisColumns = `bookmark_id, analyzed_at, prompt_version, model, content_hash, outcome, error_kind, tag_count`
 
 // List returns the whole ledger.
 func (r *AnalysisRepository) List(ctx context.Context) ([]domain.LlmAnalysis, error) {
@@ -42,7 +42,7 @@ func (r *AnalysisRepository) List(ctx context.Context) ([]domain.LlmAnalysis, er
 	for rows.Next() {
 		var record domain.LlmAnalysis
 		if err := rows.Scan(&record.BookmarkID, &record.AnalyzedAt, &record.PromptVersion,
-			&record.Model, &record.ContentHash, &record.Outcome, &record.TagCount); err != nil {
+			&record.Model, &record.ContentHash, &record.Outcome, &record.ErrorKind, &record.TagCount); err != nil {
 			return nil, fmt.Errorf("sqlite: scan analysis: %w", err)
 		}
 		records = append(records, record)
@@ -67,13 +67,14 @@ func (r *AnalysisRepository) UpsertMany(ctx context.Context, records []domain.Ll
 	defer tx.Rollback() //nolint:errcheck // no-op once committed
 
 	statement, err := tx.PrepareContext(ctx,
-		`INSERT INTO llm_analysis (`+analysisColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?)
+		`INSERT INTO llm_analysis (`+analysisColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 		 ON CONFLICT(bookmark_id) DO UPDATE SET
 		   analyzed_at    = excluded.analyzed_at,
 		   prompt_version = excluded.prompt_version,
 		   model          = excluded.model,
 		   content_hash   = excluded.content_hash,
 		   outcome        = excluded.outcome,
+		   error_kind     = excluded.error_kind,
 		   tag_count      = excluded.tag_count`)
 	if err != nil {
 		return 0, fmt.Errorf("sqlite: prepare analysis upsert: %w", err)
@@ -83,7 +84,8 @@ func (r *AnalysisRepository) UpsertMany(ctx context.Context, records []domain.Ll
 	written := 0
 	for _, record := range records {
 		if _, err := statement.ExecContext(ctx, record.BookmarkID, record.AnalyzedAt,
-			record.PromptVersion, record.Model, record.ContentHash, record.Outcome, record.TagCount); err != nil {
+			record.PromptVersion, record.Model, record.ContentHash, record.Outcome,
+			record.ErrorKind, record.TagCount); err != nil {
 			return 0, fmt.Errorf("sqlite: upsert analysis for %s: %w", record.BookmarkID, err)
 		}
 		written++
@@ -117,8 +119,10 @@ func (r *AnalysisRepository) ExistingFor(
 	}
 
 	for _, batch := range chunkStrings(ids, 500) {
+		// A failed batch left a row too, and it is not a verdict: reporting its hash
+		// as reusable would skip a bookmark the model never actually answered.
 		query := `SELECT bookmark_id, content_hash FROM llm_analysis
-		          WHERE model = ? AND prompt_version = ?
+		          WHERE model = ? AND prompt_version = ? AND outcome <> 'error'
 		            AND bookmark_id IN (` + placeholders(len(batch)) + `)`
 		args := append([]any{model, promptVersion}, argsFor(batch)...)
 
@@ -254,7 +258,8 @@ func NewSavedViewRepository(db *DB) *SavedViewRepository { return &SavedViewRepo
 var _ ports.SavedViewRepository = (*SavedViewRepository)(nil)
 
 const savedViewColumns = `id, name, query, active_tag_ids_json, active_author_handles_json,
-	only_with_media, only_longform, sort_order, view_mode, created_at, updated_at`
+	only_with_media, only_with_video, only_longform, only_archived, sort_order, view_mode,
+	created_at, updated_at`
 
 func scanSavedView(scanner interface{ Scan(...any) error }) (domain.SavedView, error) {
 	var (
@@ -262,12 +267,15 @@ func scanSavedView(scanner interface{ Scan(...any) error }) (domain.SavedView, e
 		tagIDsRaw    sql.NullString
 		handlesRaw   sql.NullString
 		onlyMedia    int
+		onlyVideo    int
 		onlyLongform int
+		onlyArchived int
 		createdAt    string
 		updatedAt    string
 	)
 	err := scanner.Scan(&view.ID, &view.Name, &view.Query, &tagIDsRaw, &handlesRaw,
-		&onlyMedia, &onlyLongform, &view.SortOrder, &view.ViewMode, &createdAt, &updatedAt)
+		&onlyMedia, &onlyVideo, &onlyLongform, &onlyArchived, &view.SortOrder, &view.ViewMode,
+		&createdAt, &updatedAt)
 	if err != nil {
 		return domain.SavedView{}, err
 	}
@@ -275,7 +283,9 @@ func scanSavedView(scanner interface{ Scan(...any) error }) (domain.SavedView, e
 	view.ActiveTagIDs, _ = decodeStrings(tagIDsRaw)
 	view.ActiveAuthorHandles, _ = decodeStrings(handlesRaw)
 	view.OnlyWithMedia = onlyMedia != 0
+	view.OnlyWithVideo = onlyVideo != 0
 	view.OnlyLongform = onlyLongform != 0
+	view.OnlyArchived = onlyArchived != 0
 	view.CreatedAt = domain.MustParseTimestamp(createdAt)
 	view.UpdatedAt = domain.MustParseTimestamp(updatedAt)
 	return view, nil
@@ -334,16 +344,18 @@ func (r *SavedViewRepository) Upsert(ctx context.Context, view domain.SavedView)
 	}
 
 	_, err = r.db.ExecContext(ctx,
-		`INSERT INTO saved_views (`+savedViewColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		`INSERT INTO saved_views (`+savedViewColumns+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		 ON CONFLICT(id) DO UPDATE SET
 		   name = excluded.name, query = excluded.query,
 		   active_tag_ids_json = excluded.active_tag_ids_json,
 		   active_author_handles_json = excluded.active_author_handles_json,
-		   only_with_media = excluded.only_with_media, only_longform = excluded.only_longform,
-		   sort_order = excluded.sort_order, view_mode = excluded.view_mode,
+		   only_with_media = excluded.only_with_media, only_with_video = excluded.only_with_video,
+		   only_longform = excluded.only_longform,
+		   only_archived = excluded.only_archived, sort_order = excluded.sort_order, view_mode = excluded.view_mode,
 		   updated_at = excluded.updated_at`,
 		view.ID, view.Name, view.Query, tagIDsJSON, handlesJSON,
-		boolToInt(view.OnlyWithMedia), boolToInt(view.OnlyLongform),
+		boolToInt(view.OnlyWithMedia), boolToInt(view.OnlyWithVideo), boolToInt(view.OnlyLongform),
+		boolToInt(view.OnlyArchived),
 		view.SortOrder, view.ViewMode,
 		domain.FormatTimestamp(view.CreatedAt), domain.FormatTimestamp(view.UpdatedAt))
 	if err != nil {
@@ -499,21 +511,68 @@ func (r *SyncRunRepository) Active(ctx context.Context) (domain.SyncRun, bool, e
 	return run, true, nil
 }
 
-// MarkInterrupted closes out runs left running by a crash.
+// ClaimStart records a run as running only if no live run owns the library.
 //
-// This is the startup self-heal. A run that died without reporting
-// leaves the UI claiming a sync is in flight forever, and nothing else in the app
-// will ever clear it: the process that owned the run is gone.
+// Two statements, and the order matters. The first closes out runs whose
+// heartbeat stopped before staleBefore -- a process that died, or an older build
+// whose row has no heartbeat at all. The second inserts only when no running row
+// is left, which is atomic within its own statement: if another process inserted
+// in between, this one matches nothing and reports false rather than starting a
+// second writer.
+func (r *SyncRunRepository) ClaimStart(ctx context.Context, run domain.SyncRun, now, staleBefore time.Time) (bool, error) {
+	if _, err := r.MarkInterrupted(ctx, staleBefore, now); err != nil {
+		return false, err
+	}
+
+	result, err := r.db.ExecContext(ctx,
+		`INSERT INTO sync_runs (`+syncRunColumns+`, heartbeat_at)
+		 SELECT ?, ?, ?, NULL, ?, ?, ?, ?, ?, NULL, NULL, ?, ?
+		 WHERE NOT EXISTS (SELECT 1 FROM sync_runs WHERE status = 'running')`,
+		run.ID, run.Status, domain.FormatTimestamp(run.StartedAt),
+		run.FetchedCount, run.InsertedCount, run.UpdatedCount, run.FailedCount,
+		run.PagesCompleted, run.StrategyVersion, domain.FormatTimestamp(now))
+	if err != nil {
+		return false, fmt.Errorf("sqlite: claim sync run %s: %w", run.ID, err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return affected == 1, nil
+}
+
+// TouchHeartbeat moves a running run's heartbeat.
+func (r *SyncRunRepository) TouchHeartbeat(ctx context.Context, runID string, now time.Time) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE sync_runs SET heartbeat_at = ? WHERE id = ? AND status = 'running'`,
+		domain.FormatTimestamp(now), runID)
+	if err != nil {
+		return fmt.Errorf("sqlite: touch sync heartbeat %s: %w", runID, err)
+	}
+	return nil
+}
+
+// MarkInterrupted closes out runs whose heartbeat stopped before cutoff.
+//
+// This is the startup self-heal. A run that died without reporting leaves the UI
+// claiming a sync is in flight forever, and nothing else in the app will ever
+// clear it: the process that owned the run is gone.
+//
+// The cutoff is not optional. Closing every running row would also close one
+// another process is still making progress on -- the window and `trove sync` can
+// legitimately overlap -- and the second process would then be free to start a
+// second writer on the same library.
 //
 // The kind is "interrupted" specifically, not "unknown": the cause is known, and
 // its remedy — just sync again — is different from a schema change's.
-func (r *SyncRunRepository) MarkInterrupted(ctx context.Context, now time.Time) (int, error) {
+func (r *SyncRunRepository) MarkInterrupted(ctx context.Context, cutoff, now time.Time) (int, error) {
 	result, err := r.db.ExecContext(ctx,
 		`UPDATE sync_runs
 		 SET status = 'error', finished_at = ?, error_kind = ?, error_summary = ?
-		 WHERE status = 'running'`,
+		 WHERE status = 'running'
+		   AND (heartbeat_at IS NULL OR heartbeat_at < ?)`,
 		domain.FormatTimestamp(now), domain.ErrInterrupted,
-		"the app stopped before this sync finished")
+		"the app stopped before this sync finished", domain.FormatTimestamp(cutoff))
 	if err != nil {
 		return 0, fmt.Errorf("sqlite: mark interrupted sync runs: %w", err)
 	}

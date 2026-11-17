@@ -444,6 +444,34 @@ const (
 // ShowToast is a message with the plain tone, which is what most callers mean.
 func (s *Shell) ShowToast(message string) { s.ShowStatus(ToastOK, message) }
 
+// ShowToastAction is a receipt with a way back.
+//
+// The one action that can be undone from the list is archiving: the row leaves the list as
+// it is archived, so the message is the only thing on screen that says where it went, and
+// while it is up the reader still knows exactly what "undo" would restore.
+func (s *Shell) ShowToastAction(message, label string, action func()) {
+	s.ShowStatus(ToastOK, message)
+	s.state.ToastActionLabel = label
+	s.state.ToastAction = action
+}
+
+// RunToastAction runs the receipt's one action and dismisses the toast.
+//
+// The toast goes first: the action is free to show its own receipt, and two sentences
+// stacked on the same deadline would be two claims about the same row.
+func (s *Shell) RunToastAction() {
+	action := s.state.ToastAction
+	s.state.ToastMessage = ""
+	s.state.ToastActionLabel = ""
+	s.state.ToastAction = nil
+	if s.window != nil {
+		s.window.Invalidate()
+	}
+	if action != nil {
+		action()
+	}
+}
+
 // toastTone is the ink and the tint for one of the three outcomes.
 func toastTone(kind string, theme *ui.Theme) ui.Color {
 	switch kind {
@@ -468,6 +496,10 @@ func toastTone(kind string, theme *ui.Theme) ui.Color {
 func (s *Shell) ShowStatus(kind, message string) {
 	s.state.ToastMessage = message
 	s.state.ToastKind = kind
+	// A status line always replaces the last one whole. An undo button that outlived its
+	// own sentence would act on a row the new sentence is not about.
+	s.state.ToastActionLabel = ""
+	s.state.ToastAction = nil
 	duration := ToastDismissAfter
 	if kind == ToastWarn {
 		duration = ToastWarnAfter
@@ -683,7 +715,7 @@ func (s *Shell) AcceptVisibleSuggestions(ctx context.Context) int {
 	accepts, failures := s.suggestions.AcceptAll(ctx, ids)
 	if len(failures) > 0 {
 		// A count rather than one row's message: the batch is what failed.
-		s.ShowStatus(ToastError, fmt.Sprintf("%d of %d suggestions could not be applied", len(failures), len(ids)))
+		s.ShowStatus(ToastError, s.t().Tf(i18n.SuggestionsApplyFailed, len(failures), len(ids)))
 	}
 	s.refreshSuggestions(ctx)
 

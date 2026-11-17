@@ -296,6 +296,57 @@ func sidebarListScroll(c *ui.Context) ui.Element {
 		ScrollbarInsets(0, -SidebarScrollbarHidden, 0, 0)
 }
 
+// navRowHandle is the keyboard handle of one sidebar row, made once and kept.
+func (s *Shell) navRowHandle(id string) *ui.Handle {
+	if s.navRows == nil {
+		s.navRows = make(map[string]*ui.Handle)
+	}
+	handle := s.navRows[id]
+	if handle == nil {
+		handle = &ui.Handle{}
+		s.navRows[id] = handle
+	}
+	return handle
+}
+
+// sidebarRowKeys makes Up and Down walk one sidebar list's rows.
+//
+// Each row is a focusable clickable, so Tab already reaches it and Enter or Space presses
+// the one under the keyboard. What a reader could not do is move down the list directly:
+// Tab made them pass every control between two rows, and the pointer's next row had no key.
+// The list is the ancestor of every row, so MyGo hands it an arrow the row itself did not
+// take, and the row it moves to is the one the focus names.
+func (s *Shell) sidebarRowKeys(c *ui.Context, list ui.Element, ids []string) ui.Element {
+	move := func(step int) {
+		if len(ids) == 0 {
+			return
+		}
+		at := -1
+		for i, id := range ids {
+			if s.navRowHandle(id).Focused(c) {
+				at = i
+				break
+			}
+		}
+		next := 0
+		switch {
+		case at >= 0:
+			next = at + step
+		case step < 0:
+			// Nothing is focused yet: Down starts at the top, Up at the bottom.
+			next = len(ids) - 1
+		}
+		if next < 0 || next >= len(ids) {
+			// A list is not a ring: the ends stay put.
+			return
+		}
+		s.navRowHandle(ids[next]).Focus(c)
+	}
+	return list.
+		OnShortcut(0, ui.KeyDown, func() { move(1) }).
+		OnShortcut(0, ui.KeyUp, func() { move(-1) })
+}
+
 // sidebarTagsBody is the tags tab: its search field and the tag rows under it.
 //
 // This tab does not open with two navigation rows (全部书签 and 待确认标签): it is the tags and
@@ -315,6 +366,8 @@ func (s *Shell) sidebarTagsBody(c *ui.Context, theme *ui.Theme, rail RailTokens)
 		sidebarListScroll(c).Children(func() {
 			list := ui.Column(c).FillWidth().GapY(SidebarRowsGap)
 			var selected ui.Element
+			// The rows Up and Down walk, in the order they are drawn.
+			var rowIDs []string
 			list.Children(func() {
 				if s.state.CreatingTag {
 					// The draft is the whole row: the 14-point hash and the field 8 apart, and
@@ -364,7 +417,9 @@ func (s *Shell) sidebarTagsBody(c *ui.Context, theme *ui.Theme, rail RailTokens)
 						FontSize(FontSmall).TextColor(theme.TextMuted).PaddingY(3)
 				}
 				for _, tag := range visible {
-					row, active := s.tagRow(c, theme, rail, prefixTag+tag.ID, tag.Name, s.tagCount(tag))
+					id := prefixTag + tag.ID
+					row, active := s.tagRow(c, theme, rail, id, tag.Name, s.tagCount(tag))
+					rowIDs = append(rowIDs, id)
 					// Several tags can be active at once, but there is one shape: it marks
 					// the first.
 					if active && !selected.Valid() {
@@ -372,7 +427,7 @@ func (s *Shell) sidebarTagsBody(c *ui.Context, theme *ui.Theme, rail RailTokens)
 					}
 				}
 			})
-			navHighlight(c, list, selected, theme)
+			navHighlight(c, s.sidebarRowKeys(c, list, rowIDs), selected, theme)
 		})
 	})
 }
@@ -392,6 +447,7 @@ func (s *Shell) sidebarAuthorsBody(c *ui.Context, theme *ui.Theme, rail RailToke
 		sidebarListScroll(c).Children(func() {
 			list := ui.Column(c).FillWidth().GapY(SidebarRowsGap)
 			var selected ui.Element
+			var rowIDs []string
 			list.Children(func() {
 				authors := s.visibleAuthors()
 				// An empty column is a dead end otherwise: nothing says whether the library
@@ -406,6 +462,7 @@ func (s *Shell) sidebarAuthorsBody(c *ui.Context, theme *ui.Theme, rail RailToke
 				}
 				for _, author := range authors {
 					row := s.authorRow(c, theme, rail, author)
+					rowIDs = append(rowIDs, "author:"+author.AuthorHandle)
 					// One shape, as for the tags: several authors may narrow the results,
 					// and the shape marks the first.
 					if s.authorActive(author.AuthorHandle) && !selected.Valid() {
@@ -413,7 +470,7 @@ func (s *Shell) sidebarAuthorsBody(c *ui.Context, theme *ui.Theme, rail RailToke
 					}
 				}
 			})
-			navHighlight(c, list, selected, theme)
+			navHighlight(c, s.sidebarRowKeys(c, list, rowIDs), selected, theme)
 		})
 	})
 }
@@ -434,7 +491,8 @@ func (s *Shell) authorRow(c *ui.Context, theme *ui.Theme, rail RailTokens, autho
 	// Two lines need more than a sub-row's 26: the avatar and the name over the handle are
 	// 30 high, while the type is the sub-row's own (12.5 name, 11 handle).
 	row := ui.Row(c).FillWidth().Padding(0, SubRowPadX).Radius(NavRowRadius).
-		GapX(SpaceBase).MinHeight(NavRowMinHeight).Border(1, ui.Transparent).Focusable()
+		GapX(SpaceBase).MinHeight(NavRowMinHeight).Border(1, ui.Transparent).Focusable().
+		Bind(s.navRowHandle("author:" + author.AuthorHandle))
 	row.Key("author:" + author.AuthorHandle).OnClick(func() {
 		s.toggleAuthorFilter(context.Background(), author.AuthorHandle)
 	}).ContextMenu(func(m *ui.Menu) {

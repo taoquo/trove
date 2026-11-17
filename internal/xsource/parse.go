@@ -33,6 +33,11 @@ type ParseResult struct {
 	// SkippedEntries counts entries that were understood but had nothing to
 	// store, such as an unavailable post. These are normal.
 	SkippedEntries int
+	// CursorSeen reports whether the page carried a bottom cursor entry at all.
+	// A page with posts but no cursor is a changed response shape, not the end of
+	// the timeline: reading it as the end is what let a drifted entryId freeze a
+	// library at its first page.
+	CursorSeen bool
 	// RawPayloads maps tweet id to the raw tweet result, populated only when
 	// ParseOptions.CaptureRawPayload is set.
 	RawPayloads map[string]json.RawMessage
@@ -76,6 +81,7 @@ func ParseBookmarkEntries(payload map[string]any, opts ParseOptions) (ParseResul
 		entryID := str(entry["entryId"])
 
 		if strings.HasPrefix(entryID, entryCursorPrefix) {
+			result.CursorSeen = true
 			if content := obj(entry["content"]); content != nil {
 				result.NextCursor = str(content["value"])
 			}
@@ -122,6 +128,16 @@ func ParseBookmarkEntries(payload map[string]any, opts ParseOptions) (ParseResul
 	if result.NextCursor == "" && len(result.Bookmarks) == 0 && result.UnrecognizedEntries > 0 {
 		return ParseResult{}, newError(domain.ErrResponseSchemaChanged, "parse", 0,
 			fmt.Errorf("timeline yielded no bookmarks and no cursor"))
+	}
+
+	// A page that carried posts but no bottom cursor is the dangerous shape: X
+	// always sends one, so its absence means the entry prefix moved. Reading it
+	// as "end of timeline" would record a completed full sync from the first
+	// page and permanently freeze the library. Failing here costs one run and
+	// says why.
+	if len(result.Bookmarks) > 0 && !result.CursorSeen {
+		return ParseResult{}, newError(domain.ErrResponseSchemaChanged, "parse", 0,
+			fmt.Errorf("page carried %d post(s) but no bottom cursor; the response shape changed", len(result.Bookmarks)))
 	}
 
 	return result, nil

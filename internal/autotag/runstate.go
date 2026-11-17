@@ -308,6 +308,12 @@ func ShouldContinue(summary RunSummary, continueCount int, autoContinue bool) bo
 		// The user asked it to stop; continuing would ignore that.
 		return false
 	}
+	if summary.Outcome == OutcomeErrorBudget {
+		// The provider refused three batches in a row. Chaining another run would
+		// start the same requests against the same wall, and the sentence the run
+		// left behind already says what to fix.
+		return false
+	}
 	if summary.UnprocessedCount <= 0 {
 		return false
 	}
@@ -336,6 +342,10 @@ const (
 	OutcomeCancelled       RunOutcome = "cancelled"
 	OutcomeInterrupted     RunOutcome = "interrupted"
 	OutcomeFailed          RunOutcome = "failed"
+	// OutcomeErrorBudget means the run stopped because the provider kept failing.
+	// It is distinct from OutcomeFailed: some batches may have succeeded, and the
+	// run stopped on purpose rather than running every batch into the same wall.
+	OutcomeErrorBudget RunOutcome = "error-budget"
 )
 
 // AllRunOutcomes is every value, for validation on read.
@@ -343,7 +353,7 @@ var AllRunOutcomes = []RunOutcome{
 	OutcomeOK, OutcomeDisabled, OutcomeLLMDisabled, OutcomeMissingAPIKey,
 	OutcomeNoCandidates, OutcomeEmptyVocabulary, OutcomeAllBlocked,
 	OutcomeBudgetExhausted, OutcomeTimedOut, OutcomeCancelled,
-	OutcomeInterrupted, OutcomeFailed,
+	OutcomeInterrupted, OutcomeFailed, OutcomeErrorBudget,
 }
 
 // ValidRunOutcome reports whether a stored outcome is one this build knows.
@@ -374,7 +384,12 @@ type RunSummary struct {
 	BlockedDroppedCount int
 	BudgetDroppedCount  int
 	UnprocessedCount    int
-	Error               string
+	// InputTokens and OutputTokens are what the provider reported for this run, or
+	// zero when it reported nothing. A run with no model phase spends nothing, and
+	// a provider that omits usage must not be shown as free.
+	InputTokens  int
+	OutputTokens int
+	Error        string
 }
 
 // UnboundedBudget is the sentinel for an unlimited new-tag budget.

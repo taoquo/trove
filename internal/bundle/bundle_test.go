@@ -130,6 +130,27 @@ func TestEveryFileIsDeclaredWithItsHash(t *testing.T) {
 	}
 }
 
+// TestTheManifestIsWrittenLast pins the order streaming requires.
+//
+// Each data file is encoded straight into its zip entry, so the manifest can only
+// be written once every file's size and hash are known. That is safe because a
+// reader indexes the archive by name; the test is here to notice if either side
+// ever starts assuming the manifest comes first.
+func TestTheManifestIsWrittenLast(t *testing.T) {
+	data := writeSample(t)
+	archive, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		t.Fatalf("the output must still be a zip: %v", err)
+	}
+	if len(archive.File) == 0 {
+		t.Fatal("the bundle has no entries")
+	}
+	last := archive.File[len(archive.File)-1].Name
+	if last != FileManifest {
+		t.Errorf("last entry is %q, want %q", last, FileManifest)
+	}
+}
+
 // TestExcludedFilesAreAbsent covers the options: an excluded file is not written
 // at all, and the manifest says so.
 func TestExcludedFilesAreAbsent(t *testing.T) {
@@ -548,5 +569,54 @@ func buildArchive(t *testing.T, entries map[string][]byte) []byte {
 func TestStepOfOnAnUnrelatedError(t *testing.T) {
 	if step := StepOf(errors.New("something else")); step != "" {
 		t.Errorf("step = %q, want empty", step)
+	}
+}
+
+// TestAFormatVersionOneBundleIsStillRead is the compatibility half of the version bump.
+//
+// Version 2 added tombstones.json. A version 1 archive does not carry it, and its
+// absence means "nothing was deleted locally" -- the only thing a version 1 backup
+// could know. Reading must accept it, and the missing file must decode as no deletes
+// rather than as an error or as a partial bundle.
+func TestAFormatVersionOneBundleIsStillRead(t *testing.T) {
+	newer := readBytes(t, writeSample(t))
+
+	var manifest Manifest
+	if err := json.Unmarshal(newer.Files[FileManifest], &manifest); err != nil {
+		t.Fatalf("decode manifest: %v", err)
+	}
+	manifest.FormatVersion = 1
+	manifest.Counts.Tombstones = 0
+	files := manifest.Files[:0]
+	for _, file := range manifest.Files {
+		if file.Path != FileTombstones {
+			files = append(files, file)
+		}
+	}
+	manifest.Files = files
+
+	entries := make(map[string][]byte, len(newer.Files))
+	for name, body := range newer.Files {
+		if name == FileTombstones {
+			continue
+		}
+		entries[name] = body
+	}
+	manifestBody, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatalf("encode manifest: %v", err)
+	}
+	entries[FileManifest] = manifestBody
+
+	older := readBytes(t, buildArchive(t, entries))
+	if _, present := older.Files[FileTombstones]; present {
+		t.Fatalf("the archive still holds %s", FileTombstones)
+	}
+	tombstones, err := Decode[map[string]any](older, FileTombstones)
+	if err != nil {
+		t.Fatalf("Decode tombstones: %v", err)
+	}
+	if len(tombstones) != 0 {
+		t.Errorf("a version 1 bundle yields %d tombstones, want none", len(tombstones))
 	}
 }

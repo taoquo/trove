@@ -7,7 +7,7 @@ import (
 
 // AnalysisOutcome is why a bookmark's LLM analysis ended the way it did.
 //
-// All four values are persisted: a bookmark the model deliberately skipped still
+// Every value is persisted: a bookmark the model deliberately skipped still
 // needs a ledger row, otherwise it is re-sent on every later run.
 type AnalysisOutcome = string
 
@@ -16,7 +16,19 @@ const (
 	OutcomeNoTopic       AnalysisOutcome = "no-topic"
 	OutcomeAllBlocked    AnalysisOutcome = "all-blocked"
 	OutcomeBudgetDropped AnalysisOutcome = "budget-dropped"
+	// OutcomeError records that the batch carrying this bookmark failed. It is the
+	// ledger's third job beside "answered" and "answered with nothing": a provider
+	// that refuses every request would otherwise re-send the same bookmarks on every
+	// run, paying for the same failure again. The row is retried once the prompt
+	// version or the model changes, which is the only event that could change the
+	// answer.
+	OutcomeError AnalysisOutcome = "error"
 )
+
+// AllAnalysisOutcomes is every value, for validation on read.
+var AllAnalysisOutcomes = []AnalysisOutcome{
+	OutcomeTagged, OutcomeNoTopic, OutcomeAllBlocked, OutcomeBudgetDropped, OutcomeError,
+}
 
 // LlmPromptVersion must be bumped whenever the prompt changes in a way that
 // could change a verdict, so answers given to the old question are re-asked. It is
@@ -36,7 +48,11 @@ type LlmAnalysis struct {
 	Model         string
 	ContentHash   string
 	Outcome       AnalysisOutcome
-	TagCount      int
+	// ErrorKind is the provider failure's classification, set only when Outcome is
+	// OutcomeError. It is what tells a wrong key from a rate limit when the ledger is
+	// inspected later.
+	ErrorKind string
+	TagCount  int
 }
 
 // IsAnalysisReusable reports whether a stored verdict is still usable: it is usable only

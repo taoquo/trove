@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/taoquo/trove/internal/domain"
 	"github.com/taoquo/trove/internal/llm"
@@ -284,6 +285,27 @@ type ProviderClient struct {
 	Capabilities llm.ModelCapabilities
 	// System is the optional system instruction.
 	System string
+
+	// mu guards usage, which the wave goroutines add to concurrently.
+	mu    sync.Mutex
+	usage llm.TokenUsage
+}
+
+// Usage is what this client's calls have cost so far.
+//
+// It is the provider's report, added up. A provider that does not report usage
+// leaves it at zero, and the summary says nothing rather than claiming the run was
+// free.
+func (c *ProviderClient) Usage() llm.TokenUsage {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.usage
+}
+
+func (c *ProviderClient) addUsage(usage llm.TokenUsage) {
+	c.mu.Lock()
+	c.usage = c.usage.Add(usage)
+	c.mu.Unlock()
 }
 
 // SuggestTags performs one batch call.
@@ -323,9 +345,17 @@ func (c *ProviderClient) SuggestTags(ctx context.Context, request TagRequest) ([
 			JSONSchema: schema,
 			JSONMode:   llm.JsonRequire,
 			DeadlineMs: request.DeadlineMs,
+			// The ceiling comes from the batch: a fixed default is too small for a
+			// full batch (the JSON is cut off, which reads as a bad answer) and too
+			// large for a one-post retry.
+			MaxOutputTokens: outputBudget(len(request.Batch)),
 		}, attemptEnv)
 
 		if err == nil {
+			// Counted before parsing: the provider was paid for this reply whether or
+			// not it parsed, and a retried attempt's first call is real spending.
+			c.addUsage(result.Usage)
+
 			verdicts, parseErr := ParseVerdicts(result, request.Batch)
 			if parseErr == nil {
 				return verdicts, nil
@@ -340,28 +370,54 @@ func (c *ProviderClient) SuggestTags(ctx context.Context, request TagRequest) ([
 
 		var classified *llm.LlmError
 		if !errors.As(err, &classified) {
-			return nil, err
+			return nil, providerFailure(err, c.Env.APIKey)
 		}
 
 		switch classified.Kind {
 		case llm.KindUnsupportedParam:
 			// Drop exactly the parameter the provider named, then try once more.
 			if classified.DroppedOption == "" || attempt > 0 {
-				return nil, err
+				return nil, providerFailure(err, c.Env.APIKey)
 			}
 			capabilities = degradeCapabilities(capabilities, classified.DroppedOption)
 		case llm.KindInvalidJSON:
 			// Fall through to the retry.
 		default:
 			// Everything else fails identically on a retry.
-			return nil, err
+			return nil, providerFailure(err, c.Env.APIKey)
 		}
 	}
 
 	if lastErr == nil {
 		lastErr = llm.InvalidJSONError("the model did not return a usable result")
 	}
-	return nil, lastErr
+	return nil, providerFailure(lastErr, c.Env.APIKey)
+}
+
+// providerFailure is a provider error ready to leave this package.
+//
+// The credential this client holds is the one thing a failure may echo: a provider that
+// quotes the Authorization header in its refusal, or a url.Error carrying the key in the
+// query. Redaction happens here because this is the only layer holding both the error and
+// the secret; the pipeline stores the resulting text in app_settings and the panel shows
+// it.
+//
+// A cancellation is not a provider failure and keeps its identity, so the pipeline can
+// still tell a stopped run from a failed one.
+func providerFailure(err error, apiKey string) error {
+	if err == nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+	return llm.SanitizeLlmError(err, apiKey)
+}
+
+// outputBudget is the response ceiling for a batch of this size.
+//
+// It is a pointer because ChatRequest treats nil as "the provider's default", which
+// is not a number this package gets to choose.
+func outputBudget(batchSize int) *int {
+	derived := llm.DeriveMaxOutputTokens(batchSize)
+	return &derived
 }
 
 // degradeCapabilities removes the parameter a provider rejected.
@@ -612,10 +668,62 @@ func TestProviderConnection(settings Settings, resolve CredentialResolver) Conne
 
 	if err := adapter.Probe(env); err != nil {
 		result.ErrorKind = string(llm.ErrorKindOf(err))
-		result.Message = err.Error()
+		// The message is shown in the panel and can come from a provider that echoes the
+		// header it was sent; the key is scrubbed here, where it is known.
+		result.Message = llm.SanitizeLlmError(err, env.APIKey).Error()
+		return result
+	}
+
+	// The listing only proves the key can enumerate models. It answers 200 for a key
+	// whose model name is misspelled, and the panel then said "connected" for a
+	// configuration every run would fail on. One minimal completion is the only check
+	// that exercises the endpoint, the model name and the JSON path a run uses.
+	if err := connectionProbe(adapter, &env); err != nil {
+		result.ErrorKind = string(llm.ErrorKindOf(err))
+		result.Message = llm.SanitizeLlmError(err, env.APIKey).Error()
 		return result
 	}
 
 	result.OK = true
 	return result
+}
+
+// The budget for the connection test's real call.
+//
+// Small enough to be almost free, large enough to hold a forced tool call with a
+// one-word answer. An 8-token cap looks cheaper and fails working Anthropic
+// configurations, because the tool_use framing alone costs more than that -- and a
+// test that fails a working setup is worse than no test.
+const (
+	connectionProbeMaxTokens  = 64
+	connectionProbeDeadlineMs = 20_000
+)
+
+// connectionProbe makes the one real call the connection test needs.
+func connectionProbe(adapter llm.Adapter, env *llm.AdapterEnv) error {
+	capabilities := llm.ResolveCapabilities(adapter.ID(), env.Model, env.Overrides, env.Learned)
+	env.Capabilities = &capabilities
+	ceiling := connectionProbeMaxTokens
+
+	_, err := adapter.ChatJSON(context.Background(), llm.ChatRequest{
+		System:          "You are a connectivity check. Answer in JSON only.",
+		Prompt:          `Reply with {"ok":true} and nothing else.`,
+		JSONSchema:      connectionProbeSchema(),
+		JSONMode:        llm.JsonRequire,
+		DeadlineMs:      connectionProbeDeadlineMs,
+		MaxOutputTokens: &ceiling,
+	}, *env)
+	return err
+}
+
+// connectionProbeSchema is the smallest object every provider can be asked for.
+func connectionProbeSchema() map[string]any {
+	return map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"ok": map[string]any{"type": "boolean"},
+		},
+		"required":             []string{"ok"},
+		"additionalProperties": false,
+	}
 }

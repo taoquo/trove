@@ -114,7 +114,12 @@ func TestAnUnchangedBrowserPairFailsTheRun(t *testing.T) {
 // through the Keychain for it would be a strange thing to do, and the refresh
 // cannot fix a 429 either.
 func TestOnlyAnAuthFailureIsRefreshed(t *testing.T) {
-	for _, kind := range []domain.SyncErrorKind{domain.ErrNetwork, domain.ErrRateLimited, domain.ErrUnknown} {
+	// credential_store is in the list on purpose: the Keychain refused, so there is
+	// nothing a browser read can heal, and opening one would be an excursion with no
+	// fix at the end of it.
+	for _, kind := range []domain.SyncErrorKind{
+		domain.ErrNetwork, domain.ErrRateLimited, domain.ErrUnknown, domain.ErrCredentialStore,
+	} {
 		t.Run(string(kind), func(t *testing.T) {
 			source := &authFailSource{fail: kind}
 			service, _ := newService(t, source)

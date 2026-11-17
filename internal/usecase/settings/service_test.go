@@ -2,6 +2,7 @@ package settings
 
 import (
 	"context"
+	"encoding/json"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -67,6 +68,81 @@ func TestPreferencesRoundTrip(t *testing.T) {
 	}
 	if loaded.Sync.PageLimit != 5000 || !loaded.Sync.SyncOnLaunch || !loaded.Sync.SaveRawPayloads {
 		t.Errorf("sync preferences = %+v", loaded.Sync)
+	}
+}
+
+// TestAutoBackupsAreOnUntilTurnedOff covers the shape of the field: a preferences
+// object written before automatic backups existed has no backup block, and that absence
+// has to mean on rather than off.
+func TestAutoBackupsAreOnUntilTurnedOff(t *testing.T) {
+	if !DefaultPreferences().AutoBackupEnabled() {
+		t.Error("a fresh install must back up")
+	}
+
+	var older Preferences
+	if err := json.Unmarshal([]byte(`{"appearance":"system"}`), &older); err != nil {
+		t.Fatalf("decode older preferences: %v", err)
+	}
+	if !older.AutoBackupEnabled() {
+		t.Error("preferences from before the feature turned backups off")
+	}
+
+	off := false
+	if (Preferences{Backup: BackupPreferences{AutoBackups: &off}}).AutoBackupEnabled() {
+		t.Error("an explicit off did not stick")
+	}
+
+	service, _ := newService(t)
+	ctx := context.Background()
+	stored, err := service.Load(ctx)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	stored.Backup.AutoBackups = &off
+	if err := service.Save(ctx, stored); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	loaded, err := service.Load(ctx)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if loaded.AutoBackupEnabled() {
+		t.Error("the stored off did not survive a round trip")
+	}
+}
+
+// TestTheTroubleshootingLogIsOffUntilAsked pins the default: a preferences object from
+// before the log existed has no diagnostics block, and absence means off. A log is a
+// support aid the reader asks for, not something an upgrade switches on under them.
+func TestTheTroubleshootingLogIsOffUntilAsked(t *testing.T) {
+	var older Preferences
+	if err := json.Unmarshal([]byte(`{"appearance":"system"}`), &older); err != nil {
+		t.Fatalf("decode older preferences: %v", err)
+	}
+	if older.Diagnostics.FileLog {
+		t.Error("preferences from before the log turned it on")
+	}
+
+	service, _ := newService(t)
+	ctx := context.Background()
+	stored, err := service.Load(ctx)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if stored.Diagnostics.FileLog {
+		t.Error("a fresh install has the log on")
+	}
+
+	stored.Diagnostics.FileLog = true
+	if err := service.Save(ctx, stored); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	loaded, err := service.Load(ctx)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if !loaded.Diagnostics.FileLog {
+		t.Error("the stored on did not survive a round trip")
 	}
 }
 

@@ -71,6 +71,17 @@ func newError(kind domain.SyncErrorKind, op string, status int, err error) *Erro
 	return &Error{Kind: kind, Op: op, Status: status, Err: err}
 }
 
+// Classify wraps a failure that happened before a request, with a kind the
+// caller already knows.
+//
+// The credential source is the reason it exists: a locked Keychain and an expired
+// session are both "the request never left", but only one of them is fixed by
+// signing in again. The source knows which; this carries its answer through the
+// client instead of flattening both into unauthorized.
+func Classify(kind domain.SyncErrorKind, op string, err error) *Error {
+	return newError(kind, op, 0, err)
+}
+
 // KindOf returns the classification of err, or an empty kind when err is nil.
 //
 // Cancellation is deliberately *not* given a kind: the caller distinguishes it

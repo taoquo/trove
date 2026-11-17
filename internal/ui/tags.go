@@ -616,30 +616,6 @@ func (s *Shell) AskDeleteSidebarTag(tagID string) {
 	}
 }
 
-// SetTagTheme nests the focused tag under the picked one, or clears its theme.
-func (s *Shell) SetTagTheme(ctx context.Context) {
-	if s.service == nil || s.state.TagFocus == "" {
-		return
-	}
-
-	parentID := ""
-	if s.state.TagParentPick != s.t().T(i18n.TagParentNone) {
-		for _, item := range s.state.TagItems {
-			if item.Name == s.state.TagParentPick {
-				parentID = item.TagID
-				break
-			}
-		}
-	}
-
-	if _, err := s.service.SetTagParent(ctx, s.state.TagFocus, parentID); err != nil {
-		s.state.TagActionMsg = err.Error()
-		return
-	}
-	s.state.TagActionMsg = ""
-	s.ReloadTagLibraryAsync(ctx)
-}
-
 // SaveTagAliases writes the comma-separated aliases for the focused tag.
 func (s *Shell) SaveTagAliases(ctx context.Context) {
 	if s.service == nil || s.state.TagFocus == "" {
@@ -694,7 +670,8 @@ func (s *Shell) tagRow(c *ui.Context, theme *ui.Theme, rail RailTokens, id, labe
 	// and 12.5px text. It used to take the top-level row's
 	// 30/9/7/13, which is the row a page gets, not the row a tag under it gets.
 	row := ui.Row(c).FillWidth().Padding(0, SubRowPadX).Radius(SubRowRadius).
-		GapX(NavRowGap).MinHeight(SubRowMinHeight).Border(1, ui.Transparent).Focusable()
+		GapX(NavRowGap).MinHeight(SubRowMinHeight).Border(1, ui.Transparent).Focusable().
+		Bind(s.navRowHandle(id))
 	row.Key(id).OnClick(func() { s.toggleTagFilter(context.Background(), tagID) }).
 		ContextMenu(func(m *ui.Menu) { s.tagContextMenu(m, tagID, label) })
 	// No ground of its own in any state: the list's selection shape is the list's only

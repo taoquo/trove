@@ -6,17 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
-	"time"
-
 	"github.com/taoquo/trove/internal/bundle"
 	"github.com/taoquo/trove/internal/domain"
 	"github.com/taoquo/trove/internal/ports"
+	"sort"
+	"time"
 )
-
-// ErrValidation reports a bundle that failed a check. The wrapped error names the
-// step, so a caller can tell corruption from a version mismatch.
-var ErrValidation = errors.New("importexport: the bundle was rejected")
 
 // Service exports, imports and restores libraries.
 type Service struct {
@@ -46,232 +41,19 @@ func New(repos ports.Repositories, clock ports.Clock, appVersion string) *Servic
 	return &Service{repos: repos, clock: clock, AppVersion: appVersion}
 }
 
-// ExportOptions chooses what an export includes.
-type ExportOptions struct {
-	IncludeSyncRuns    bool
-	IncludeRawPayloads bool
-}
+// ErrValidation reports a bundle that failed a check. The wrapped error names the
+// step, so a caller can tell corruption from a version mismatch.
+var ErrValidation = errors.New("importexport: the bundle was rejected")
 
-// DefaultExportOptions are the legacy export defaults: sync history yes, raw payloads no.
-func DefaultExportOptions() ExportOptions {
-	return ExportOptions{IncludeSyncRuns: true, IncludeRawPayloads: false}
-}
+// ErrUnsupportedBundle reports a file whose shape this build cannot read.
+var ErrUnsupportedBundle = errors.New("importexport: the bundle holds data this build cannot read")
 
-// Export writes a bundle.
-//
-// The settings are taken from the injected allowlist, so a credential or a private
-// endpoint cannot reach the file even if it is stored in the same table.
-func (s *Service) Export(ctx context.Context, options ExportOptions) ([]byte, error) {
-	data, err := s.collect(ctx, options)
-	if err != nil {
-		return nil, err
-	}
+// Clock returns the service's clock reading, so a caller stamping alongside it
+// uses one clock.
+func (s *Service) Now() time.Time { return s.clock.Now() }
 
-	var buffer bytes.Buffer
-	if err := bundle.Write(&buffer, data, bundle.WriteOptions{
-		SourceAppVersion:   s.AppVersion,
-		IncludeSyncRuns:    options.IncludeSyncRuns,
-		IncludeRawPayloads: options.IncludeRawPayloads,
-		Baseline: bundle.SourceBaseline{
-			// The native app's data descends from the legacy schema; recording it
-			// lets an importer apply the right mappings.
-			LegacyDBVersion:       9,
-			SettingsSchemaVersion: 7,
-			ExportVersion:         2,
-		},
-		Now: s.clock.Now(),
-	}); err != nil {
-		return nil, err
-	}
-	return buffer.Bytes(), nil
-}
-
-// ErrIncomplete reports a service built without the stores an export needs.
-//
-// Export touches six tables, so a partial set of repositories would panic on a nil
-// interface. Failing with a message is the difference between a clear
-// configuration error and a crash with a stack trace.
-var ErrIncomplete = errors.New("importexport: the service is missing a repository")
-
-// require checks the stores an export reads.
-func (s *Service) require() error {
-	switch {
-	case s.repos.Bookmarks == nil:
-		return fmt.Errorf("%w: bookmarks", ErrIncomplete)
-	case s.repos.Tags == nil:
-		return fmt.Errorf("%w: tags", ErrIncomplete)
-	case s.repos.Lists == nil:
-		return fmt.Errorf("%w: lists", ErrIncomplete)
-	case s.repos.Suggestions == nil:
-		return fmt.Errorf("%w: suggestions", ErrIncomplete)
-	case s.repos.Analysis == nil:
-		return fmt.Errorf("%w: analysis", ErrIncomplete)
-	case s.repos.SavedViews == nil:
-		return fmt.Errorf("%w: saved views", ErrIncomplete)
-	}
-	return nil
-}
-
-// collect reads every table into the bundle's wire shape.
-func (s *Service) collect(ctx context.Context, options ExportOptions) (bundle.ExportData, error) {
-	data := bundle.ExportData{}
-
-	if err := s.require(); err != nil {
-		return data, err
-	}
-
-	bookmarks, err := s.repos.Bookmarks.All(ctx)
-	if err != nil {
-		return data, err
-	}
-	dtos := make([]BookmarkDTO, 0, len(bookmarks))
-	for _, bookmark := range bookmarks {
-		dtos = append(dtos, NewBookmarkDTO(bookmark))
-	}
-	if data.Bookmarks, err = marshalRecords(dtos); err != nil {
-		return data, fmt.Errorf("importexport: encode bookmarks: %w", err)
-	}
-
-	tags, err := s.repos.Tags.List(ctx)
-	if err != nil {
-		return data, err
-	}
-	tagDTOs := make([]TagDTO, 0, len(tags))
-	for _, tag := range tags {
-		tagDTOs = append(tagDTOs, NewTagDTO(tag))
-	}
-	if data.Tags, err = marshalRecords(tagDTOs); err != nil {
-		return data, fmt.Errorf("importexport: encode tags: %w", err)
-	}
-
-	relations, err := s.repos.Tags.AllRelations(ctx)
-	if err != nil {
-		return data, err
-	}
-	relationDTOs := make([]BookmarkTagDTO, 0, len(relations))
-	for _, relation := range relations {
-		relationDTOs = append(relationDTOs, BookmarkTagDTO{
-			BookmarkID: relation.BookmarkID,
-			TagID:      relation.TagID,
-			CreatedAt:  domain.FormatTimestamp(relation.CreatedAt),
-			Source:     relation.Source,
-		})
-	}
-	if data.BookmarkTags, err = marshalRecords(relationDTOs); err != nil {
-		return data, fmt.Errorf("importexport: encode bookmark tags: %w", err)
-	}
-
-	lists, err := s.repos.Lists.List(ctx)
-	if err != nil {
-		return data, err
-	}
-	listDTOs := make([]ListDTO, 0, len(lists))
-	for _, list := range lists {
-		listDTOs = append(listDTOs, NewListDTO(list))
-	}
-	if data.Lists, err = marshalRecords(listDTOs); err != nil {
-		return data, fmt.Errorf("importexport: encode lists: %w", err)
-	}
-
-	// Bookmark-to-list membership is read per bookmark: the repository exposes it
-	// that way, and a bookmark's list is what the format records.
-	memberships := make([]BookmarkListDTO, 0, len(bookmarks))
-	ids := make([]string, 0, len(bookmarks))
-	for _, bookmark := range bookmarks {
-		ids = append(ids, bookmark.TweetID)
-	}
-	byBookmark, err := s.repos.Bookmarks.ListByBookmark(ctx, ids)
-	if err != nil {
-		return data, err
-	}
-	for bookmarkID, list := range byBookmark {
-		memberships = append(memberships, BookmarkListDTO{
-			BookmarkID: bookmarkID,
-			ListID:     list.ID,
-			UpdatedAt:  domain.FormatTimestamp(list.UpdatedAt),
-		})
-	}
-	if data.BookmarkLists, err = marshalRecords(memberships); err != nil {
-		return data, fmt.Errorf("importexport: encode bookmark lists: %w", err)
-	}
-
-	suggestions, err := s.repos.Suggestions.All(ctx)
-	if err != nil {
-		return data, err
-	}
-	suggestionDTOs := make([]SuggestionDTO, 0, len(suggestions))
-	for _, suggestion := range suggestions {
-		suggestionDTOs = append(suggestionDTOs, NewSuggestionDTO(suggestion))
-	}
-	if data.TagSuggestions, err = marshalRecords(suggestionDTOs); err != nil {
-		return data, fmt.Errorf("importexport: encode suggestions: %w", err)
-	}
-
-	analysis, err := s.repos.Analysis.List(ctx)
-	if err != nil {
-		return data, err
-	}
-	analysisDTOs := make([]AnalysisDTO, 0, len(analysis))
-	for _, record := range analysis {
-		analysisDTOs = append(analysisDTOs, NewAnalysisDTO(record))
-	}
-	if data.LLMAnalysis, err = marshalRecords(analysisDTOs); err != nil {
-		return data, fmt.Errorf("importexport: encode analysis: %w", err)
-	}
-
-	views, err := s.repos.SavedViews.List(ctx)
-	if err != nil {
-		return data, err
-	}
-	viewDTOs := make([]SavedViewDTO, 0, len(views))
-	for _, view := range views {
-		viewDTOs = append(viewDTOs, NewSavedViewDTO(view))
-	}
-	if data.SavedViews, err = marshalRecords(viewDTOs); err != nil {
-		return data, fmt.Errorf("importexport: encode saved views: %w", err)
-	}
-
-	// Sync history is optional: it is diagnostic, and a user restoring a backup
-	// rarely wants another machine's sync log.
-	if options.IncludeSyncRuns && s.repos.SyncRuns != nil {
-		runs, err := s.repos.SyncRuns.Recent(ctx, syncRunsExported)
-		if err != nil {
-			return data, err
-		}
-		runDTOs := make([]SyncRunDTO, 0, len(runs))
-		for _, run := range runs {
-			runDTOs = append(runDTOs, NewSyncRunDTO(run))
-		}
-		if data.SyncRuns, err = marshalRecords(runDTOs); err != nil {
-			return data, fmt.Errorf("importexport: encode sync runs: %w", err)
-		}
-	}
-
-	// Raw payloads are off by default: they duplicate the parsed fields and are
-	// the largest thing in the database.
-	if options.IncludeRawPayloads && s.repos.Bookmarks != nil {
-		payloads, err := s.repos.Bookmarks.RawPayloads(ctx, ids)
-		if err != nil {
-			return data, err
-		}
-		payloadDTOs := make([]RawPayloadDTO, 0, len(payloads))
-		for _, payload := range payloads {
-			payloadDTOs = append(payloadDTOs, NewRawPayloadDTO(payload))
-		}
-		if data.RawPayloads, err = marshalRecords(payloadDTOs); err != nil {
-			return data, fmt.Errorf("importexport: encode raw payloads: %w", err)
-		}
-	}
-
-	// The settings come from the allowlist, never from a raw table dump.
-	if s.ExportableSettings != nil {
-		if data.Settings, err = s.ExportableSettings(ctx); err != nil {
-			return data, err
-		}
-	}
-
-	return data, nil
-}
+// UseSecretClearer installs the hook that forgets stored secrets.
+func (s *Service) UseSecretClearer(clear func(context.Context) error) { s.clearSecrets = clear }
 
 // Preview inspects a bundle without applying it.
 //
@@ -314,15 +96,17 @@ func (s *Service) Preview(ctx context.Context, raw []byte) (bundle.Preview, erro
 
 // ImportReport says what a merge changed.
 type ImportReport struct {
-	BookmarksInserted int
-	BookmarksUpdated  int
-	TagsInserted      int
-	ListsInserted     int
-	RelationsAdded    int
-	SuggestionsAdded  int
-	ViewsWritten      int
-	SyncRunsAdded     int
-	AnalysisWritten   int
+	BookmarksInserted  int
+	BookmarksUpdated   int
+	TagsInserted       int
+	ListsInserted      int
+	RelationsAdded     int
+	SuggestionsAdded   int
+	ViewsWritten       int
+	SyncRunsAdded      int
+	AnalysisWritten    int
+	RawPayloadsWritten int
+	TombstonesWritten  int
 	// Warnings are the consequences the user must be told about, such as a legacy
 	// backup that will cause every bookmark to be analysed again.
 	Warnings []LegacyWarning
@@ -333,78 +117,13 @@ type ImportReport struct {
 // accumulates thousands of runs, and a backup does not need all of them.
 const syncRunsExported = 200
 
-// Import merges a bundle into the library.
+// importBatch is how many rows one transaction of an import writes.
 //
-// Merging is idempotent: every write is an upsert or an insert-if-absent, so
-// importing the same bundle twice leaves the library exactly as one import did.
-// Existing data is never removed, which is what distinguishes Import from Restore.
-func (s *Service) Import(ctx context.Context, raw []byte) (ImportReport, error) {
-	result, err := s.parse(raw)
-	if err != nil {
-		return ImportReport{}, err
-	}
-	return s.apply(ctx, result.Bundle, false, result.Warnings...)
-}
-
-// Restore replaces the library with a bundle.
-//
-// This is the legacy restore semantics: the bundle becomes the library. It is
-// destructive, so the caller is expected to have confirmed it — and unlike Import
-// it does not merge, because merging into data the user is trying to get rid of
-// would defeat the point.
-func (s *Service) Restore(ctx context.Context, raw []byte) (ImportReport, error) {
-	result, err := s.parse(raw)
-	if err != nil {
-		return ImportReport{}, err
-	}
-
-	// Snapshot before deleting anything. The apply path is not transactional --
-	// it writes table by table through the repositories -- so a failure part way
-	// through used to leave the library half replaced, with the original already
-	// gone. The snapshot is in memory and is only kept while this call runs; the
-	// guarantee is "a failed restore puts the library back", not "a crash is
-	// survivable", which is what the transactional rewrite would add.
-	snapshot, snapshotErr := s.Export(ctx, DefaultExportOptions())
-
-	// Validation happens above, before anything is deleted: a rejected bundle must
-	// leave the existing library untouched.
-	if err := s.wipe(ctx); err != nil {
-		return ImportReport{}, err
-	}
-
-	report, applyErr := s.apply(ctx, result.Bundle, true, result.Warnings...)
-	if applyErr == nil {
-		return report, nil
-	}
-
-	// Put the old library back. The rollback itself can fail (the disk is the
-	// disk), and when it does the honest report is both failures rather than a
-	// single error that hides which data is still there.
-	if snapshotErr != nil {
-		return report, fmt.Errorf("importexport: restore failed (%v) and no snapshot could be taken: %w", applyErr, snapshotErr)
-	}
-	parsedSnapshot, parseErr := s.parse(snapshot)
-	if parseErr != nil {
-		return report, fmt.Errorf("importexport: restore failed (%v) and its snapshot could not be read: %w", applyErr, parseErr)
-	}
-	if wipeErr := s.wipe(ctx); wipeErr != nil {
-		return report, fmt.Errorf("importexport: restore failed (%v); rollback could not clear the partial data: %w", applyErr, wipeErr)
-	}
-	if _, rollbackErr := s.apply(ctx, parsedSnapshot.Bundle, true); rollbackErr != nil {
-		return report, fmt.Errorf("importexport: restore failed (%v) and rollback failed: %w", applyErr, rollbackErr)
-	}
-	return report, fmt.Errorf("importexport: restore failed; the previous library was put back: %w", applyErr)
-}
-
-// ParseResult is a validated input, whatever format it arrived in.
-type ParseResult struct {
-	Bundle *bundle.Bundle
-	// Warnings are consequences the user must be told about. They are not errors:
-	// a legacy backup is perfectly importable, it just costs something.
-	Warnings []LegacyWarning
-	// Legacy is true when the input was a flat JSON backup.
-	Legacy bool
-}
+// The relations and the memberships used to be written one row at a time, each its
+// own transaction: a hundred thousand relations meant a hundred thousand commits.
+// A thousand rows per commit is small enough that a failure loses little and large
+// enough that the commit count stays in the hundreds.
+const importBatch = 1000
 
 // parse validates an input, recognising both the bundle and the legacy format.
 //
@@ -429,6 +148,16 @@ func (s *Service) parse(raw []byte) (*ParseResult, error) {
 		return nil, fmt.Errorf("%w: %v", ErrValidation, err)
 	}
 	return &ParseResult{Bundle: parsed}, nil
+}
+
+// ParseResult is a validated input, whatever format it arrived in.
+type ParseResult struct {
+	Bundle *bundle.Bundle
+	// Warnings are consequences the user must be told about. They are not errors:
+	// a legacy backup is perfectly importable, it just costs something.
+	Warnings []LegacyWarning
+	// Legacy is true when the input was a flat JSON backup.
+	Legacy bool
 }
 
 // normalizeTagParents reduces an imported hierarchy to the two levels the app supports.
@@ -625,6 +354,7 @@ func (s *Service) apply(ctx context.Context, parsed *bundle.Bundle, replacing bo
 			knownBookmarks[bookmark.TweetID] = true
 		}
 	}
+	pendingRelations := make([]domain.BookmarkTag, 0, len(relations))
 	for _, dto := range relations {
 		tagID := dto.TagID
 		if mapped, ok := tagIDMap[tagID]; ok {
@@ -647,14 +377,67 @@ func (s *Service) apply(ctx context.Context, parsed *bundle.Bundle, replacing bo
 		if !domain.ValidTagSource(source) {
 			source = domain.TagSourceManual
 		}
-		if err := s.repos.Tags.Attach(ctx, domain.BookmarkTag{
+		pendingRelations = append(pendingRelations, domain.BookmarkTag{
 			BookmarkID: dto.BookmarkID, TagID: tagID,
 			CreatedAt: domain.MustParseTimestamp(dto.CreatedAt), Source: source,
-		}); err != nil {
-			return report, err
-		}
+		})
 		existing[key] = true
 		report.RelationsAdded++
+	}
+	// In batches, not one attach at a time. Every Attach was its own transaction,
+	// so importing a library with fifty thousand relations committed fifty thousand
+	// times -- minutes of fsync for a file that was already in memory.
+	for start := 0; start < len(pendingRelations); start += importBatch {
+		end := min(start+importBatch, len(pendingRelations))
+		if err := s.repos.Tags.AttachMany(ctx, pendingRelations[start:end]); err != nil {
+			return report, err
+		}
+	}
+
+	// Tombstones. The file records what the exporting device deleted, and a restore
+	// must keep that record: wipe has just cleared the local one, and a sync would
+	// otherwise bring every deleted post back. An id the file itself carries is not a
+	// delete, and a merge must not tombstone a post this library still holds.
+	tombstones, err := decodeRecords[TombstoneDTO](parsed.Files[bundle.FileTombstones])
+	if err != nil {
+		return report, fmt.Errorf("importexport: decode tombstones: %w", err)
+	}
+	if len(tombstones) > 0 {
+		records := make([]ports.Tombstone, 0, len(tombstones))
+		for _, dto := range tombstones {
+			if dto.TweetID == "" || knownBookmarks[dto.TweetID] {
+				continue
+			}
+			records = append(records, dto.ToDomain())
+		}
+		if err := s.repos.Bookmarks.AddTombstones(ctx, records); err != nil {
+			return report, err
+		}
+		report.TombstonesWritten = len(records)
+	}
+
+	// Raw payloads, after the bookmarks they belong to: the foreign key would
+	// reject one that arrives first. A capture only exists when the export asked
+	// for it, so an absent file is the normal case rather than a loss.
+	payloads, err := decodeRecords[RawPayloadDTO](parsed.Files[bundle.FileRawPayloads])
+	if err != nil {
+		return report, fmt.Errorf("importexport: decode raw payloads: %w", err)
+	}
+	if len(payloads) > 0 {
+		stored := make([]ports.RawPayload, 0, len(payloads))
+		for _, dto := range payloads {
+			// The same rule as relations: a payload for a bookmark neither the file
+			// nor the library holds cannot be written, and skipping it keeps one bad
+			// row from aborting a restore.
+			if !knownBookmarks[dto.TweetID] {
+				continue
+			}
+			stored = append(stored, dto.ToDomain())
+		}
+		if err := s.repos.Bookmarks.SaveRawPayloads(ctx, stored); err != nil {
+			return report, err
+		}
+		report.RawPayloadsWritten = len(stored)
 	}
 
 	// Memberships. A bookmark keeps the list it already has when merging, so an
@@ -672,12 +455,27 @@ func (s *Service) apply(ctx context.Context, parsed *bundle.Bundle, replacing bo
 		if err != nil {
 			return report, err
 		}
+		// Grouped by list, because the repository assigns a list to a set of
+		// bookmarks: one row at a time made the import commit per bookmark. The
+		// list order is the file's, so the same file commits in the same order.
+		byList := make(map[string][]string, 8)
+		var listOrder []string
 		for _, dto := range memberships {
 			if _, present := current[dto.BookmarkID]; present && !replacing {
 				continue
 			}
-			if err := s.repos.Bookmarks.AssignToList(ctx, []string{dto.BookmarkID}, dto.ListID, now); err != nil {
-				return report, err
+			if _, seen := byList[dto.ListID]; !seen {
+				listOrder = append(listOrder, dto.ListID)
+			}
+			byList[dto.ListID] = append(byList[dto.ListID], dto.BookmarkID)
+		}
+		for _, listID := range listOrder {
+			bookmarkIDs := byList[listID]
+			for start := 0; start < len(bookmarkIDs); start += importBatch {
+				end := min(start+importBatch, len(bookmarkIDs))
+				if err := s.repos.Bookmarks.AssignToList(ctx, bookmarkIDs[start:end], listID, now); err != nil {
+					return report, err
+				}
 			}
 		}
 	}
@@ -785,115 +583,3 @@ func (s *Service) apply(ctx context.Context, parsed *bundle.Bundle, replacing bo
 
 	return report, nil
 }
-
-// clearSecrets is installed by the composition root, which holds both this service and
-// the credential store. It is nil in tests that do not care, and the reset still runs.
-//
-// UseSecretClearer installs it.
-//
-// This action belongs beside "Import restore", behind a confirmation. It was missing here
-// in a way nothing caught: the cascade existed, but only as the first half of a restore,
-// and the checker that finds unreached methods walks internal/usecase -- this is
-// internal/importexport, so it was outside that sweep.
-func (s *Service) ResetLocalData(ctx context.Context) error {
-	if err := s.require(); err != nil {
-		return err
-	}
-
-	// The stored secrets go first, and a failure stops the reset before anything is
-	// wiped. The confirmation promises that local settings are cleared, and it would be
-	// false if the Keychain accounts survived: the API key lives under its own account,
-	// so emptying the tables would never reach it. The secrets store has to be cleared as
-	// well for the promise to hold.
-	//
-	// The clearer is injected, not reached for: the accounts belong to the credentials
-	// package, and importing it here would tie this service to the Keychain for one
-	// call. A nil clearer means there is nothing to clear, as in the tests that build
-	// this service without one.
-	if s.clearSecrets != nil {
-		if err := s.clearSecrets(ctx); err != nil {
-			return err
-		}
-	}
-
-	// The confirmation names bookmarks, tags and settings, so all three go.
-	if err := s.wipe(ctx); err != nil {
-		return err
-	}
-	if _, err := s.repos.Tags.DeleteAll(ctx); err != nil {
-		return err
-	}
-	if _, err := s.repos.Settings.DeleteAll(ctx); err != nil {
-		return err
-	}
-	return nil
-}
-
-// wipe removes the library's data before a restore.
-//
-// The order matters: relations and memberships cascade from bookmarks, and a tag
-// still referenced by a relation cannot be removed first.
-func (s *Service) wipe(ctx context.Context) error {
-	if _, err := s.repos.Bookmarks.DeleteAll(ctx); err != nil {
-		return err
-	}
-	if _, err := s.repos.Suggestions.DeleteAll(ctx); err != nil {
-		return err
-	}
-	if _, err := s.repos.Analysis.DeleteAll(ctx); err != nil {
-		return err
-	}
-
-	tags, err := s.repos.Tags.List(ctx)
-	if err != nil {
-		return err
-	}
-	ids := make([]string, 0, len(tags))
-	for _, tag := range tags {
-		ids = append(ids, tag.ID)
-	}
-	if _, err := s.repos.Tags.DeleteMany(ctx, ids); err != nil {
-		return err
-	}
-
-	// Lists are removed except the Inbox, which is a system row the schema and the
-	// UI both assume exists.
-	lists, err := s.repos.Lists.List(ctx)
-	if err != nil {
-		return err
-	}
-	for _, list := range lists {
-		if list.ID == domain.InboxListID {
-			continue
-		}
-		if err := s.repos.Lists.Delete(ctx, list.ID); err != nil {
-			return err
-		}
-	}
-
-	// Saved views belong to the library, not to the app: the bundle is the new
-	// library, and a view the bundle does not contain must not survive it. The
-	// repository has no DeleteAll, and the count is small.
-	if s.repos.SavedViews != nil {
-		views, err := s.repos.SavedViews.List(ctx)
-		if err != nil {
-			return err
-		}
-		for _, view := range views {
-			if err := s.repos.SavedViews.Delete(ctx, view.ID); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-// ErrUnsupportedBundle reports a file whose shape this build cannot read.
-var ErrUnsupportedBundle = errors.New("importexport: the bundle holds data this build cannot read")
-
-// Clock returns the service's clock reading, so a caller stamping alongside it
-// uses one clock.
-func (s *Service) Now() time.Time { return s.clock.Now() }
-
-// UseSecretClearer installs the hook that forgets stored secrets.
-func (s *Service) UseSecretClearer(clear func(context.Context) error) { s.clearSecrets = clear }

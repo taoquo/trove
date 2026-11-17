@@ -186,7 +186,12 @@ func (s *Shell) emptyState(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 	// Each empty state has its own advice, from emptyFeedDescription and
 	// noBookmarksDescription.
 	detail := s.t().T(i18n.EmptyLibraryDetail)
-	if !s.state.Data.Query.Filter.IsZero() {
+	if s.state.Data.Query.Filter.Archived == domain.ArchivedOnly {
+		// The archive is a place, not a narrowing: blaming "the current filters" for an
+		// empty archive would blame the one filter that is the archive itself.
+		message = s.t().T(i18n.EmptyArchive)
+		detail = s.t().T(i18n.EmptyArchiveDetail)
+	} else if !s.state.Data.Query.Filter.IsZero() {
 		// Both lines switch on the same condition, so a filtered miss has its own advice.
 		message = s.t().T(i18n.EmptyFilter)
 		detail = s.t().T(i18n.EmptyFilterDetail)

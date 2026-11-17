@@ -66,6 +66,77 @@ func TestMigrationDenormalizesLongformAtTheUTF16Boundary(t *testing.T) {
 	}
 }
 
+// TestTheVideoFilterIsInsideTheMediaFilter pins the relation between the two media
+// conditions: a video is media, an animation plays too, and a picture or an
+// attachment this build does not recognise is media without being video.
+func TestTheVideoFilterIsInsideTheMediaFilter(t *testing.T) {
+	db := openTestDB(t)
+	repo := NewBookmarkRepository(db)
+	ctx := context.Background()
+
+	withMedia := func(id string, media ...domain.Media) domain.Bookmark {
+		bookmark := bookmarkFixture(id, clockBase)
+		bookmark.Media = media
+		return bookmark
+	}
+	photo := domain.Media{Type: domain.MediaPhoto, URL: "p"}
+	video := domain.Media{Type: domain.MediaVideo, URL: "v"}
+
+	if _, err := repo.UpsertMany(ctx, []domain.Bookmark{
+		withMedia("plain"),
+		withMedia("pictures", photo),
+		withMedia("clip", photo, video),
+		withMedia("gif", domain.Media{Type: domain.MediaAnimatedGif, URL: "g"}),
+		withMedia("mystery", domain.Media{Type: "spaces", URL: "s"}),
+	}); err != nil {
+		t.Fatalf("UpsertMany: %v", err)
+	}
+
+	found := func(filter domain.LibraryFilter) map[string]bool {
+		t.Helper()
+		got, err := repo.Query(ctx, domain.LibraryQuery{Filter: filter, Sort: domain.SortSavedDesc, Limit: 50})
+		if err != nil {
+			t.Fatalf("Query(%+v): %v", filter, err)
+		}
+		set := make(map[string]bool, len(got))
+		for _, bookmark := range got {
+			set[bookmark.TweetID] = true
+		}
+		return set
+	}
+
+	media := found(domain.LibraryFilter{OnlyWithMedia: true})
+	for _, id := range []string{"pictures", "clip", "gif", "mystery"} {
+		if !media[id] {
+			t.Errorf("the media filter left out %q, which carries an attachment", id)
+		}
+	}
+	if media["plain"] {
+		t.Error("the media filter kept a post with no attachment")
+	}
+
+	videoOnly := found(domain.LibraryFilter{OnlyWithVideo: true})
+	for _, id := range []string{"clip", "gif"} {
+		if !videoOnly[id] {
+			t.Errorf("the video filter left out %q, which plays", id)
+		}
+	}
+	for _, id := range []string{"plain", "pictures", "mystery"} {
+		if videoOnly[id] {
+			t.Errorf("the video filter kept %q, which does not play", id)
+		}
+	}
+
+	// A later sync that gains a video moves the post into the video filter: the
+	// kind is refreshed on every upsert, not fixed at insert.
+	if _, err := repo.UpsertMany(ctx, []domain.Bookmark{withMedia("pictures", photo, video)}); err != nil {
+		t.Fatalf("UpsertMany: %v", err)
+	}
+	if !found(domain.LibraryFilter{OnlyWithVideo: true})["pictures"] {
+		t.Error("a post that gained a video stayed out of the video filter")
+	}
+}
+
 // TestMigrationBackfillsExistingRows covers the path a real user takes: an
 // existing file that predates the new columns, rather than a fresh install.
 //
@@ -412,6 +483,76 @@ func TestSearchCoversFourFields(t *testing.T) {
 	}
 	if count != 0 {
 		t.Errorf("an unrelated term found %d rows", count)
+	}
+}
+
+// TestSearchCoversTagAndListNames is the other half of what "search" means: a user
+// who files posts under a tag or a list expects the name they typed to find them, not
+// only the words inside the posts.
+func TestSearchCoversTagAndListNames(t *testing.T) {
+	db := openTestDB(t)
+	repo := NewBookmarkRepository(db)
+	tags := NewTagRepository(db)
+	lists := NewListRepository(db)
+	ctx := context.Background()
+
+	tagged := bookmarkFixture("tagged", clockBase)
+	tagged.Text = "nothing relevant"
+	filed := bookmarkFixture("filed", clockBase)
+	filed.Text = "nothing relevant"
+	plain := bookmarkFixture("plain", clockBase)
+	plain.Text = "nothing relevant"
+	if _, err := repo.UpsertMany(ctx, []domain.Bookmark{tagged, filed, plain}); err != nil {
+		t.Fatalf("UpsertMany: %v", err)
+	}
+
+	if err := tags.Create(ctx, domain.Tag{
+		ID: "t1", Name: "Kubernetes", CanonicalKey: domain.CanonicalTagKey("Kubernetes"),
+		CreatedAt: domain.FormatTimestamp(clockBase), UpdatedAt: domain.FormatTimestamp(clockBase),
+	}); err != nil {
+		t.Fatalf("Create tag: %v", err)
+	}
+	if err := tags.Attach(ctx, domain.BookmarkTag{
+		BookmarkID: "tagged", TagID: "t1", CreatedAt: clockBase, Source: domain.TagSourceManual,
+	}); err != nil {
+		t.Fatalf("Attach: %v", err)
+	}
+
+	if err := lists.Create(ctx, domain.List{
+		ID: "l1", Name: "Reading",
+		Normalized: domain.NormalizeListName("Reading"),
+		CreatedAt:  clockBase, UpdatedAt: clockBase,
+	}); err != nil {
+		t.Fatalf("Create list: %v", err)
+	}
+	if err := repo.AssignToList(ctx, []string{"filed"}, "l1", clockBase); err != nil {
+		t.Fatalf("AssignToList: %v", err)
+	}
+
+	cases := []struct {
+		query string
+		want  string
+	}{
+		// Folded, like every other searched name: the stored tag is capitalised.
+		{"kubernetes", "tagged"},
+		{"reading", "filed"},
+	}
+	for _, c := range cases {
+		found, err := repo.Query(ctx, domain.LibraryQuery{
+			Sort: domain.SortSavedDesc, Filter: domain.LibraryFilter{Query: c.query},
+		})
+		if err != nil {
+			t.Fatalf("Query(%q): %v", c.query, err)
+		}
+		if len(found) != 1 || found[0].TweetID != c.want {
+			t.Errorf("searching %q found %v, want just %q", c.query, idsOf(found), c.want)
+		}
+	}
+
+	// An unrelated post stays out, so this is a match and not a filter that lets
+	// everything through.
+	if count, err := repo.Count(ctx, domain.LibraryFilter{Query: "nomatch"}); err != nil || count != 0 {
+		t.Errorf("an unrelated term found %d rows (err %v), want 0", count, err)
 	}
 }
 

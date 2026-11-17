@@ -48,6 +48,13 @@ type filterFlag struct {
 	on  func(*Shell) bool
 	// set turns the flag on or off. It does not reload.
 	set func(*Shell, bool)
+	// inPanel says the filter popover draws this condition as its own checkbox. The
+	// review row is reached from the sidebar, so it is a chip here but has no row in
+	// the panel.
+	inPanel bool
+	// panelLabel overrides the row's words in the panel, for a row that counts what
+	// is behind it. The chip keeps the plain name.
+	panelLabel func(*Shell) string
 }
 
 // filterCondition is one active narrowing, as a chip shows and removes it.
@@ -85,9 +92,16 @@ func (s *Shell) filterFacets() []filterFacet {
 func (s *Shell) filterFlags() []filterFlag {
 	return []filterFlag{
 		{
-			key: i18n.FilterHasMedia,
-			on:  func(shell *Shell) bool { return shell.state.OnlyWithMedia },
-			set: func(shell *Shell, on bool) { shell.state.OnlyWithMedia = on },
+			key:     i18n.FilterHasMedia,
+			on:      func(shell *Shell) bool { return shell.state.OnlyWithMedia },
+			set:     func(shell *Shell, on bool) { shell.state.OnlyWithMedia = on },
+			inPanel: true,
+		},
+		{
+			key:     i18n.FilterHasVideo,
+			on:      func(shell *Shell) bool { return shell.state.OnlyWithVideo },
+			set:     func(shell *Shell, on bool) { shell.state.OnlyWithVideo = on },
+			inPanel: true,
 		},
 		{
 			key: i18n.SuggestionsPendingTitle,
@@ -95,18 +109,21 @@ func (s *Shell) filterFlags() []filterFlag {
 			set: func(shell *Shell, on bool) { shell.state.OnlyPendingSuggestions = on },
 		},
 		{
-			key: i18n.FilterLongform,
-			on:  func(shell *Shell) bool { return shell.state.OnlyLongform },
-			set: func(shell *Shell, on bool) { shell.state.OnlyLongform = on },
+			key:     i18n.FilterLongform,
+			on:      func(shell *Shell) bool { return shell.state.OnlyLongform },
+			set:     func(shell *Shell, on bool) { shell.state.OnlyLongform = on },
+			inPanel: true,
 		},
 		{
 			// The archive is a mode of the view rather than a switch with a second copy,
 			// but it selects a different set, which is exactly what a chip reports. It
 			// is listed last because it is the one condition that replaces the list
 			// rather than narrowing it.
-			key: i18n.FilterArchived,
-			on:  func(shell *Shell) bool { return shell.state.OnlyArchived },
-			set: func(shell *Shell, on bool) { shell.state.OnlyArchived = on },
+			key:        i18n.FilterArchived,
+			on:         func(shell *Shell) bool { return shell.state.OnlyArchived },
+			set:        func(shell *Shell, on bool) { shell.state.OnlyArchived = on },
+			inPanel:    true,
+			panelLabel: func(shell *Shell) string { return shell.archiveFilterLabel() },
 		},
 	}
 }

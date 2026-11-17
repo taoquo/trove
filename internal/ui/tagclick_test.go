@@ -11,8 +11,7 @@ import (
 )
 
 // TestTheTagLibraryAnswersEveryClick walks the tag library as a pointer meets it: the row's
-// six controls, the theme cell's picker, the bulk bar's merge, the orphan sweep, and the
-// page's own create row.
+// five controls, the bulk bar's merge, the orphan sweep, and the page's own create row.
 //
 // The census starts with the names, because that is what a reader (and this test) has to go
 // on: every row used to carry four identical verbs and an unnamed checkbox, so nothing said
@@ -58,7 +57,7 @@ func TestTheTagLibraryAnswersEveryClick(t *testing.T) {
 	// Every control on a row says which row it is on.
 	for _, key := range []i18n.Key{
 		i18n.TagSelectRowFor, i18n.TagBookmarksFor, i18n.TagRenameFor,
-		i18n.TagAliasesFor, i18n.TagThemeFor, i18n.TagDeleteFor,
+		i18n.TagAliasesFor, i18n.TagDeleteFor,
 	} {
 		if _, ok := tester.Find(shell.t().Tf(key, "go")); !ok {
 			t.Errorf("the row for go has no %q; texts: %q", shell.t().Tf(key, "go"), tester.Texts())
@@ -98,17 +97,6 @@ func TestTheTagLibraryAnswersEveryClick(t *testing.T) {
 	}
 	if !aliased {
 		t.Errorf("the alias editor's Save wrote no alias; items: %+v", items)
-	}
-
-	// The theme cell opens its own picker; Escape leaves without writing.
-	click(shell.t().Tf(i18n.TagThemeFor, "golang"))
-	if shell.state.TagEditField != TagEditTheme {
-		t.Fatalf("the theme cell opened %q", shell.state.TagEditField)
-	}
-	tester.Key(0, ui.KeyEscape)
-	tester.Frame()
-	if shell.state.TagEditField != "" {
-		t.Error("Escape left the theme picker open")
 	}
 
 	// The row's box feeds the bulk bar; two rows ticked make it appear.

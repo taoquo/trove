@@ -132,6 +132,11 @@ type LibraryFilter struct {
 	OnlyUnclassified bool
 
 	OnlyWithMedia bool
+	// OnlyWithVideo keeps bookmarks whose attachments play. An animated GIF is a
+	// video here: it plays on its own, which is the thing a reader filtering for
+	// video is looking for. It is a subset of OnlyWithMedia, so setting it alone
+	// still means "has media".
+	OnlyWithVideo bool
 	OnlyLongform  bool
 
 	// Archived decides whether the view shows the archive. The zero value is filled by
@@ -201,6 +206,7 @@ func (f LibraryFilter) IsZero() bool {
 		!normalized.OnlyUnclassified &&
 		!normalized.OnlyWithPendingSuggestions &&
 		!normalized.OnlyWithMedia &&
+		!normalized.OnlyWithVideo &&
 		!normalized.OnlyLongform &&
 		normalized.Archived == ArchivedHidden &&
 		normalized.TimeRange == RangeAll
@@ -215,6 +221,9 @@ func (f LibraryFilter) ActiveCount() int {
 	// The suggestion row is one of the toggles, so it counts toward the badge.
 	count := 0
 	if f.OnlyWithMedia {
+		count++
+	}
+	if f.OnlyWithVideo {
 		count++
 	}
 	if f.OnlyLongform {
@@ -329,6 +338,9 @@ type WorkspaceCounts struct {
 	PendingSuggestions int
 	TagCount           int
 	ListCount          int
+	// ArchivedCount is how many bookmarks the archive holds, so the archive's row can
+	// say whether there is anything behind it without being opened.
+	ArchivedCount int
 }
 
 // FacetCounts is what each sidebar row would show if it were clicked.

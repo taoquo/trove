@@ -69,7 +69,6 @@ func (s *Shell) tagLibraryStatsLine(all []domain.TagLibraryItem) string {
 	return strings.Join([]string{
 		fmt.Sprintf("%d %s", len(all), s.t().T(i18n.TagTagsSuffix)),
 		fmt.Sprintf("%d %s", domain.CountOrphanTags(all), s.t().T(i18n.TagOrphanSuffix)),
-		fmt.Sprintf("%d %s", domain.CountUnparentedTags(all), s.t().T(i18n.TagUnparentedSuffix)),
 		fmt.Sprintf("%d %s", domain.CountLongTailTags(all), s.t().T(i18n.TagLongTailSuffix)),
 		s.t().T(health),
 	}, " · ")

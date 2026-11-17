@@ -159,8 +159,8 @@ UI 测试用 `ui.NewTester`（不开窗口），是复现布局和状态缺陷�
 检查器是构建的一部分，不是可选工具：
 
 - `tools/check-text.sh`：用户可见字符串必须走翻译目录；
-- `tools/check-wiring.sh`：接口方法必须可达、字段必须被读取，并跑 surfaces / toolrefs /
-  namesort / bigfiles / 颜色与几何检查；
+- `tools/check-wiring.sh`：接口方法必须可达、导出函数必须有调用方、字段必须被读取，并跑
+  surfaces / toolrefs / namesort / bigfiles / 迁移前快照 / 续跑游标 / 颜色与几何检查；
 - `tools/selfcheck.sh`：逐个破坏检查器看守的东西，证明它仍会变红；
 - `tools/panes.sh`、`tools/geometry.sh`：在真实构建的截图上验证三栏边界与几何不变量。
 

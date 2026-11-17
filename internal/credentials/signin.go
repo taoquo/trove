@@ -89,6 +89,15 @@ func (s *Store) saveIfChanged(ctx context.Context, found xsource.Credentials) (b
 	if storedErr == nil && stored.AuthToken == found.AuthToken && stored.CSRFToken == found.CSRFToken {
 		return false, nil
 	}
+	// A store that would not open is not a store with nothing in it. Writing now
+	// would either fail or replace a pair this process could not read, so the
+	// refresh reports the store instead of trying; the caller's sentence is then
+	// "the Keychain could not be read", which is the truth.
+	if storedErr != nil &&
+		!errors.Is(storedErr, ErrNoCredential) &&
+		!errors.Is(storedErr, ErrIncompleteCredentials) {
+		return false, fmt.Errorf("credentials: refresh: %w", storedErr)
+	}
 	if err := s.SaveXCredentials(ctx, found); err != nil {
 		return false, err
 	}

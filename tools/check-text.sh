@@ -21,13 +21,31 @@ hits=$(grep -rnE "$pattern" internal/ui/*.go 2>/dev/null | grep -v '_test.go' ||
 #              It is not a word in either language.
 allowed='\\u00d7|"@"\+|"“"'
 
+status=0
 if [ -n "$hits" ]; then
   remaining=$(printf '%s\n' "$hits" | grep -vE "$allowed" || true)
   if [ -n "$remaining" ]; then
     echo "Hardcoded user-visible text found. Route it through i18n (s.t()/s.t().Tf()):"
     echo "$remaining"
-    exit 1
+    status=1
   fi
+fi
+
+# Status-line sentences are user-visible too, and the calls that show them are usually
+# given an expression rather than the direct literal the pattern above looks for. The two
+# shortcut forms are caught here: a bare English string, and a fmt.Sprintf whose format
+# string has words in it. A message assembled elsewhere -- s.t().T(key), err.Error() -- is
+# not this checker's business.
+status_pattern='(ShowStatus|ShowToast|ShowBanner)\(.*("[^"]*[A-Za-z][^"]*"|fmt\.Sprintf\("[^"]*[A-Za-z])'
+status_hits=$(grep -rnE "$status_pattern" internal/ui/*.go 2>/dev/null | grep -v '_test.go' || true)
+if [ -n "$status_hits" ]; then
+  echo "Hardcoded status text found. Status and toast sentences go through i18n:"
+  echo "$status_hits"
+  status=1
+fi
+
+if [ "$status" -ne 0 ]; then
+  exit 1
 fi
 
 echo "OK: every user-visible string goes through the translator"

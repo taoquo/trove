@@ -13,6 +13,30 @@ import (
 	"github.com/taoquo/trove/internal/netproxy"
 )
 
+// TokenUsage is what a provider said a request cost.
+//
+// It is reported, never estimated: a provider that does not say leaves both at
+// zero, and a caller must read zero as "unknown" rather than "free". The run
+// summary shows it so a user can see what a pass spent, which is the only way to
+// judge a batch size from the outside.
+type TokenUsage struct {
+	InputTokens  int
+	OutputTokens int
+}
+
+// IsZero reports that the provider did not report usage.
+func (u TokenUsage) IsZero() bool {
+	return u.InputTokens == 0 && u.OutputTokens == 0
+}
+
+// Add returns the sum, so a run can accumulate a wave's results.
+func (u TokenUsage) Add(other TokenUsage) TokenUsage {
+	return TokenUsage{
+		InputTokens:  u.InputTokens + other.InputTokens,
+		OutputTokens: u.OutputTokens + other.OutputTokens,
+	}
+}
+
 // ChatResult is one completion response.
 type ChatResult struct {
 	// Text is the model's raw output.
@@ -21,6 +45,8 @@ type ChatResult struct {
 	Parsed map[string]any
 	// FinishReason is the provider's stop reason, when reported.
 	FinishReason string
+	// Usage is the provider's token counts, when it reported any.
+	Usage TokenUsage
 	// DroppedOptions lists request parameters this call had to leave out.
 	DroppedOptions []DroppedOption
 }
@@ -193,7 +219,7 @@ func (t *Transport) attempt(ctx context.Context, spec requestSpec, timeout time.
 		return body, response.Header, nil
 	}
 
-	classified := normalizeHTTPError(response.StatusCode, string(body), spec.Headers["x-api-key"])
+	classified := normalizeHTTPError(response.StatusCode, string(body), requestSecrets(spec.Headers))
 	if retryAfter := parseRetryAfter(response.Header.Get("Retry-After")); retryAfter > 0 {
 		classified.RetryAfter = retryAfter
 	}

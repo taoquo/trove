@@ -13,6 +13,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -136,23 +137,52 @@ func runSync(args []string) error {
 		fmt.Println("syncing…")
 	}
 	started := time.Now()
-	run, err := syncService.Run(ctx, syncer.RunOptions{
+	// The continuation point comes from the same helper the window uses. Spelling
+	// the options out here again is what let the CLI drift: it never resumed, so a
+	// capped first sync restarted from the top on every run.
+	options := syncService.ResumeOptions(ctx, syncer.RunOptions{
 		Incremental: incremental,
 		RawPayloads: preferences.Sync.SaveRawPayloads,
 		Limit:       preferences.Sync.PageLimit,
 	})
+	run, err := syncService.Run(ctx, options)
+	return reportSyncResult(os.Stdout, *quiet, run, err, time.Since(started))
+}
+
+// reportSyncResult turns a finished run into the command's outcome and its line.
+//
+// It is separate from runSync so the exit rule can be tested without a network: the
+// status, not the error, decides. A partial run returns its page failure as well as a
+// partial_success record, and returning that error made a run that stored thousands of
+// bookmarks exit non-zero -- which a scheduler reads as a broken sync, when it was the
+// normal outcome of a flaky connection.
+func reportSyncResult(w io.Writer, quiet bool, run domain.SyncRun, err error, elapsed time.Duration) error {
+	// Another process owns the library. Nothing was attempted, so this is not a
+	// failed run: a scheduler must not record it as one, and starting a second
+	// writer is exactly what the claim exists to prevent.
+	if errors.Is(err, syncer.ErrSyncAlreadyRunning) {
+		fmt.Fprintln(w, "another sync is running; leaving it to finish")
+		return nil
+	}
+
+	if run.Status == domain.SyncPartialSuccess {
+		if !quiet {
+			fmt.Fprintf(w, "saved %d new, updated %d, %d page(s) in %s (partial: %d page(s) failed)\n",
+				run.InsertedCount, run.UpdatedCount, run.PagesCompleted,
+				elapsed.Round(time.Second), run.FailedCount)
+		}
+		return nil
+	}
 	if err != nil {
 		return syncFailure(run, err)
 	}
-	// Partial is a finished run: some pages failed and the rest are stored, which is the
-	// normal outcome of a flaky connection, not a reason to wake the scheduler's owner.
-	if run.Status != domain.SyncSuccess && run.Status != domain.SyncPartialSuccess {
+	if run.Status != domain.SyncSuccess {
 		return syncFailure(run, nil)
 	}
-	if !*quiet {
-		fmt.Printf("saved %d new, updated %d, %d page(s) in %s\n",
+	if !quiet {
+		fmt.Fprintf(w, "saved %d new, updated %d, %d page(s) in %s\n",
 			run.InsertedCount, run.UpdatedCount, run.PagesCompleted,
-			time.Since(started).Round(time.Second))
+			elapsed.Round(time.Second))
 	}
 	return nil
 }
@@ -162,7 +192,7 @@ func runSync(args []string) error {
 // the context was cancelled, which is what Ctrl-C looks like.
 func syncFailure(run domain.SyncRun, err error) error {
 	switch {
-	case err != nil && run.ErrorSummary != "":
+	case err != nil && run.ErrorSummary != "" && run.ErrorSummary != err.Error():
 		return fmt.Errorf("sync failed: %s: %w", run.ErrorSummary, err)
 	case err != nil:
 		return fmt.Errorf("sync failed: %w", err)
@@ -195,18 +225,21 @@ func runExport(args []string) error {
 
 	// An unconfigured app exports sync history by default, the same as the export panel.
 	service := importexport.New(library.repos, ports.SystemClock{}, appVersion())
-	payload, err := service.Export(ctx, importexport.DefaultExportOptions())
-	if err != nil {
-		return fmt.Errorf("export: %w", err)
-	}
 	// Write beside the target and rename, so an interrupted export never leaves a
-	// half-written bundle where the previous good one was.
+	// half-written bundle where the previous good one was. The bundle is streamed
+	// into the temporary file rather than built in memory first: a full library can
+	// be much larger than the process should hold.
 	temporary, err := os.CreateTemp(filepath.Dir(target), ".trovebundle-*")
 	if err != nil {
 		return err
 	}
 	defer os.Remove(temporary.Name())
-	if _, err := temporary.Write(payload); err != nil {
+	if err := service.ExportTo(ctx, temporary, importexport.DefaultExportOptions()); err != nil {
+		temporary.Close()
+		return fmt.Errorf("export: %w", err)
+	}
+	info, err := temporary.Stat()
+	if err != nil {
 		temporary.Close()
 		return err
 	}
@@ -216,7 +249,7 @@ func runExport(args []string) error {
 	if err := os.Rename(temporary.Name(), target); err != nil {
 		return err
 	}
-	fmt.Printf("wrote %s (%s)\n", target, humanBytes(int64(len(payload))))
+	fmt.Printf("wrote %s (%s)\n", target, humanBytes(info.Size()))
 	return nil
 }
 
@@ -316,7 +349,7 @@ func (l *library) syncer() *syncer.Service {
 	client := xsource.NewClient(
 		xsource.NewQueryCatalog(""),
 		func(ctx context.Context) (xsource.Credentials, error) {
-			return l.store.XCredentials(ctx)
+			return l.store.XCredentialsForSync(ctx)
 		},
 	)
 	client.CaptureRawPayload = true

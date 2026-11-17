@@ -73,11 +73,7 @@ func (openAIChatAdapter) ID() string { return APIOpenAIChat }
 func (openAIChatAdapter) NeedsAPIKey() bool { return false }
 
 func (a openAIChatAdapter) ChatJSON(ctx context.Context, request ChatRequest, env AdapterEnv) (ChatResult, error) {
-	base := strings.TrimSpace(env.BaseURL)
-	if base == "" {
-		base = "https://api.openai.com/v1"
-	}
-	endpoint := JoinURL(ResolveOpenAIBaseURL(base), "chat/completions")
+	endpoint := JoinURL(ResolveOpenAIBaseURL(baseURLFor(APIOpenAIChat, env.BaseURL)), "chat/completions")
 
 	capabilities := capabilitiesFor(a.ID(), env.Model, env.Capabilities, env.Overrides, env.Learned)
 	assembled, dropped := AssembleRequest(capabilities, request)
@@ -157,14 +153,14 @@ const anthropicDefaultMaxTokens = 1024
 const anthropicToolName = "emit_tags"
 
 func (a anthropicMessagesAdapter) ChatJSON(ctx context.Context, request ChatRequest, env AdapterEnv) (ChatResult, error) {
-	base := strings.TrimSpace(env.BaseURL)
-	if base == "" {
-		base = "https://api.anthropic.com"
-	}
-	endpoint := JoinURL(base, "v1/messages")
+	endpoint := JoinURL(baseURLFor(APIAnthropicMessages, env.BaseURL), "v1/messages")
 
+	// The caller derives the ceiling from the batch size. A fixed 1024 was low
+	// enough that a full batch of 25 could be cut off mid-JSON, which reads as the
+	// model answering badly rather than the request being too small. The default
+	// stays for a caller that asks for nothing.
 	maxTokens := anthropicDefaultMaxTokens
-	if request.MaxOutputTokens != nil && *request.MaxOutputTokens < maxTokens {
+	if request.MaxOutputTokens != nil && *request.MaxOutputTokens > 0 {
 		maxTokens = *request.MaxOutputTokens
 	}
 
@@ -218,6 +214,8 @@ func (a anthropicMessagesAdapter) ChatJSON(ctx context.Context, request ChatRequ
 		return ChatResult{}, err
 	}
 
+	usage := anthropicUsage(decoded)
+
 	// The answer arrives as a tool_use block's input.
 	for _, rawBlock := range asSlice(decoded["content"]) {
 		block, ok := rawBlock.(map[string]any)
@@ -235,6 +233,7 @@ func (a anthropicMessagesAdapter) ChatJSON(ctx context.Context, request ChatRequ
 			Text:         mustJSON(input),
 			Parsed:       input,
 			FinishReason: asString(decoded["stop_reason"]),
+			Usage:        usage,
 		}, nil
 	}
 
@@ -251,10 +250,7 @@ func (googleGenerativeAIAdapter) ID() string { return APIGoogleGenerativeAI }
 func (googleGenerativeAIAdapter) NeedsAPIKey() bool { return true }
 
 func (a googleGenerativeAIAdapter) ChatJSON(ctx context.Context, request ChatRequest, env AdapterEnv) (ChatResult, error) {
-	base := strings.TrimSpace(env.BaseURL)
-	if base == "" {
-		base = "https://generativelanguage.googleapis.com"
-	}
+	base := baseURLFor(APIGoogleGenerativeAI, env.BaseURL)
 
 	// Google carries the key in the query string, which is why every error path
 	// must redact URLs.
@@ -324,7 +320,8 @@ func (a googleGenerativeAIAdapter) ChatJSON(ctx context.Context, request ChatReq
 			continue
 		}
 
-		result := ChatResult{Text: text.String(), FinishReason: asString(candidate["finishReason"])}
+		result := ChatResult{Text: text.String(), FinishReason: asString(candidate["finishReason"]),
+			Usage: googleUsage(decoded)}
 		if parsed, parseErr := ParseJSONLoose(result.Text); parseErr == nil {
 			if object, ok := parsed.(map[string]any); ok {
 				result.Parsed = object
@@ -428,7 +425,8 @@ func parseOpenAIStyleResponse(body []byte, dropped []DroppedOption) (ChatResult,
 	message, _ := choice["message"].(map[string]any)
 	text := asString(message["content"])
 
-	result := ChatResult{Text: text, FinishReason: asString(choice["finish_reason"]), DroppedOptions: dropped}
+	result := ChatResult{Text: text, FinishReason: asString(choice["finish_reason"]),
+		Usage: openAIUsage(decoded), DroppedOptions: dropped}
 	if text != "" {
 		if parsed, parseErr := ParseJSONLoose(text); parseErr == nil {
 			if object, ok := parsed.(map[string]any); ok {
@@ -437,6 +435,34 @@ func parseOpenAIStyleResponse(body []byte, dropped []DroppedOption) (ChatResult,
 		}
 	}
 	return result, nil
+}
+
+// Usage parsing. Each provider names the same two numbers differently, and all of
+// them are optional: a gateway that omits the block leaves a zero usage rather than
+// a guessed one.
+
+func openAIUsage(decoded map[string]any) TokenUsage {
+	usage, _ := decoded["usage"].(map[string]any)
+	return TokenUsage{
+		InputTokens:  asInt(usage["prompt_tokens"]),
+		OutputTokens: asInt(usage["completion_tokens"]),
+	}
+}
+
+func anthropicUsage(decoded map[string]any) TokenUsage {
+	usage, _ := decoded["usage"].(map[string]any)
+	return TokenUsage{
+		InputTokens:  asInt(usage["input_tokens"]),
+		OutputTokens: asInt(usage["output_tokens"]),
+	}
+}
+
+func googleUsage(decoded map[string]any) TokenUsage {
+	usage, _ := decoded["usageMetadata"].(map[string]any)
+	return TokenUsage{
+		InputTokens:  asInt(usage["promptTokenCount"]),
+		OutputTokens: asInt(usage["candidatesTokenCount"]),
+	}
 }
 
 // promptWithSchema appends the schema to the prompt when the strategy cannot send
@@ -487,6 +513,18 @@ func asSlice(value any) []any {
 	return nil
 }
 
+// asInt reads a JSON number. decodeObject leaves every number as float64.
+func asInt(value any) int {
+	switch number := value.(type) {
+	case float64:
+		return int(number)
+	case int:
+		return number
+	default:
+		return 0
+	}
+}
+
 func asString(value any) string {
 	if text, ok := value.(string); ok {
 		return text
@@ -515,16 +553,16 @@ func (openAIChatAdapter) Probe(env AdapterEnv) error {
 	if env.APIKey != "" {
 		headers["authorization"] = "Bearer " + env.APIKey
 	}
-	return probeGet(env, JoinURL(firstNonEmpty(ResolveOpenAIBaseURL(env.BaseURL), "https://api.openai.com/v1"), "models"), headers)
+	return probeGet(env, JoinURL(ResolveOpenAIBaseURL(baseURLFor(APIOpenAIChat, env.BaseURL)), "models"), headers)
 }
 
 func (anthropicMessagesAdapter) Probe(env AdapterEnv) error {
-	return probeGet(env, JoinURL(firstNonEmpty(env.BaseURL, "https://api.anthropic.com"), "v1/models"),
+	return probeGet(env, JoinURL(baseURLFor(APIAnthropicMessages, env.BaseURL), "v1/models"),
 		map[string]string{"x-api-key": env.APIKey, "anthropic-version": "2023-06-01"})
 }
 
 func (googleGenerativeAIAdapter) Probe(env AdapterEnv) error {
-	base := firstNonEmpty(env.BaseURL, "https://generativelanguage.googleapis.com")
+	base := baseURLFor(APIGoogleGenerativeAI, env.BaseURL)
 	return probeGet(env, JoinURL(base, "v1beta/models")+"?key="+url.QueryEscape(env.APIKey), nil)
 }
 

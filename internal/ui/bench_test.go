@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -104,7 +105,11 @@ func measureRender(t *testing.T, shell *Shell, iterations int) (median, p95 time
 	}
 
 	sortDurations(samples)
-	return samples[len(samples)/2], samples[(len(samples)*95)/100]
+	// Nearest-rank p95 -- the same definition as the workspace budget's measure. The plain
+	// (n*95)/100 index landed on the maximum for thirty samples as well, so one delayed frame
+	// could redden the gate.
+	rank := (95*len(samples) + 99) / 100
+	return samples[len(samples)/2], samples[rank-1]
 }
 
 func sortDurations(values []time.Duration) {
@@ -115,40 +120,60 @@ func sortDurations(values []time.Duration) {
 	}
 }
 
-// TestUIRenderScalingReport measures how long a frame takes at each library size.
-func TestUIRenderScalingReport(t *testing.T) {
+// frameBudget is the p95 ceiling for one frame, at 10,000 bookmarks.
+//
+// Twice the Wave 5 render report's measurements, the same starting rule as the
+// workspace budget: a loaded machine passes, and a frame that starts rebuilding
+// something expensive does not. The settings frame is the cheapest of the three
+// because the panel replaces the list rather than adding to it.
+const frameBudget = 5 * time.Millisecond
+
+// settingsFrameBudget is the ceiling while the settings panel covers the workspace.
+const settingsFrameBudget = 2 * time.Millisecond
+
+// TestUIRenderBudget measures the frame a reader looks at and fails when it crosses its
+// ceiling. A frame's cost is not visible in a report, and a view that starts doing work
+// per card is exactly the regression a screenshot cannot show.
+//
+// A frame is wall clock, so it is measured alone. In the parallel `go test ./...` run the
+// same frames crossed their ceiling while another package filled a database; the gate's
+// budget step sets TROVE_BUDGETS=1 and runs this test in a process of its own.
+func TestUIRenderBudget(t *testing.T) {
 	if testing.Short() {
-		t.Skip("the render report builds large databases")
+		t.Skip("the budget builds a ten-thousand-row database")
 	}
 	if raceEnabled {
-		t.Skip("the render report is skipped under -race; the detector distorts it")
+		t.Skip("the render budget is skipped under -race; the detector distorts it")
+	}
+	if os.Getenv("TROVE_BUDGETS") != "1" {
+		t.Skip("wall-clock ceilings run alone: set TROVE_BUDGETS=1 (the gate's budget step does)")
 	}
 
-	t.Logf("| bookmarks | frame | median | p95 |")
-	t.Logf("|---|---|---|---|")
+	const size = 10000
+	shell, _ := buildUILibrary(t, size)
+	const iterations = 30
 
-	for _, size := range []int{1000, 10000, 50000} {
-		shell, _ := buildUILibrary(t, size)
-
-		iterations := 30
-		if size >= 50000 {
-			iterations = 15
-		}
-
+	check := func(label string, budget time.Duration) {
+		t.Helper()
 		median, p95 := measureRender(t, shell, iterations)
-		t.Logf("| %d | results list (100 cards) | %.2f ms | %.2f ms |", size,
-			float64(median.Microseconds())/1000, float64(p95.Microseconds())/1000)
-
-		// The inspector populated, which adds a text-heavy column.
-		shell.State().Selected = shell.State().Data.Bookmarks[0].TweetID
-		median, p95 = measureRender(t, shell, iterations)
-		t.Logf("| %d | with inspector open | %.2f ms | %.2f ms |", size,
-			float64(median.Microseconds())/1000, float64(p95.Microseconds())/1000)
-
-		// The settings panel, which is a modal over the workspace.
-		shell.State().SettingsOpen = true
-		median, p95 = measureRender(t, shell, iterations)
-		t.Logf("| %d | with settings panel | %.2f ms | %.2f ms |", size,
-			float64(median.Microseconds())/1000, float64(p95.Microseconds())/1000)
+		t.Logf("| %d | %s | %.2f ms | %.2f ms | %.0f ms |", size, label,
+			float64(median.Microseconds())/1000, float64(p95.Microseconds())/1000,
+			float64(budget.Microseconds())/1000)
+		if p95 > budget {
+			t.Errorf("%s took %.2f ms at p95, over the %.0f ms budget",
+				label, float64(p95.Microseconds())/1000, float64(budget.Microseconds())/1000)
+		}
 	}
+
+	t.Logf("| bookmarks | frame | median | p95 | budget |")
+	t.Logf("|---|---|---|---|---|")
+	check("results list (100 cards)", frameBudget)
+
+	// The inspector populated, which adds a text-heavy column.
+	shell.State().Selected = shell.State().Data.Bookmarks[0].TweetID
+	check("with inspector open", frameBudget)
+
+	// The settings panel, which is a modal over the workspace.
+	shell.State().SettingsOpen = true
+	check("with settings panel", settingsFrameBudget)
 }

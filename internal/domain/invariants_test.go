@@ -80,22 +80,25 @@ func TestSyncStatusValidation(t *testing.T) {
 // never fetched.
 func TestCompletesFullSyncGatesTheOldDefect(t *testing.T) {
 	tests := []struct {
-		name        string
-		reason      TerminationReason
-		failedCount int
-		want        bool
+		name         string
+		reason       TerminationReason
+		failedCount  int
+		unrecognized int
+		want         bool
 	}{
-		{"reached the end cleanly", TermEndOfPages, 0, true},
-		{"reached the end but a page failed", TermEndOfPages, 1, false},
-		{"hit the sync cap", TermHitLimit, 0, false},
-		{"stopped early on known pages", TermStoppedEarly, 0, false},
-		{"cancelled", TermCancelled, 0, false},
-		{"failed", TermFailed, 0, false},
+		{"reached the end cleanly", TermEndOfPages, 0, 0, true},
+		{"reached the end but a page failed", TermEndOfPages, 1, 0, false},
+		{"reached the end with unreadable posts", TermEndOfPages, 0, 3, false},
+		{"hit the sync cap", TermHitLimit, 0, 0, false},
+		{"stopped early on known pages", TermStoppedEarly, 0, 0, false},
+		{"cancelled", TermCancelled, 0, 0, false},
+		{"failed", TermFailed, 0, 0, false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := CompletesFullSync(tc.reason, tc.failedCount); got != tc.want {
-				t.Errorf("CompletesFullSync(%q, %d) = %v, want %v", tc.reason, tc.failedCount, got, tc.want)
+			if got := CompletesFullSync(tc.reason, tc.failedCount, tc.unrecognized); got != tc.want {
+				t.Errorf("CompletesFullSync(%q, %d, %d) = %v, want %v",
+					tc.reason, tc.failedCount, tc.unrecognized, got, tc.want)
 			}
 		})
 	}

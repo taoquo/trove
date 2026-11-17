@@ -549,6 +549,13 @@ func TestCancellationDuringFetchIsRecordedAsCancelled(t *testing.T) {
 	if counts.TotalBookmarks != 1 {
 		t.Errorf("stored %d bookmarks, want the 1 fetched before the cancel", counts.TotalBookmarks)
 	}
+
+	// The place the walk stopped is kept even though the run's own context is
+	// cancelled: recording it through that context would drop it and restart the
+	// whole walk next time.
+	if got := service.ResumeCursor(context.Background()); got != "cursor-after-cancel" {
+		t.Errorf("resume cursor = %q, want %q", got, "cursor-after-cancel")
+	}
 }
 
 // cancelOnFetch cancels the context as the first page returns.
@@ -712,6 +719,71 @@ func TestAFailedPageKeepsThePagesBeforeIt(t *testing.T) {
 	}
 	if complete {
 		t.Error("a run that lost a page must not be recorded as a completed full sync")
+	}
+}
+
+// TestAFailedRunKeepsItsPlaceToResume is the defect measured on a real walk: the
+// cursor was written only when the cap stopped the run, so a page failure threw it
+// away. A 9,000-bookmark walk that died at page 450 restarted from the top and
+// failed at the same page on every run.
+func TestAFailedRunKeepsItsPlaceToResume(t *testing.T) {
+	source := &failingSecondPage{
+		first: page("1", "2"),
+		err:   &xsource.Error{Kind: domain.ErrNetwork, Op: "fetch"},
+	}
+	service, _ := newService(t, source)
+	ctx := context.Background()
+
+	if _, err := service.Run(ctx, RunOptions{Sleep: noSleep}); err == nil {
+		t.Fatal("the page failure must still be reported")
+	}
+	if got := service.ResumeCursor(ctx); got != "cursor-after-first" {
+		t.Errorf("resume cursor = %q, want the page the walk stopped before", got)
+	}
+}
+
+// TestACompletedWalkClearsTheResumeCursor is the counterweight: a stale cursor
+// would ask X for a page it has already given us.
+func TestACompletedWalkClearsTheResumeCursor(t *testing.T) {
+	source := &fakeSource{pages: []ports.Page{{Items: page("1").Items, NextCursor: ""}}}
+	service, db := newService(t, source)
+	ctx := context.Background()
+
+	if err := sqlite.NewSettingsRepository(db).Set(ctx, resumeCursorKey, "stale", clockBase); err != nil {
+		t.Fatalf("seed the stale cursor: %v", err)
+	}
+	if _, err := service.Run(ctx, RunOptions{Sleep: noSleep}); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if got := service.ResumeCursor(ctx); got != "" {
+		t.Errorf("resume cursor = %q, want it cleared once the timeline ended", got)
+	}
+}
+
+// TestUnreadablePostsMakeTheRunPartial keeps an honest status: a page on which
+// some entries could not be read leaves the library incomplete even though the
+// timeline ended, so the run must not be recorded as a success.
+func TestUnreadablePostsMakeTheRunPartial(t *testing.T) {
+	source := &fakeSource{pages: []ports.Page{
+		{Items: page("1").Items, NextCursor: "cursor-1", Unrecognized: 1},
+		{Items: page("2").Items, NextCursor: ""},
+	}}
+	service, _ := newService(t, source)
+	ctx := context.Background()
+
+	run, err := service.Run(ctx, RunOptions{Sleep: noSleep})
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if run.Status != domain.SyncPartialSuccess {
+		t.Errorf("status = %q, want %q when a post could not be read", run.Status, domain.SyncPartialSuccess)
+	}
+	complete, err := service.HasCompletedInitialFullSync(ctx)
+	if err != nil {
+		t.Fatalf("HasCompletedInitialFullSync: %v", err)
+	}
+	if complete {
+		t.Error("a run that could not read every post must not count as a completed full sync")
 	}
 }
 

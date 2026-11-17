@@ -391,6 +391,186 @@ func TestPipelineWritesALedgerRowForEveryBatchBookmark(t *testing.T) {
 	}
 }
 
+// TestARefusedBatchIsNotSentAgain is the memory the ledger gained: a batch the
+// provider refuses leaves a row per bookmark, so the next run does not pay for the
+// same refusal.
+func TestARefusedBatchIsNotSentAgain(t *testing.T) {
+	bookmarks := posts(2, "ada")
+
+	first := newHarness(t, Snapshot{Bookmarks: bookmarks})
+	first.client.respond = func(TagRequest) ([]TagVerdict, error) {
+		return nil, &llm.LlmError{Kind: llm.KindContentFilter, Message: "blocked by policy"}
+	}
+	first.run(t)
+
+	if len(first.analysis) != 2 {
+		t.Fatalf("wrote %d ledger rows, want one per refused post: %+v", len(first.analysis), first.analysis)
+	}
+	for _, record := range first.analysis {
+		if record.Outcome != domain.OutcomeError {
+			t.Errorf("outcome = %q, want %q", record.Outcome, domain.OutcomeError)
+		}
+		// The kind, not the sentence: the sentence can hold a provider's body.
+		if record.ErrorKind != llm.KindContentFilter {
+			t.Errorf("error kind = %q, want %q", record.ErrorKind, llm.KindContentFilter)
+		}
+		if record.ContentHash != domain.HashAnalyzedContent(textOf(bookmarks, record.BookmarkID)) {
+			t.Error("the row must carry the hash of the text that was refused")
+		}
+		if record.Model != "test-model" || record.PromptVersion != domain.LlmPromptVersion {
+			t.Errorf("row = %+v, want this run's model and prompt version", record)
+		}
+	}
+
+	// The second run over the same library sends nothing: asking again would fail
+	// identically.
+	second := newHarness(t, Snapshot{Bookmarks: bookmarks, Analysis: first.analysis})
+	second.run(t)
+
+	if got := second.client.callCount(); got != 0 {
+		t.Errorf("the second run sent %d request(s) for posts the provider already refused", got)
+	}
+	if second.summary == nil || second.summary.Outcome != OutcomeNoCandidates {
+		t.Errorf("outcome = %v, want %q", second.summary, OutcomeNoCandidates)
+	}
+}
+
+// TestATransientFailureIsRetried is the other half of that rule. A rate limit is
+// written down so the ledger is honest, but it is a moment, not a verdict: dropping
+// the bookmark because of it would lose an answer the user expected next run.
+func TestATransientFailureIsRetried(t *testing.T) {
+	bookmarks := posts(2, "ada")
+
+	first := newHarness(t, Snapshot{Bookmarks: bookmarks})
+	first.client.respond = func(TagRequest) ([]TagVerdict, error) {
+		return nil, &llm.LlmError{Kind: llm.KindRateLimit, Status: 429}
+	}
+	first.run(t)
+
+	if len(first.analysis) != 2 {
+		t.Fatalf("wrote %d ledger rows, want 2: %+v", len(first.analysis), first.analysis)
+	}
+	if first.analysis[0].ErrorKind != llm.KindRateLimit {
+		t.Errorf("error kind = %q, want the rate limit", first.analysis[0].ErrorKind)
+	}
+
+	second := newHarness(t, Snapshot{Bookmarks: bookmarks, Analysis: first.analysis})
+	second.client.respond = func(request TagRequest) ([]TagVerdict, error) {
+		return verdictsFor(request.Batch, "Topic"), nil
+	}
+	second.run(t)
+
+	if got := second.client.callCount(); got != 1 {
+		t.Fatalf("the retry sent %d request(s), want 1", got)
+	}
+	if len(second.client.lastRequest().Batch) != 2 {
+		t.Error("the retry must carry both posts")
+	}
+}
+
+// TestRepeatedProviderFailuresStopTheRun is the circuit breaker: a provider that
+// refuses everything stops the run after three batches instead of being asked once
+// per remaining batch.
+func TestRepeatedProviderFailuresStopTheRun(t *testing.T) {
+	bookmarks := posts(100, "ada") // four batches of 25
+	h := newHarness(t, Snapshot{Bookmarks: bookmarks})
+	h.deps.Settings.LLM.BatchSize = DefaultBatchSize
+	h.client.respond = func(TagRequest) ([]TagVerdict, error) {
+		return nil, &llm.LlmError{Kind: llm.KindUnauthorized, Status: 401}
+	}
+
+	summary := h.run(t)
+
+	if summary.Outcome != OutcomeErrorBudget {
+		t.Fatalf("outcome = %q, want %q", summary.Outcome, OutcomeErrorBudget)
+	}
+	if got := h.client.callCount(); got != DefaultMaxConsecutiveFailedBatches {
+		t.Errorf("sent %d requests, want the run to stop after %d", got, DefaultMaxConsecutiveFailedBatches)
+	}
+	if want := DefaultMaxConsecutiveFailedBatches * DefaultBatchSize; len(h.analysis) != want {
+		t.Errorf("wrote %d ledger rows, want %d (every refused post remembered)", len(h.analysis), want)
+	}
+	if summary.UnprocessedCount == 0 {
+		t.Error("the stopped run must report the work it did not reach")
+	}
+}
+
+// TestASuccessResetsTheFailureStreak keeps the breaker from firing on a provider
+// that merely stumbles: a reply between two failures means the run is working.
+func TestASuccessResetsTheFailureStreak(t *testing.T) {
+	bookmarks := posts(75, "ada") // three batches
+	h := newHarness(t, Snapshot{Bookmarks: bookmarks})
+	h.deps.Settings.LLM.BatchSize = DefaultBatchSize
+	h.client.respond = func(request TagRequest) ([]TagVerdict, error) {
+		if request.Batch[0].TweetID == bookmarks[25].TweetID {
+			return verdictsFor(request.Batch, "Topic"), nil
+		}
+		return nil, &llm.LlmError{Kind: llm.KindServer, Status: 500}
+	}
+
+	summary := h.run(t)
+
+	if summary.Outcome == OutcomeErrorBudget {
+		t.Fatal("a reply in the middle must reset the failure streak")
+	}
+	if got := h.client.callCount(); got != 3 {
+		t.Errorf("sent %d requests, want all three batches", got)
+	}
+}
+
+// usageClient is a model client that can say what it spent, which is the optional
+// half of the interface a provider client implements.
+type usageClient struct {
+	fakeClient
+	usage llm.TokenUsage
+}
+
+func (u *usageClient) Usage() llm.TokenUsage { return u.usage }
+
+// TestTheSummaryReportsWhatTheProviderCharged is item 11's last line: the run's
+// report carries the provider's own numbers, and a client that cannot report leaves
+// them at zero rather than at a guess.
+func TestTheSummaryReportsWhatTheProviderCharged(t *testing.T) {
+	answer := func(request TagRequest) ([]TagVerdict, error) {
+		return verdictsFor(request.Batch, "Topic"), nil
+	}
+
+	t.Run("a client that reports usage", func(t *testing.T) {
+		h := newHarness(t, Snapshot{Bookmarks: posts(2, "ada")})
+		h.deps.Client = &usageClient{
+			fakeClient: fakeClient{respond: answer},
+			usage:      llm.TokenUsage{InputTokens: 900, OutputTokens: 120},
+		}
+
+		summary := h.run(t)
+
+		if summary.InputTokens != 900 || summary.OutputTokens != 120 {
+			t.Errorf("summary usage = %d/%d, want 900/120", summary.InputTokens, summary.OutputTokens)
+		}
+	})
+
+	t.Run("a client that cannot", func(t *testing.T) {
+		h := newHarness(t, Snapshot{Bookmarks: posts(2, "ada")})
+		h.client.respond = answer
+
+		summary := h.run(t)
+
+		if summary.InputTokens != 0 || summary.OutputTokens != 0 {
+			t.Errorf("summary usage = %d/%d, want zeros for an unknown cost",
+				summary.InputTokens, summary.OutputTokens)
+		}
+	})
+}
+
+func textOf(bookmarks []domain.Bookmark, id string) string {
+	for _, bookmark := range bookmarks {
+		if bookmark.TweetID == id {
+			return bookmark.Text
+		}
+	}
+	return ""
+}
+
 // --- budget ---
 
 func TestPipelineGuardedBudgetCapsNewTags(t *testing.T) {

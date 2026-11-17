@@ -10,13 +10,27 @@ bash -c 'source .toolchain/env.sh && bash tools/gate.sh'
 
 步骤：
 
-1. 文案、接线、表面索引、token、命名与引用检查；
+1. 文案、接线、表面索引、token、命名与引用检查（含迁移快照、续跑游标、无调用方的导出函数）；
 2. 每个检查器的负样本（`tools/selfcheck.sh`）；
 3. gofmt、`go vet`、`go tool mygo vet ./cmd/trove`、`CGO_ENABLED=0` 构建；
-4. `go test` 与 `go test -race`；
-5. `go tool mygo build -skip-dmg`；
-6. 启动、单实例、退出冒烟测试；
-7. 在真实截图上检查三栏边界与两条几何不变量。
+4. `go test`；
+5. 时间预算（`TestPerformanceBudget`、`TestUIRenderBudget`、
+   `TestTheSidebarCacheIsWhatMakesAFilterCheap`，单独进程，超时 5 分钟）；
+6. `go test -race`；
+7. 30 秒的 `FuzzParsePage`；
+8. `go tool mygo build -skip-dmg`；
+9. 启动、单实例、退出冒烟测试；
+10. 在真实截图上检查三栏边界与两条几何不变量。
+
+预算排在 race 之前：race 的进程刚被回收时测到的是机器的回写，不是代码。这里的 p95 是
+最近秩——20 个样本取第 19 名，单个被调度延迟的样本不会让门禁变红；整体回归会抬高每一个
+样本，仍然会红。
+
+墙钟测试只在 `TROVE_BUDGETS=1` 时测量。`go test ./...` 并行跑各个包，此时测到的是别的包
+写库带来的争用：一次并行运行里搜索读到 366 ms（预算 320）、帧也越线，而它们在单独的进程里
+都在预算内。所以 `go test ./...` 会跳过这三条，gate 的预算步骤用
+`env TROVE_BUDGETS=1 go test -p 1 -run …` 单独按顺序运行它们（`-p 1` 让查询预算和帧预算
+不互相干扰）；本地想复现预算也用这条命令。
 
 必须在将要提交的那棵树上跑；跑完再改代码就要重跑。
 
@@ -25,13 +39,45 @@ gate 会编译很多次（vet、两种 test、构建、三平台），而 `inter
 缓存放在仓库外：`GOCACHE` 指向 `~/Library/Caches/trove/go-build`，编译临时目录用系统
 `$TMPDIR`。密集开发一周仍可能堆到几 G，`go clean -cache` 随时可以全部回收，代价只是下次重编。
 
+## 预算与实测（10k 库）
+
+两条预算测试各自打印一张表；下面是 2026-11-16 在 Apple 芯片、Go 1.27.2 上的一次运行，
+按 20 次（工作区）/ 30 次（帧）取中位数与 p95。预算写死为这里的 p95 的两倍左右：机器繁忙
+时仍能通过，某条路径退化成全表排序或逐卡重算时则不能。
+
+工作区（`TestPerformanceBudget`，`go test -v ./internal/usecase/workspace`）：
+
+| bookmarks | operation | median | p95 | budget |
+|---|---|---|---|---|
+| 10000 | sort: timeline | 1.9 ms | 2.1 ms | 5 ms |
+| 10000 | sort: saved-desc | 1.9 ms | 2.1 ms | 5 ms |
+| 10000 | sort: saved-asc | 1.9 ms | 2.1 ms | 5 ms |
+| 10000 | sort: created-desc | 1.8 ms | 2.1 ms | 5 ms |
+| 10000 | sort: likes-desc | 1.9 ms | 2.1 ms | 5 ms |
+| 10000 | open workspace (first page) | 1.9 ms | 2.1 ms | 75 ms |
+| 10000 | search (LIKE, one term) | 154.3 ms | 156.5 ms | 320 ms |
+| 10000 | filter by one tag | 48.8 ms | 49.3 ms | 100 ms |
+| 10000 | unclassified | 38.3 ms | 39.3 ms | 80 ms |
+| 10000 | deep page (offset n/2) | 2.3 ms | 2.5 ms | 5 ms |
+| 10000 | write 500 bookmarks (sync batch) | 21.3 ms | 29.0 ms | 140 ms |
+
+帧（`TestUIRenderBudget`，`go test -v ./internal/ui`）：
+
+| bookmarks | frame | median | p95 | budget |
+|---|---|---|---|---|
+| 10000 | results list (100 cards) | 1.89 ms | 2.78 ms | 5 ms |
+| 10000 | with inspector open | 1.88 ms | 2.00 ms | 5 ms |
+| 10000 | with settings panel | 0.39 ms | 0.44 ms | 2 ms |
+
 ## CI 与发布
 
 `.github/workflows/ci.yml` 在每次 push 和 PR 上跑 gate 里不需要窗口的部分：文案检查、
-`check-wiring.sh --source-only`（跳过读 `docs/screenshots` 的一对列检查）、gofmt、vet、
-`mygo vet`、`go test` 与 `go test -race`；另有一个 ubuntu 任务只做 `GOOS=windows`
-交叉编译，防止 Windows 一侧悄悄坏掉。`selfcheck.sh` 与截图检查需要 Pillow、真实截取和窗口，
-只在本地 gate 跑。
+`check-wiring.sh --source-only`（跳过读 `docs/screenshots` 的一对列检查）、
+`selfcheck.sh --source-only`（跑所有不需要图片的负样本，其余逐条列出留给 gate）、gofmt、
+vet、`mygo vet`、`go test` 与 `go test -race`、10 秒 `FuzzParsePage`、`govulncheck ./...`
+与覆盖率汇总（先只报告，60% 下限待覆盖率先越过再强制执行）。另有一个 ubuntu 任务只做
+`GOOS=windows` 交叉编译，防止 Windows 一侧悄悄坏掉。需要 Pillow 的合成图片检查与需要真实
+截取的对比检查只在本地 gate 跑。
 
 `.github/workflows/release.yml` 由 `v*` 标签触发：macOS 上构建两种架构的 dmg，Windows 上构建
 NSIS 安装包，生成更新包与清单，改名成站点使用的固定文件名，为全部资产出构建证明与校验和，

@@ -24,20 +24,48 @@
 #   bigfiles    a file can hold every surface the window draws and still be unreadable: the
 #               other checkers all ask whether something is connected, not whether the file has
 #               grown past one job
+#   C1          an exported function with a test and no production caller reads as wired
+#   C2          a migration still reaches the right schema with its pre-upgrade copy deleted
+#   C3          a status sentence typed inline is user-visible text
+#   C4          the window and the CLI start a sync; only one of them resumed from the cursor
+#   C5          a deleted sort index leaves the order right and the query one full sort slower
 #
-#     bash tools/selfcheck.sh
+#     bash tools/selfcheck.sh [--source-only]
 #
 # Each case edits one file, runs one checker, looks for a fragment, and restores from a copy.
 # The restore is a copy rather than a reverse edit, so a wrong edit cannot leave the tree
 # changed. Cases that skip are counted as failures: a case that no longer applies is a case
 # that no longer proves anything.
+#
+# --source-only is for CI, which has neither a captured window nor Pillow. It drops the cases
+# that read docs/screenshots or build synthetic pictures, and says so on one line each; those
+# stay in the gate, which has both. A case that skips because its edit no longer applies still
+# fails, so the flag cannot hide a stale needle.
 
 set -u
 cd "$(dirname "$0")/.."
 
+source_only=0
+for arg in "$@"; do
+  case "$arg" in
+    --source-only) source_only=1 ;;
+    *)
+      echo "unknown argument: $arg" >&2
+      exit 2
+      ;;
+  esac
+done
+
 pass=0
 skipped=0
 fail=0
+notrun=0
+
+# no_picture <name> -- records a case that needs a capture or an image library.
+no_picture() {
+  echo "  --   $1 (needs a picture; left to the gate)"
+  notrun=$((notrun + 1))
+}
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
@@ -184,11 +212,51 @@ if needle not in source:
 open(path, "w", encoding="utf-8").write(source.replace(needle, "WidthSidebarMin = 180", 1))
 PY
 
+# C1: an exported function with no caller. The everyday shape is a helper that a test exercises
+# and nothing in the app asks for; it compiles, it is tested, and the feature it was written for
+# is wired to nothing.
+cat > "$tmp/uncalled.py" <<'PY'
+import sys
+path = sys.argv[1]
+source = open(path, encoding="utf-8").read()
+needle = "package ui\n"
+if needle not in source:
+    sys.exit("the package clause moved")
+open(path, "w", encoding="utf-8").write(
+    source.replace(needle, needle + "\n// OrphanProbe is a function the checker must report.\nfunc OrphanProbe() {}\n", 1))
+PY
+
+# C2: the pre-upgrade copy removed. The replacement is another real call so the function still
+# reads as doing something; what is gone is the snapshot, which no schema test notices.
+cat > "$tmp/migratesnapshot.py" <<'PY'
+import sys
+path = sys.argv[1]
+source = open(path, encoding="utf-8").read()
+needle = "if err := db.snapshotBeforeMigration(current); err != nil {"
+if needle not in source:
+    sys.exit("the snapshot call moved")
+open(path, "w", encoding="utf-8").write(
+    source.replace(needle, "if err := db.ensureMigrationTable(); err != nil {", 1))
+PY
+
+# C4: the window's ResumeOptions call removed, so its RunOptions reaches Run with no cursor --
+# exactly the drift the CLI had.
+cat > "$tmp/runcursor.py" <<'PY'
+import sys
+path = sys.argv[1]
+source = open(path, encoding="utf-8").read()
+needle = "\toptions = s.syncer.ResumeOptions(ctx, options)\n"
+if needle not in source:
+    sys.exit("the ResumeOptions call moved")
+open(path, "w", encoding="utf-8").write(source.replace(needle, "", 1))
+PY
+
 # columns.py takes a picture, not a file to break, so its case is a synthetic one. Two images
 # that differ in exactly the property it asserts: one where paint stops at the pane boundary,
 # one where it runs across. Written as a picture because the defect it watches for -- the middle
 # pane drawing over the inspector -- leaves no trace in the source code. The only evidence is the
 # screenshot.
+if [ "$source_only" -eq 0 ]; then
 cat > "$tmp/columns_case.py" <<'PY'
 import sys
 from PIL import Image
@@ -213,6 +281,9 @@ make(sys.argv[1] + "/ruled.png",  True)    # a separator stands at the boundary
 make(sys.argv[1] + "/unruled.png", False)  # the two surfaces meet with nothing between
 PY
 python3 "$tmp/columns_case.py" "$tmp" 400
+else
+  no_picture "columns on synthetic pictures"
+fi
 
 echo "checkers catch the defect each was written for:"
 
@@ -235,6 +306,12 @@ run "twins sees two bounds that disagree" \
 
 run "hexcolors sees a colour outside the token table" \
     hexcolors.py internal/ui/settingsui.go "$tmp/hexcolors.py" "ui.Hex(#b83d2e)"
+run "uncalled sees an exported function with no caller" \
+    uncalled.py internal/ui/card.go "$tmp/uncalled.py" "OrphanProbe"
+run "migratesnapshot sees a migration with no pre-upgrade copy" \
+    migratesnapshot.py internal/storage/sqlite/migrations.go "$tmp/migratesnapshot.py" "without a snapshot first"
+run "runcursor sees a run that skips the resume cursor" \
+    runcursor.py internal/ui/sync.go "$tmp/runcursor.py" "without syncer.ResumeOptions"
 
 # Every checker says what it counted, even when it found nothing.
 #
@@ -242,7 +319,7 @@ run "hexcolors sees a colour outside the token table" \
 # means both "nothing wrong" and "the check did not run". The failure mode is a path error and a
 # missing separator looking the same.
 silent=""
-for checker in bigfiles hexcolors namesort surfaces toolrefs unread; do
+for checker in bigfiles hexcolors migratesnapshot namesort runcursor surfaces toolrefs unread; do
   if [ -z "$(python3 tools/$checker.py 2>&1)" ]; then
     silent="$silent $checker"
   fi
@@ -259,7 +336,7 @@ fi
 # were run. A wrong directory still produced something that looked like a result.
 root=$(pwd)
 unwarned=""
-for checker in twins bigfiles orphankeys; do
+for checker in twins bigfiles migratesnapshot orphankeys runcursor; do
   out=$(cd .. && python3 "$root/tools/$checker.py" 2>&1)
   case "$out" in
     *"relative to the repository root"*) ;;
@@ -274,6 +351,10 @@ fi
 
 # cardrows.py finds the two addresses it needs, on a picture built for the purpose.
 #
+# Everything from here to the check-text case reads a picture: the synthetic cards are drawn
+# with Pillow and the contrast and empty-screen cases read the gate's captures. --source-only
+# steps over the whole stretch and names the cases it did not run.
+if [ "$source_only" -eq 0 ]; then
 # Scanning down "the card's left border" at a guessed x can hit the text or the sidebar's edge and
 # learn nothing. This case feeds a synthetic list: a sidebar border that runs the full height, and
 # two cards that do not, so a tool that confuses them fails here.
@@ -335,7 +416,107 @@ else
   echo "  FAIL cardrows exit codes: no-cards=$nocards (want 0), cannot-open=$broken (want 2)"
   fail=$((fail + 1))
 fi
+else
+  no_picture "cardrows finds the card edge past the sidebar's"
+  no_picture "cardrows tells the sidebar's edge from a card's"
+  no_picture "cardrows tells 'no cards here' from 'cannot read the file'"
+  no_picture "contrast derives its tile size from the theme"
+  no_picture "contrast finds text-like tiles in a populated capture"
+fi
 
+# check-text.sh is a shell checker, so its case is shell too. The rule this case proves is
+# the status line's: a toast sentence typed inline is user-visible text, and the direct
+# literal the old pattern looked for is not how most of them are written.
+text_file=internal/ui/panels.go
+cp "$text_file" "$tmp/panels.go.bak"
+if ! python3 - "$text_file" <<'PY'
+import sys
+path = sys.argv[1]
+source = open(path, encoding="utf-8").read()
+needle = "s.ShowToast(s.t().T(i18n.ToastDone))"
+if needle not in source:
+    sys.exit("no translated toast to replace")
+open(path, "w", encoding="utf-8").write(
+    source.replace(needle, 's.ShowToast("Saved to disk")', 1))
+PY
+then
+  echo "  SKIP check-text: the toast it edits moved"; fail=$((fail + 1))
+else
+  text_out=$(bash tools/check-text.sh 2>&1 || true)
+  cp "$tmp/panels.go.bak" "$text_file"
+  case "$text_out" in
+    *"Hardcoded status text found"*)
+      echo "  ok   check-text sees an untranslated toast"; pass=$((pass + 1)) ;;
+    *)
+      echo "  FAIL check-text did not see the untranslated toast"
+      echo "       got: ${text_out:-<empty>}"
+      fail=$((fail + 1)) ;;
+  esac
+fi
+
+# C3: a status sentence typed inline. The case above writes a toast; this one writes the status
+# line's message, which is the other call check-text.sh watches. Both forms used to pass, because
+# a sentence assembled from a key and an error has no literal to grep for.
+cp internal/ui/panels.go "$tmp/panels.go.status.bak"
+if ! python3 - internal/ui/panels.go <<'PY'
+import sys
+path = sys.argv[1]
+source = open(path, encoding="utf-8").read()
+needle = "s.ShowStatus(ToastError, err.Error())"
+if needle not in source:
+    sys.exit("the status call moved")
+open(path, "w", encoding="utf-8").write(
+    source.replace(needle, 's.ShowStatus(ToastError, "Something went wrong")', 1))
+PY
+then
+  echo "  SKIP check-text: the ShowStatus call it edits moved"; fail=$((fail + 1))
+else
+  status_out=$(bash tools/check-text.sh 2>&1 || true)
+  cp "$tmp/panels.go.status.bak" internal/ui/panels.go
+  case "$status_out" in
+    *"Hardcoded status text found"*)
+      echo "  ok   check-text sees an untranslated status sentence"; pass=$((pass + 1)) ;;
+    *)
+      echo "  FAIL check-text did not see the untranslated status sentence"
+      echo "       got: ${status_out:-<empty>}"
+      fail=$((fail + 1)) ;;
+  esac
+fi
+
+# C5: the sort indexes, by plan rather than by source. Deleting one index leaves the schema
+# valid and every other test green -- the rows are the same, the order is the same -- and the
+# only difference is a full sort inside SQLite. The plan is the only witness, so the case is a
+# go test with the index removed.
+c5_file=internal/storage/sqlite/migrations.go
+cp "$c5_file" "$tmp/migrations.go.c5.bak"
+if ! python3 - "$c5_file" <<'PY'
+import sys
+path = sys.argv[1]
+source = open(path, encoding="utf-8").read()
+block = """CREATE INDEX bookmarks_hidden_likes_idx
+  ON bookmarks(COALESCE(json_extract(metrics_json, '$.likes'), 0) DESC, tweet_id ASC)
+  WHERE archived_at IS NULL;"""
+if block not in source:
+    sys.exit("the likes sort index moved")
+open(path, "w", encoding="utf-8").write(
+    source.replace(block, "-- the likes index is removed by selfcheck", 1))
+PY
+then
+  echo "  SKIP C5: the likes sort index moved"; fail=$((fail + 1))
+else
+  plan_out=$(${GO:-go} test -count=1 -run TestNoSortNeedsATempBTree ./internal/storage/sqlite 2>&1 || true)
+  cp "$tmp/migrations.go.c5.bak" "$c5_file"
+  case "$plan_out" in
+    *"sorts through a temp b-tree"*)
+      echo "  ok   the sort plan sees a sort with no index behind it"; pass=$((pass + 1)) ;;
+    *)
+      echo "  FAIL the sort plan did not see the missing index"
+      printf '%s\n' "$plan_out" | tail -5 | sed 's/^/       /'
+      fail=$((fail + 1)) ;;
+  esac
+fi
+
+if [ "$source_only" -eq 0 ]; then
 echo "  -- columns, on synthetic pictures --"
 out=$(python3 tools/columns.py "$tmp/unruled.png" --boundary 900 2>&1 | tr '\n' ' ')
 case "$out" in
@@ -376,6 +557,11 @@ if [ -z "$out" ]; then
 else
   echo "  FAIL columns reported a drawn separator"; echo "       got: $out"; fail=$((fail + 1))
 fi
+else
+  no_picture "columns sees two surfaces meeting with no separator"
+  no_picture "columns exit codes for a missing path, a wrong picture and a right one"
+  no_picture "columns accepts a separator on two near-white surfaces"
+fi
 
 cat > "$tmp/renamecardaction.py" <<'PY'
 import sys
@@ -402,5 +588,11 @@ if [ "$skipped" -gt 0 ]; then
   echo "$pass passed, $fail failed ($skipped of them skipped)"
 else
   echo "$pass passed, $fail failed"
+fi
+# The picture cases are named as they are passed over, and counted here. They are not failures
+# under --source-only -- CI can run neither of them -- but the count says what this run did not
+# cover, so a green CI line is not mistaken for the whole set.
+if [ "$notrun" -gt 0 ]; then
+  echo "$notrun cases left to the gate: this run had no capture and no Pillow"
 fi
 [ "$fail" -eq 0 ]

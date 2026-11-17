@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -113,6 +114,63 @@ func TestRestoreIntoAnEmptyLibraryBringsTheArchiveBack(t *testing.T) {
 	}
 	if !stored.ArchivedAt.Equal(restored.ArchivedAt) {
 		t.Errorf("restored archive = %v, want %v", stored.ArchivedAt, restored.ArchivedAt)
+	}
+}
+
+// TestSetArchivedManyMovesTheWholeBatch covers the batch the list writes and the count the
+// sidebar reads.
+//
+// The id set crosses the 500-row chunk boundary on purpose: a single UPDATE with one
+// placeholder list would fail there, and a loop that stopped at the first chunk would
+// archive part of a selection and report success.
+func TestSetArchivedManyMovesTheWholeBatch(t *testing.T) {
+	db := openTestDB(t)
+	repo := NewBookmarkRepository(db)
+	ctx := context.Background()
+
+	const total = 1100
+	rows := make([]domain.Bookmark, 0, total)
+	ids := make([]string, 0, total)
+	for i := 0; i < total; i++ {
+		id := fmt.Sprintf("batch-%04d", i)
+		rows = append(rows, bookmarkFixture(id, clockBase))
+		ids = append(ids, id)
+	}
+	if _, err := repo.UpsertMany(ctx, rows); err != nil {
+		t.Fatalf("UpsertMany: %v", err)
+	}
+
+	// An id the library does not hold is a selection that changed under the click, not
+	// a failed write: the rest of the batch still lands.
+	if err := repo.SetArchivedMany(ctx, append(ids, "gone"), clockBase.Add(time.Hour)); err != nil {
+		t.Fatalf("SetArchivedMany: %v", err)
+	}
+	if count, err := repo.Count(ctx, domain.LibraryFilter{}); err != nil {
+		t.Fatalf("Count: %v", err)
+	} else if count != 0 {
+		t.Errorf("the default view matched %d rows, want none", count)
+	}
+	if count, err := repo.Count(ctx, domain.LibraryFilter{Archived: domain.ArchivedOnly}); err != nil {
+		t.Fatalf("Count(archived): %v", err)
+	} else if count != total {
+		t.Errorf("the archive matched %d rows, want %d", count, total)
+	}
+	counts, err := repo.Counts(ctx)
+	if err != nil {
+		t.Fatalf("Counts: %v", err)
+	}
+	if counts.ArchivedCount != total {
+		t.Errorf("the sidebar says %d archived, want %d", counts.ArchivedCount, total)
+	}
+
+	// The zero time is the way back for the batch too.
+	if err := repo.SetArchivedMany(ctx, ids[:2], time.Time{}); err != nil {
+		t.Fatalf("SetArchivedMany(back): %v", err)
+	}
+	if count, err := repo.Count(ctx, domain.LibraryFilter{}); err != nil {
+		t.Fatalf("Count(back): %v", err)
+	} else if count != 2 {
+		t.Errorf("after the way back the default view matched %d rows, want 2", count)
 	}
 }
 

@@ -740,52 +740,6 @@ func TestMergeTagsRejectsAMissingTarget(t *testing.T) {
 	}
 }
 
-// TestSetTagParentEnforcesTwoLevels covers the hierarchy command.
-func TestSetTagParentEnforcesTwoLevels(t *testing.T) {
-	service, db := newService(t)
-	ctx := context.Background()
-	tags := sqlite.NewTagRepository(db)
-
-	for _, spec := range []struct{ id, name, parent string }{
-		{"root", "languages", ""},
-		{"child", "go", "root"},
-		{"other", "tools", ""},
-	} {
-		tag := domain.Tag{
-			ID: spec.id, Name: spec.name, ParentID: spec.parent,
-			CanonicalKey: domain.CanonicalTagKey(spec.name),
-			CreatedAt:    domain.FormatTimestamp(clockBase), UpdatedAt: domain.FormatTimestamp(clockBase),
-		}
-		if err := tags.Create(ctx, tag); err != nil {
-			t.Fatalf("Create: %v", err)
-		}
-	}
-
-	// A root under a root is fine.
-	if _, err := service.SetTagParent(ctx, "other", "root"); err != nil {
-		t.Errorf("nesting a root under a root: %v", err)
-	}
-	// A child under a root is a third level, which the domain refuses.
-	if _, err := service.SetTagParent(ctx, "child", "other"); err == nil {
-		t.Error("a third level must be refused")
-	}
-	// A tag with children cannot itself become a child.
-	if _, err := service.SetTagParent(ctx, "root", "other"); err == nil {
-		t.Error("a tag with children must not become a child")
-	}
-	// Clearing a parent makes a root.
-	if _, err := service.SetTagParent(ctx, "child", ""); err != nil {
-		t.Errorf("clearing a parent: %v", err)
-	}
-	child, _, err := tags.Get(ctx, "child")
-	if err != nil {
-		t.Fatalf("Get: %v", err)
-	}
-	if child.ParentID != "" {
-		t.Errorf("parent = %q, want none", child.ParentID)
-	}
-}
-
 // TestUpdateTagAliasesDropsNoise covers the alias command.
 func TestUpdateTagAliasesDropsNoise(t *testing.T) {
 	service, db := newService(t)

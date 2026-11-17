@@ -114,11 +114,17 @@ type SavedViewDTO struct {
 	ActiveTagIDs        []string `json:"activeTagIds,omitempty"`
 	ActiveAuthorHandles []string `json:"activeAuthorHandles,omitempty"`
 	OnlyWithMedia       bool     `json:"onlyWithMedia"`
-	OnlyLongform        bool     `json:"onlyLongform"`
-	SortOrder           string   `json:"sortOrder"`
-	ViewMode            string   `json:"viewMode"`
-	CreatedAt           string   `json:"createdAt"`
-	UpdatedAt           string   `json:"updatedAt"`
+	// OnlyWithVideo is omitted when false, so a bundle written before the video
+	// filter existed decodes to the media view those files held.
+	OnlyWithVideo bool `json:"onlyWithVideo,omitempty"`
+	OnlyLongform  bool `json:"onlyLongform"`
+	// OnlyArchived is omitted when false, so a bundle written before the archive
+	// existed decodes to the library view those files were saved from.
+	OnlyArchived bool   `json:"onlyArchived,omitempty"`
+	SortOrder    string `json:"sortOrder"`
+	ViewMode     string `json:"viewMode"`
+	CreatedAt    string `json:"createdAt"`
+	UpdatedAt    string `json:"updatedAt"`
 }
 
 // --- domain to wire ---
@@ -286,8 +292,10 @@ func NewSavedViewDTO(view domain.SavedView) SavedViewDTO {
 	return SavedViewDTO{
 		ID: view.ID, Name: view.Name, Query: view.Query,
 		ActiveTagIDs: view.ActiveTagIDs, ActiveAuthorHandles: view.ActiveAuthorHandles,
-		OnlyWithMedia: view.OnlyWithMedia, OnlyLongform: view.OnlyLongform,
-		SortOrder: view.SortOrder, ViewMode: view.ViewMode,
+		OnlyWithMedia: view.OnlyWithMedia, OnlyWithVideo: view.OnlyWithVideo,
+		OnlyLongform: view.OnlyLongform,
+		OnlyArchived: view.OnlyArchived,
+		SortOrder:    view.SortOrder, ViewMode: view.ViewMode,
 		CreatedAt: domain.FormatTimestamp(view.CreatedAt),
 		UpdatedAt: domain.FormatTimestamp(view.UpdatedAt),
 	}
@@ -298,8 +306,10 @@ func (d SavedViewDTO) ToDomain() domain.SavedView {
 	return domain.SavedView{
 		ID: d.ID, Name: d.Name, Query: d.Query,
 		ActiveTagIDs: d.ActiveTagIDs, ActiveAuthorHandles: d.ActiveAuthorHandles,
-		OnlyWithMedia: d.OnlyWithMedia, OnlyLongform: d.OnlyLongform,
-		SortOrder: d.SortOrder, ViewMode: d.ViewMode,
+		OnlyWithMedia: d.OnlyWithMedia, OnlyWithVideo: d.OnlyWithVideo,
+		OnlyLongform: d.OnlyLongform,
+		OnlyArchived: d.OnlyArchived,
+		SortOrder:    d.SortOrder, ViewMode: d.ViewMode,
 		CreatedAt: domain.MustParseTimestamp(d.CreatedAt),
 		UpdatedAt: domain.MustParseTimestamp(d.UpdatedAt),
 	}
@@ -446,4 +456,36 @@ func NewRawPayloadDTO(payload ports.RawPayload) RawPayloadDTO {
 		Payload:    json.RawMessage(payload.PayloadJSON),
 		CapturedAt: payload.CapturedAt,
 	}
+}
+
+// ToDomain renders a raw payload for storage.
+//
+// The payload stays the exact text the API returned: a diagnostic record is only useful
+// if it can be replayed, and re-encoding it would change the bytes the old parser saw.
+func (dto RawPayloadDTO) ToDomain() ports.RawPayload {
+	return ports.RawPayload{
+		TweetID:     dto.TweetID,
+		PayloadJSON: string(dto.Payload),
+		CapturedAt:  dto.CapturedAt,
+	}
+}
+
+// TombstoneDTO is one record of a post deleted locally.
+//
+// A backup carries it so a restore does not resurrect what the exporting device had
+// removed: the sync skips a tombstoned id, and the record is the only thing that says
+// "this was deleted on purpose" rather than "this was never seen".
+type TombstoneDTO struct {
+	TweetID   string `json:"tweetId"`
+	DeletedAt string `json:"deletedAt"`
+}
+
+// NewTombstoneDTO renders a tombstone.
+func NewTombstoneDTO(tombstone ports.Tombstone) TombstoneDTO {
+	return TombstoneDTO{TweetID: tombstone.TweetID, DeletedAt: tombstone.DeletedAt}
+}
+
+// ToDomain renders a tombstone for storage.
+func (dto TombstoneDTO) ToDomain() ports.Tombstone {
+	return ports.Tombstone{TweetID: dto.TweetID, DeletedAt: dto.DeletedAt}
 }

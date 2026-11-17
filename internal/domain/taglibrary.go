@@ -7,9 +7,8 @@ import (
 
 // The tag library view.
 //
-// This is the tag hygiene surface: which tags are used by nothing, which are
-// over-specific one-offs, which have no place in the hierarchy yet, and which could
-// become a parent. It is the lever for shrinking a library that drifted past a
+// This is the tag hygiene surface: which tags are used by nothing and which are
+// over-specific one-offs. It is the lever for shrinking a library that drifted past a
 // workable size, so the rules are exact rather than approximated.
 
 // LongTailMaxBookmarks is the threshold: a tag used by one or two bookmarks
@@ -24,16 +23,15 @@ type TagLibraryFilter string
 
 // The filters.
 const (
-	TagFilterAll        TagLibraryFilter = "all"
-	TagFilterOrphan     TagLibraryFilter = "orphan"
-	TagFilterLongTail   TagLibraryFilter = "long-tail"
-	TagFilterPending    TagLibraryFilter = "pending"
-	TagFilterUnparented TagLibraryFilter = "unparented"
+	TagFilterAll      TagLibraryFilter = "all"
+	TagFilterOrphan   TagLibraryFilter = "orphan"
+	TagFilterLongTail TagLibraryFilter = "long-tail"
+	TagFilterPending  TagLibraryFilter = "pending"
 )
 
 // AllTagLibraryFilters is the whitelist.
 var AllTagLibraryFilters = []TagLibraryFilter{
-	TagFilterAll, TagFilterOrphan, TagFilterLongTail, TagFilterPending, TagFilterUnparented,
+	TagFilterAll, TagFilterOrphan, TagFilterLongTail, TagFilterPending,
 }
 
 // TagLibrarySortOrder is how the library is ordered.
@@ -57,11 +55,9 @@ type TagLibraryItem struct {
 	TagID   string
 	Name    string
 	Aliases []string
-	// ParentID and ParentName are empty when the tag is a root, and also when its
-	// parent no longer exists.
-	ParentID   string
-	ParentName string
-	// ChildCount is how many tags name this one as their parent.
+	// ChildCount is how many tags name this one as their parent. The theme belongs to
+	// the data model -- old backups and imports still carry parents -- while no screen
+	// sets or shows one; the count stays because the two hygiene rules below need it.
 	ChildCount int
 	// BookmarkCount is how many bookmarks carry this tag.
 	BookmarkCount int
@@ -124,13 +120,6 @@ func BuildTagLibraryItems(tags []Tag, relations []BookmarkTag, suggestions []Tag
 			item.UpdatedAt = tag.CreatedAt
 		}
 
-		// A parentId pointing at a deleted tag degrades to no parent, rather than
-		// rendering a dangling label.
-		if parentName, exists := nameByID[tag.ParentID]; tag.ParentID != "" && exists {
-			item.ParentID = tag.ParentID
-			item.ParentName = parentName
-		}
-
 		items = append(items, item)
 	}
 
@@ -185,80 +174,10 @@ func GetRemovableOrphanTagIDs(items []TagLibraryItem) []string {
 	return ids
 }
 
-// CountUnparentedTags counts tags that could reasonably sit under a theme.
-//
-// A tag that already has children is a theme itself, so it is not counted.
-func CountUnparentedTags(items []TagLibraryItem) int {
-	total := 0
-	for _, item := range items {
-		if item.ParentID == "" && item.ChildCount == 0 {
-			total++
-		}
-	}
-	return total
-}
-
-// GetRootTagCandidates lists the tags that may become a parent.
-//
-// Only root tags qualify, which is what keeps the taxonomy two levels deep on the
-// view side as well as in the schema.
-func GetRootTagCandidates(items []TagLibraryItem) []TagLibraryItem {
-	candidates := make([]TagLibraryItem, 0, len(items))
-	for _, item := range items {
-		if item.ParentID == "" {
-			candidates = append(candidates, item)
-		}
-	}
-	sort.SliceStable(candidates, func(i, j int) bool {
-		return CompareNaturalNames(candidates[i].Name, candidates[j].Name) < 0
-	})
-	return candidates
-}
-
-// GetParentCandidates lists the tags a given tag could be nested under.
-func GetParentCandidates(items []TagLibraryItem, tagID string) []TagLibraryItem {
-	var self *TagLibraryItem
-	for index := range items {
-		if items[index].TagID == tagID {
-			self = &items[index]
-			break
-		}
-	}
-	if self == nil || self.ChildCount > 0 {
-		return []TagLibraryItem{}
-	}
-
-	candidates := make([]TagLibraryItem, 0, len(items))
-	for _, candidate := range GetRootTagCandidates(items) {
-		if candidate.TagID != tagID {
-			candidates = append(candidates, candidate)
-		}
-	}
-	return candidates
-}
-
-// HasParentCandidates reports whether a tag could be nested at all.
-//
-// It takes the shared root list rather than the whole library, so a large library
-// does not rebuild the candidate list once per row.
-func HasParentCandidates(rootCandidates []TagLibraryItem, item TagLibraryItem) bool {
-	if item.ChildCount > 0 {
-		return false
-	}
-	// The tag is itself in the root list while it has no parent, and it cannot be its
-	// own parent.
-	available := len(rootCandidates)
-	if item.ParentID == "" {
-		available--
-	}
-	return available > 0
-}
-
 // matchesTagQuery reports whether a tag matches the search box.
 //
-// It matches on the display name, the aliases and the parent's name, and it accepts
-// either a plain substring or a canonical-key containment -- so "AI Agents" finds
-// "ai agent".
+// It matches on the display name and the aliases, and it accepts either a plain
+// substring or a canonical-key containment -- so "AI Agents" finds "ai agent".
 func matchesTagQuery(item TagLibraryItem, searchQuery string) bool {
 	trimmed := strings.TrimSpace(searchQuery)
 	if trimmed == "" {
@@ -268,12 +187,9 @@ func matchesTagQuery(item TagLibraryItem, searchQuery string) bool {
 	queryKey := CanonicalTagKey(trimmed)
 	lowered := strings.ToLower(trimmed)
 
-	haystack := make([]string, 0, len(item.Aliases)+2)
+	haystack := make([]string, 0, len(item.Aliases)+1)
 	haystack = append(haystack, item.Name)
 	haystack = append(haystack, item.Aliases...)
-	if item.ParentName != "" {
-		haystack = append(haystack, item.ParentName)
-	}
 
 	for _, value := range haystack {
 		if strings.Contains(strings.ToLower(value), lowered) {
@@ -329,10 +245,6 @@ func GetVisibleTagLibraryItems(items []TagLibraryItem, searchQuery string, filte
 			}
 		case TagFilterPending:
 			if item.PendingSuggestionCount == 0 {
-				continue
-			}
-		case TagFilterUnparented:
-			if item.ParentID != "" || item.ChildCount > 0 {
 				continue
 			}
 		}

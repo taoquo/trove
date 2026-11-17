@@ -3,8 +3,8 @@ package workspace_test
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"testing"
 	"time"
@@ -145,6 +145,13 @@ var benchTopics = []string{
 }
 
 // measure runs fn repeatedly and returns the median and p95 durations.
+//
+// p95 is the nearest rank: ceil(0.95*n), one-based, so twenty samples report the nineteenth.
+// The plain (n*95)/100 indexing this replaced reported the twentieth -- the maximum -- and the
+// gate runs the budgets right after the race tests, when one sample can be delayed by a
+// second's worth of cache and page work. A single spike is not a regression; a regression moves
+// every sample and still fails, because the ceiling is compared against the twenty-first
+// percentile of the slow end rather than the median alone.
 func measure(iterations int, fn func()) (median, p95 time.Duration) {
 	samples := make([]time.Duration, 0, iterations)
 	for i := 0; i < iterations; i++ {
@@ -154,7 +161,8 @@ func measure(iterations int, fn func()) (median, p95 time.Duration) {
 	}
 
 	sort.Slice(samples, func(i, j int) bool { return samples[i] < samples[j] })
-	return samples[len(samples)/2], samples[(len(samples)*95)/100]
+	rank := (95*len(samples) + 99) / 100
+	return samples[len(samples)/2], samples[rank-1]
 }
 
 // logRow prints one measurement as a markdown table row.
@@ -164,115 +172,127 @@ func logRow(t *testing.T, size int, label string, median, p95 time.Duration) {
 		label, float64(median.Microseconds())/1000, float64(p95.Microseconds())/1000)
 }
 
-// TestScalingReport measures the paths a user waits on at three sizes.
-func TestScalingReport(t *testing.T) {
+// budgetLibrarySize is the library the budget is measured on: one size, big enough
+// that a per-row cost shows up and small enough that the gate pays for it once.
+const budgetLibrarySize = 10000
+
+// performanceBudget is the p95 ceiling for each read path at 10k bookmarks.
+//
+// The numbers are twice the measurements the Wave 5 scaling report took on the machine
+// the plan was written on, which leaves a loaded or slower machine room to pass while
+// still failing a change that makes a path much more expensive. They are meant to
+// tighten as the paths are measured on more machines; a report is not a gate, and this is.
+var performanceBudget = []struct {
+	name   string
+	query  domain.LibraryQuery
+	budget time.Duration
+}{
+	{"open workspace (first page)", domain.LibraryQuery{}, 75 * time.Millisecond},
+	{"search (LIKE, one term)",
+		domain.LibraryQuery{Filter: domain.LibraryFilter{Query: "kubernetes"}},
+		320 * time.Millisecond},
+	{"filter by one tag",
+		domain.LibraryQuery{Filter: domain.LibraryFilter{TagIDs: []string{"tag-0"}}},
+		100 * time.Millisecond},
+	{"unclassified",
+		domain.LibraryQuery{Filter: domain.LibraryFilter{OnlyUnclassified: true}},
+		80 * time.Millisecond},
+	{"deep page (offset n/2)",
+		domain.LibraryQuery{Offset: budgetLibrarySize / 2},
+		5 * time.Millisecond},
+}
+
+// budgetsRequested tells a wall-clock test whether it was asked for.
+//
+// `go test ./...` runs packages in parallel, and a query timed while another package is
+// filling a ten-thousand-row database reads that contention, not the code. The gate run
+// that showed this had search at 366 ms against its 320 ms ceiling and a deep page at
+// 5.2 ms against 5.0 -- both under budget when measured in a process of their own. So the
+// ceilings are measured where they mean something: the gate's budget step sets
+// TROVE_BUDGETS=1 and names each test, and the full-suite run skips them on purpose.
+func budgetsRequested() bool { return os.Getenv("TROVE_BUDGETS") == "1" }
+
+// writeBudget is the ceiling for a sync's batch write.
+const writeBudget = 140 * time.Millisecond
+
+// TestPerformanceBudget measures the paths a reader waits on at 10,000 bookmarks and
+// fails when one of them crosses its ceiling.
+//
+// A regression used to be something a report showed and a reader had to notice. The
+// numbers below are the same paths at one size, with the ceiling written down beside
+// them, so a change that scans the table for a filtered page turns the gate red.
+func TestPerformanceBudget(t *testing.T) {
 	if testing.Short() {
-		t.Skip("the scaling report builds large databases")
+		t.Skip("the budget builds a ten-thousand-row database")
 	}
 	if raceEnabled {
-		// Race instrumentation makes a fifty-thousand-row database take minutes.
-		// The report is a measurement, and the numbers would be meaningless under
-		// the detector anyway, so it is skipped rather than slowed.
-		t.Skip("the scaling report is skipped under -race; run it without the detector")
+		t.Skip("timings are meaningless under the race detector")
+	}
+	if !budgetsRequested() {
+		t.Skip("wall-clock ceilings run alone: set TROVE_BUDGETS=1 (the gate's budget step does)")
 	}
 
-	var startMemory runtime.MemStats
-	runtime.GC()
-	runtime.ReadMemStats(&startMemory)
+	library := buildLibrary(t, budgetLibrarySize)
+	ctx := context.Background()
 
-	t.Logf("| bookmarks | operation | median | p95 |")
-	t.Logf("|---|---|---|---|")
+	paths := make([]struct {
+		name   string
+		query  domain.LibraryQuery
+		budget time.Duration
+	}, 0, len(performanceBudget)+len(domain.AllSortOrders))
+	for _, order := range domain.AllSortOrders {
+		paths = append(paths, struct {
+			name   string
+			query  domain.LibraryQuery
+			budget time.Duration
+		}{"sort: " + string(order), domain.LibraryQuery{Sort: order}, 5 * time.Millisecond})
+	}
+	paths = append(paths, performanceBudget...)
 
-	for _, size := range benchSizes {
-		library := buildLibrary(t, size)
-		ctx := context.Background()
-
-		iterations := 20
-		if size >= 50000 {
-			iterations = 10
+	t.Logf("| bookmarks | operation | median | p95 | budget |")
+	t.Logf("|---|---|---|---|---|")
+	const iterations = 20
+	for _, path := range paths {
+		query := path.query
+		// One read before measuring: the first page pays for opening the database and
+		// filling the sidebar cache, and that is not what a steady-state frame costs.
+		if _, err := library.service.Load(ctx, query); err != nil {
+			t.Fatalf("warm %s: %v", path.name, err)
 		}
-
-		// Opening the workspace: the query plus the sidebar aggregates.
 		median, p95 := measure(iterations, func() {
-			if _, err := library.service.Load(ctx, domain.LibraryQuery{}); err != nil {
-				t.Fatalf("Load: %v", err)
+			if _, err := library.service.Load(ctx, query); err != nil {
+				t.Fatalf("Load %s: %v", path.name, err)
 			}
 		})
-		logRow(t, size, "open workspace (first page)", median, p95)
-
-		// Typing in the search box. This is the path the FTS5 decision was about.
-		median, p95 = measure(iterations, func() {
-			if _, err := library.service.Load(ctx, domain.LibraryQuery{
-				Filter: domain.LibraryFilter{Query: "kubernetes"},
-			}); err != nil {
-				t.Fatalf("Load search: %v", err)
-			}
-		})
-		logRow(t, size, "search (LIKE, one term)", median, p95)
-
-		// Filtering by tag.
-		median, p95 = measure(iterations, func() {
-			if _, err := library.service.Load(ctx, domain.LibraryQuery{
-				Filter: domain.LibraryFilter{TagIDs: []string{"tag-0"}},
-			}); err != nil {
-				t.Fatalf("Load tag: %v", err)
-			}
-		})
-		logRow(t, size, "filter by one tag", median, p95)
-
-		// The Unclassified view, which is a NOT EXISTS over the relation table.
-		median, p95 = measure(iterations, func() {
-			if _, err := library.service.Load(ctx, domain.LibraryQuery{
-				Filter: domain.LibraryFilter{OnlyUnclassified: true},
-			}); err != nil {
-				t.Fatalf("Load unclassified: %v", err)
-			}
-		})
-		logRow(t, size, "unclassified", median, p95)
-
-		// Each sort order, since each has its own index path.
-		for _, order := range domain.AllSortOrders {
-			order := order
-			median, p95 = measure(iterations, func() {
-				if _, err := library.service.Load(ctx, domain.LibraryQuery{Sort: order}); err != nil {
-					t.Fatalf("Load sort %s: %v", order, err)
-				}
-			})
-			logRow(t, size, "sort: "+order, median, p95)
+		t.Logf("| %d | %s | %.1f ms | %.1f ms | %.0f ms |", budgetLibrarySize, path.name,
+			float64(median.Microseconds())/1000, float64(p95.Microseconds())/1000,
+			float64(path.budget.Microseconds())/1000)
+		if p95 > path.budget {
+			t.Errorf("%s took %.1f ms at p95, over the %.1f ms budget",
+				path.name, float64(p95.Microseconds())/1000,
+				float64(path.budget.Microseconds())/1000)
 		}
-
-		// Scrolling: a deep page, which is where an offset scan shows up.
-		median, p95 = measure(iterations, func() {
-			if _, err := library.service.Load(ctx, domain.LibraryQuery{Offset: size / 2}); err != nil {
-				t.Fatalf("Load deep page: %v", err)
-			}
-		})
-		logRow(t, size, "deep page (offset n/2)", median, p95)
-
-		// Writing: the batch size a sync uses.
-		median, p95 = measure(iterations, func() {
-			rows := make([]domain.Bookmark, 0, 500)
-			for i := 0; i < 500; i++ {
-				rows = append(rows, domain.Bookmark{
-					TweetID: fmt.Sprintf("bench-write-%d-%d", size, i), Text: "written by the benchmark",
-					SavedAt: time.Now(), UpdatedAt: time.Now(),
-				})
-			}
-			if _, err := library.repos.Bookmarks.UpsertMany(ctx, rows); err != nil {
-				t.Fatalf("UpsertMany: %v", err)
-			}
-		})
-		logRow(t, size, "write 500 bookmarks (sync batch)", median, p95)
 	}
 
-	var endMemory runtime.MemStats
-	runtime.GC()
-	runtime.ReadMemStats(&endMemory)
-
-	t.Logf("")
-	t.Logf("peak heap during the run: %.1f MiB", float64(endMemory.HeapSys)/1024/1024)
-	t.Logf("total allocated during the run: %.1f MiB", float64(endMemory.TotalAlloc-startMemory.TotalAlloc)/1024/1024)
-	t.Logf("goroutines at the end: %d", runtime.NumGoroutine())
+	batch := make([]domain.Bookmark, 0, 500)
+	for i := 0; i < 500; i++ {
+		batch = append(batch, domain.Bookmark{
+			TweetID: fmt.Sprintf("budget-write-%d", i), Text: "written by the budget",
+			SavedAt: time.Now(), UpdatedAt: time.Now(),
+		})
+	}
+	median, p95 := measure(iterations, func() {
+		if _, err := library.repos.Bookmarks.UpsertMany(ctx, batch); err != nil {
+			t.Fatalf("UpsertMany: %v", err)
+		}
+	})
+	t.Logf("| %d | write 500 bookmarks (sync batch) | %.1f ms | %.1f ms | %.0f ms |",
+		budgetLibrarySize, float64(median.Microseconds())/1000,
+		float64(p95.Microseconds())/1000, float64(writeBudget.Microseconds())/1000)
+	if p95 > writeBudget {
+		t.Errorf("the sync batch took %.1f ms at p95, over the %.1f ms budget",
+			float64(p95.Microseconds())/1000, float64(writeBudget.Microseconds())/1000)
+	}
 }
 
 // TestTheSidebarCacheIsWhatMakesAFilterCheap measures the revision cache against the same
@@ -288,6 +308,9 @@ func TestTheSidebarCacheIsWhatMakesAFilterCheap(t *testing.T) {
 	}
 	if raceEnabled {
 		t.Skip("timings are meaningless under the race detector")
+	}
+	if !budgetsRequested() {
+		t.Skip("wall-clock comparisons run alone: set TROVE_BUDGETS=1 (the gate's budget step does)")
 	}
 
 	for _, size := range []int{10000, 50000} {

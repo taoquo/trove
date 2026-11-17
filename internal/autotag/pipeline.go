@@ -23,6 +23,11 @@ const (
 	// MaxConcurrency caps the batches in flight. More than this against one key
 	// mostly produces rate limits.
 	MaxConcurrency = 4
+	// DefaultMaxConsecutiveFailedBatches is how many batches may fail in a row
+	// before the run stops. One failure is a bad batch; a whole wave failing the
+	// same way is the provider refusing every request, and the rest of the run
+	// would only repeat it.
+	DefaultMaxConsecutiveFailedBatches = 3
 )
 
 // Snapshot is the stored state a run works from.
@@ -72,6 +77,17 @@ type TagCandidate struct {
 // tested without a provider.
 type LLMClient interface {
 	SuggestTags(ctx context.Context, request TagRequest) ([]TagVerdict, error)
+}
+
+// TokenReporter is what a model client implements when it can say what its calls
+// cost.
+//
+// It is optional rather than part of LLMClient: a test client has nothing to report,
+// and requiring the method everywhere would only teach every fake to return a zero.
+// The count is cumulative for the client, which is one run in production, because a
+// client is built per run.
+type TokenReporter interface {
+	Usage() llm.TokenUsage
 }
 
 // LLMSettings is the part of the configuration the pipeline needs.
@@ -202,7 +218,7 @@ func Run(ctx context.Context, deps Deps) (RunSummary, error) {
 
 	snapshot, err := deps.Snapshot(ctx)
 	if err != nil {
-		summary := RunSummary{Outcome: OutcomeFailed, Error: err.Error()}
+		summary := RunSummary{Outcome: OutcomeFailed, Error: sanitizedErrorText(err)}
 		return finish(ctx, deps, "", summary, err)
 	}
 
@@ -214,7 +230,7 @@ func Run(ctx context.Context, deps Deps) (RunSummary, error) {
 		Deadline:   deadline,
 	})
 	if err := saveState(ctx, deps, state); err != nil {
-		summary := RunSummary{Outcome: OutcomeFailed, Error: err.Error()}
+		summary := RunSummary{Outcome: OutcomeFailed, Error: sanitizedErrorText(err)}
 		return finish(ctx, deps, "", summary, err)
 	}
 
@@ -241,7 +257,7 @@ func Run(ctx context.Context, deps Deps) (RunSummary, error) {
 		if err != nil {
 			// The heuristics are the cheap half; losing them is worth reporting.
 			summary := report.summary(OutcomeFailed)
-			summary.Error = err.Error()
+			summary.Error = sanitizedErrorText(err)
 			return finish(ctx, deps, state.RunID, summary, err)
 		}
 		report.suggested += inserted
@@ -304,7 +320,7 @@ func Run(ctx context.Context, deps Deps) (RunSummary, error) {
 		// built the client on purpose and failed for a reason the user can act on.
 		summary := report.summary(OutcomeFailed)
 		if deps.ClientError != nil {
-			summary.Error = deps.ClientError.Error()
+			summary.Error = sanitizedErrorText(deps.ClientError)
 		} else {
 			summary.Error = "no model client configured"
 		}
@@ -333,6 +349,9 @@ func Run(ctx context.Context, deps Deps) (RunSummary, error) {
 
 	// --- wave batching ---
 	stopped := report.runWaves(ctx, deps, candidates, vocabulary, entries, budget, deadline, batchBudget, state)
+	// Read in their own right rather than per batch: the waves write concurrently,
+	// and the provider's own counter is the only place the numbers come from.
+	report.collectUsage(deps.Client)
 
 	return finish(ctx, deps, state.RunID, report.summary(stopped), nil)
 }
@@ -351,6 +370,11 @@ type report struct {
 	processedCount   int
 	batchCount       int
 	failedBatchCount int
+	// consecutiveFailures is how many batches have failed since the last one that
+	// came back. A wave half as wide as the last one is still the same provider
+	// saying no, so this is what stops a doomed run instead of paying for every
+	// remaining batch to learn the same thing.
+	consecutiveFailures int
 	// inFlight is how many batches are waiting on the provider. A bool was not
 	// enough once batches finished independently: the first reply cleared the flag
 	// while another request was still out.
@@ -366,6 +390,9 @@ type report struct {
 	// blocked is the canonical block list. The vocabulary the model is offered
 	// already excludes these names, but a model can propose one anyway.
 	blocked map[string]bool
+
+	// usage is what the provider reported for the run's calls.
+	usage llm.TokenUsage
 
 	lastError string
 }
@@ -390,7 +417,16 @@ func (r *report) summary(outcome RunOutcome) RunSummary {
 		BlockedDroppedCount: r.blockedDropped,
 		BudgetDroppedCount:  r.budgetDropped,
 		UnprocessedCount:    r.unprocessed,
-		Error:               r.lastError,
+		InputTokens:         r.usage.InputTokens,
+		OutputTokens:        r.usage.OutputTokens,
+		Error:               llm.RedactCredentials(r.lastError),
+	}
+}
+
+// collectUsage asks the client what the run spent, when it can say.
+func (r *report) collectUsage(client LLMClient) {
+	if reporter, ok := client.(TokenReporter); ok {
+		r.usage = reporter.Usage()
 	}
 }
 
@@ -496,6 +532,13 @@ func (r *report) runWaves(
 
 		if err := saveState(ctx, deps, state); err != nil {
 			r.lastError = err.Error()
+		}
+
+		// Three batches in a row is the provider refusing every request, not a run
+		// that happens to be unlucky. Stopping says why; running to the end spends
+		// the rest of the user's quota repeating the same failure.
+		if r.consecutiveFailures >= DefaultMaxConsecutiveFailedBatches {
+			return OutcomeErrorBudget
 		}
 	}
 
@@ -605,6 +648,63 @@ func (r *report) runWave(
 	return results
 }
 
+// recordFailedBatch writes one ledger row per bookmark in a batch the provider
+// refused.
+//
+// It is the same ledger that stores verdicts, with the failure as its outcome. The
+// row is what lets the next run tell "the model answered nothing" from "the model
+// was never asked": without it the same bookmarks are sent again, and a provider
+// that refuses everything makes every run pay for the identical failure.
+//
+// The error's kind is stored rather than its sentence. The sentence can hold a
+// provider's whole response body and is not something to keep in the library; the
+// kind is what the candidate filter and a reader need.
+func (r *report) recordFailedBatch(ctx context.Context, deps Deps, batch []domain.Bookmark, failure error) {
+	if deps.PersistAnalysis == nil || len(batch) == 0 {
+		return
+	}
+
+	kind := llm.ErrorKindOf(failure)
+	analyzedAt := domain.FormatTimestamp(deps.now())
+	records := make([]domain.LlmAnalysis, 0, len(batch))
+	for _, bookmark := range batch {
+		records = append(records, domain.LlmAnalysis{
+			BookmarkID:    bookmark.TweetID,
+			AnalyzedAt:    analyzedAt,
+			PromptVersion: domain.LlmPromptVersion,
+			Model:         deps.Settings.LLM.Model,
+			ContentHash:   domain.HashAnalyzedContent(bookmark.Text),
+			Outcome:       domain.OutcomeError,
+			ErrorKind:     kind,
+		})
+	}
+
+	persist, cancel := persistContext(ctx)
+	defer cancel()
+
+	if err := deps.PersistAnalysis(persist, records); err != nil {
+		r.lastError = err.Error()
+	}
+}
+
+// failureIsFinal reports whether a recorded failure would fail the same way if the
+// batch were sent again.
+//
+// The distinction is the whole reason the ledger keeps the kind. A content filter
+// or a wrong key will answer identically forever, so remembering it saves the
+// request; a rate limit or a timeout is a moment, and remembering it would quietly
+// drop bookmarks that would have been tagged a minute later. Anything this build
+// cannot classify is retried, for the same reason.
+func failureIsFinal(kind string) bool {
+	switch llm.ErrorKind(kind) {
+	case llm.KindUnauthorized, llm.KindForbidden, llm.KindQuota, llm.KindBadRequest,
+		llm.KindUnsupportedParam, llm.KindContextLength, llm.KindContentFilter:
+		return true
+	default:
+		return false
+	}
+}
+
 // runBatch sends one batch, records the verdicts and persists them.
 func (r *report) runBatch(
 	ctx context.Context,
@@ -657,10 +757,15 @@ func (r *report) runBatch(
 	if err != nil {
 		mu.Lock()
 		r.failedBatchCount++
+		r.consecutiveFailures++
 		r.lastError = err.Error()
 		if llm.IsRateLimit(err) {
 			result.rateLimited = true
 		}
+		// The failure is written down per bookmark, which is what keeps the next run
+		// from sending the same batch again. It is written through a context of its
+		// own for the same reason a successful batch's rows are.
+		r.recordFailedBatch(ctx, deps, batch, err)
 		if finishedErr := r.markBatchFinished(ctx, state, deps, nil); finishedErr != nil {
 			r.lastError = finishedErr.Error()
 		}
@@ -670,6 +775,8 @@ func (r *report) runBatch(
 
 	mu.Lock()
 	defer mu.Unlock()
+
+	r.consecutiveFailures = 0
 
 	suggestions, records, newTags, accepted, blockedDropped, budgetDropped :=
 		r.applyVerdicts(verdicts, batch, vocabulary, budget)
@@ -964,6 +1071,13 @@ func eligibleBookmarks(snapshot Snapshot, model string) []domain.Bookmark {
 		// three. The consequence was not a wrong tag but a missing one: a bookmark judged
 		// by an older prompt, or one whose text was edited since, kept its old verdict and
 		// was never re-sent -- so an improved prompt reached only bookmarks saved after it.
+		// A remembered failure counts as "already asked" only when asking again would
+		// fail the same way. A rate limit or a timeout is written down too, so the
+		// ledger is honest, but it is not a reason to drop the bookmark: the next run
+		// is exactly the retry the user expects.
+		if record.Outcome == domain.OutcomeError && !failureIsFinal(record.ErrorKind) {
+			continue
+		}
 		if record.Model != model {
 			continue
 		}
@@ -1166,4 +1280,26 @@ func finish(ctx context.Context, deps Deps, runID string, summary RunSummary, ru
 		}
 	}
 	return summary, runErr
+}
+
+// sanitizedErrorText is what a summary stores for a failure.
+//
+// The summary is written to app_settings and shown in the panel, and the errors that reach
+// it include a provider's own words. The provider client has already redacted with the
+// credential it holds; this pass covers text that never went through the client -- a
+// storage error, a factory error -- and any URL whose query carried a key.
+func sanitizedErrorText(err error) string {
+	if err == nil {
+		return ""
+	}
+	return llm.RedactCredentials(err.Error())
+}
+
+// SanitizeSummaryError scrubs credentials from a stored summary's error text.
+//
+// The persistence path calls this rather than trusting its caller: the summary is the run
+// record written to app_settings, and a text field that reaches storage is a text field
+// that can leak.
+func SanitizeSummaryError(text string) string {
+	return llm.RedactCredentials(text)
 }

@@ -69,23 +69,14 @@ func (s *Shell) bookmarkCard(c *ui.Context, theme *ui.Theme, rail RailTokens, in
 	// Clicking the card opens its detail: the modal is the card's onClick, not a selection
 	// state. MyGo hands a click to the innermost clickable node only (input.go:257-290), so the
 	// checkbox below taking its own OnClick stops the click from also reaching the card.
-	item := card.Key(row.TweetID).Focusable()
+	//
+	// The card is not a Tab stop. It used to be Focusable, which made a page of 80 cards 80
+	// stops between the toolbar and the status line; the list is one stop (see resultsStop)
+	// and the arrows pick the card under the outline. A card is still clickable, still named
+	// by its Key, and Enter opens the selected one from anywhere in the list.
+	item := card.Key(row.TweetID)
 	if selected && s.state.RevealSelected {
 		item = item.ScrollIntoView()
-	}
-	// Handing the keyboard back after the detail closes. The flag is one frame's worth,
-	// for the same reason RevealSelected is: focus is a request per element, and leaving it
-	// set would pull the keyboard back to this card on every later rebuild.
-	if selected && s.state.FocusSelected {
-		item = item.Focus()
-		if s.window != nil {
-			window := s.window
-			time.AfterFunc(120*time.Millisecond, func() {
-				window.Update(func() {
-					s.state.FocusSelected = false
-				})
-			})
-		}
 	}
 	item.OnClick(func() {
 		s.showDetail(row.TweetID)
@@ -546,9 +537,11 @@ func cardActionGlyph(c *ui.Context, rail RailTokens, name string, size float32) 
 
 // cardActionButton draws one 32-square icon that acts.
 func cardActionButton(c *ui.Context, theme *ui.Theme, rail RailTokens, name, tooltip string, size float32, onClick func()) {
-	// Focusable and labelled, like every icon-only control: the card's one real action
-	// was pointer-only and had no accessible name.
-	box := ui.Box(c).Width(size).Height(size).Focusable().Label(tooltip).Radius(RadiusPill)
+	// Labelled, like every icon-only control: the card's one real action had no accessible
+	// name. It is not a Tab stop -- the list is one stop and this control would add one per
+	// card -- but it is clickable and named, and the same action sits in the detail, which
+	// is where the keyboard reaches it.
+	box := ui.Box(c).Width(size).Height(size).Label(tooltip).Radius(RadiusPill)
 	box = box.Background(hoverColor(c, box, "action-bg", ui.Transparent, theme.SurfaceHover, box.Hovered()))
 	// An icon control, so a pressed one shrinks to .9.
 	box = pressScale(box, "press", PressScaleIcon, MotionPress)
@@ -584,6 +577,33 @@ func cardActionButton(c *ui.Context, theme *ui.Theme, rail RailTokens, name, too
 // can run several times per frame. autoLoadY is the offset the last page was asked at, and
 // the appended cards do not move that offset, so the next frame compares equal and does
 // nothing; only scrolling further asks again.
+// resultsStop makes the results list the one stop of Tab it is, and hands it the keyboard
+// when the detail has just closed.
+//
+// A bookmark list is a list, not a form: its cards are reached with the arrows once the
+// list itself is focused, and Enter opens the selected one. Making every card and every
+// card action its own stop meant Tab walked the page card by card, 80 stops per page.
+//
+// The flag is one frame's worth, for the same reason RevealSelected is: focus is a request
+// per element, and leaving it set would pull the keyboard back to the list on every later
+// rebuild.
+func (s *Shell) resultsStop(el ui.Element) ui.Element {
+	el = el.Focusable().Label(s.t().T(i18n.ResultsListLabel))
+	if !s.state.FocusSelected {
+		return el
+	}
+	el = el.Focus()
+	if s.window != nil {
+		window := s.window
+		time.AfterFunc(120*time.Millisecond, func() {
+			window.Update(func() {
+				s.state.FocusSelected = false
+			})
+		})
+	}
+	return el
+}
+
 func (s *Shell) bookmarkGrid(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 	s.autoLoadMore(context.Background())
 
@@ -606,7 +626,7 @@ func (s *Shell) bookmarkGrid(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 		split = (len(shown) + 1) / 2
 	}
 
-	ui.Scroll(c).FillWidth().Grow(1).TrackScroll(&s.resultsScroll).Children(func() {
+	s.resultsStop(ui.Scroll(c).FillWidth().Grow(1).TrackScroll(&s.resultsScroll)).Children(func() {
 		ui.Row(c).FillWidth().GapX(GridColumnGap).AlignItems(ui.Start).Children(func() {
 			column := func(from, to int) {
 				ui.Column(c).Grow(1).GapY(GridCardGap).Children(func() {
@@ -655,9 +675,9 @@ func (s *Shell) bookmarkList(c *ui.Context, theme *ui.Theme, rail RailTokens) {
 
 	// The list spaces its cards 12 apart; ui.List reads the row gap from the element, so it has
 	// to be set here or the cards butt together.
-	list := ui.List(c, &s.list, len(rows), func(i int) {
+	list := s.resultsStop(ui.List(c, &s.list, len(rows), func(i int) {
 		s.bookmarkCard(c, theme, rail, i, false)
-	}).Fill().GapY(ResultsListGap).TrackScroll(&s.listScroll)
+	}).Fill().GapY(ResultsListGap).TrackScroll(&s.listScroll))
 
 	s.autoLoadMore(context.Background())
 

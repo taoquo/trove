@@ -26,12 +26,8 @@ CAP = 900
 # They are listed rather than exempted by path prefix so that the list is visible and so that a
 # file that grows past the cap later still has to be argued for.
 ALLOWED = {
-    # The catalogue itself: nine functions over a thousand lines of message pairs.
-    "internal/i18n/i18n.go": "the message catalogue, one entry per string",
     # One pipeline, twenty-four steps of it, read top to bottom in the order they run.
     "internal/autotag/pipeline.go": "the auto-tag pipeline, in the order its steps run",
-    # The read model for the whole workspace: every query the three columns ask for.
-    "internal/usecase/workspace/service.go": "the workspace read model, one method per query",
 }
 
 

@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -106,9 +107,10 @@ func (c *Client) FetchPage(ctx context.Context, cursor string) (ports.Page, erro
 	}
 
 	return ports.Page{
-		Items:       parsed.Bookmarks,
-		NextCursor:  parsed.NextCursor,
-		RawPayloads: parsed.RawPayloads,
+		Items:        parsed.Bookmarks,
+		NextCursor:   parsed.NextCursor,
+		RawPayloads:  parsed.RawPayloads,
+		Unrecognized: parsed.UnrecognizedEntries,
 	}, nil
 }
 
@@ -198,8 +200,20 @@ func (c *Client) get(ctx context.Context, requestURL, op string) (map[string]any
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		// Retry-After is a hint; X's rate limiter states its window in
+		// x-rate-limit-reset as an epoch second. Reading only the first meant a
+		// real 429 whose window was minutes away ended the run after thirty
+		// seconds of backoff.
+		wait := parseRetryAfter(resp.Header.Get("Retry-After"))
+		if wait <= 0 {
+			now := time.Now()
+			if c.Now != nil {
+				now = c.Now()
+			}
+			wait = parseRateLimitReset(resp.Header.Get("x-rate-limit-reset"), now)
+		}
 		return nil, newError(classifyHTTP(resp.StatusCode, string(body)), op, resp.StatusCode, nil).
-			withRetryAfter(parseRetryAfter(resp.Header.Get("Retry-After")))
+			withRetryAfter(wait)
 	}
 
 	payload, err := decodePayload(body)
@@ -224,6 +238,13 @@ func (c *Client) credentials(ctx context.Context) (Credentials, error) {
 	}
 	credentials, err := c.Credentials(ctx)
 	if err != nil {
+		// A source that classified its own failure keeps its kind. Only an
+		// unclassified one defaults to "expired session", which is what a missing
+		// pair means; a locked keychain must not be reported that way.
+		var classified *Error
+		if errors.As(err, &classified) && classified.Kind != "" {
+			return Credentials{}, err
+		}
 		return Credentials{}, newError(domain.ErrUnauthorized, "credentials", 0, err)
 	}
 	return credentials, nil
@@ -315,6 +336,22 @@ func parseRetryAfter(value string) time.Duration {
 	}
 
 	return 0
+}
+
+// parseRateLimitReset turns X's epoch-second reset header into a wait.
+//
+// A value in the past, or one that is not a number, returns zero so the caller
+// falls back to exponential backoff.
+func parseRateLimitReset(value string, now time.Time) time.Duration {
+	seconds, err := strconv.ParseInt(strings.TrimSpace(value), 10, 64)
+	if err != nil || seconds <= 0 {
+		return 0
+	}
+	wait := time.Unix(seconds, 0).Sub(now)
+	if wait <= 0 {
+		return 0
+	}
+	return wait
 }
 
 // orderedFeatures marshals the feature flags in declaration order, so the query

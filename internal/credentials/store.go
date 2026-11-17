@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/taoquo/trove/internal/credentials/keychain"
+	"github.com/taoquo/trove/internal/domain"
 	"github.com/taoquo/trove/internal/xsource"
 )
 
@@ -47,6 +48,19 @@ var ErrNoCredential = errors.New("credentials: nothing stored")
 
 // ErrIncompleteCredentials reports a partially configured credential set.
 var ErrIncompleteCredentials = errors.New("credentials: incomplete")
+
+// Failures of the secure store itself, as opposed to its contents.
+//
+// The distinction reaches the sync's error kind. Before it existed, every failure
+// to read the store was reported as an expired X session: a locked Keychain sent
+// the reader to paste cookies that were already there, and a scheduled sync
+// triggered a browser refresh that had nothing to fix.
+var (
+	// ErrStoreLocked means the store holds the secrets but refused to open.
+	ErrStoreLocked = errors.New("credentials: the secure store is locked")
+	// ErrStoreUnavailable means there is no usable secure store at all.
+	ErrStoreUnavailable = errors.New("credentials: the secure store is unavailable")
+)
 
 // BrowserReader reads the two X cookies out of a signed-in browser.
 //
@@ -97,6 +111,27 @@ func (s *Store) XCredentials(ctx context.Context) (xsource.Credentials, error) {
 		return xsource.Credentials{}, fmt.Errorf("%w: %v", ErrIncompleteCredentials, err)
 	}
 	return credentials, nil
+}
+
+// XCredentialsForSync reads the stored pair with the failure classified for the
+// sync's status line.
+//
+// It sits beside XCredentials because the two callers ask different questions. A
+// caller that only wants to know whether a session is stored treats every error
+// alike. The sync must not: an empty store and a locked store both fail here, but
+// only the first is fixed by supplying cookies, and reporting both as "login
+// expired" sends the reader to paste cookies that are already there.
+func (s *Store) XCredentialsForSync(ctx context.Context) (xsource.Credentials, error) {
+	credentials, err := s.XCredentials(ctx)
+	if err == nil {
+		return credentials, nil
+	}
+	if errors.Is(err, ErrNoCredential) || errors.Is(err, ErrIncompleteCredentials) {
+		return xsource.Credentials{}, xsource.Classify(domain.ErrUnauthorized, "credentials", err)
+	}
+	// Anything else is the store itself: locked, unavailable, or a failure this
+	// build does not recognise. None of them is cured by new cookies.
+	return xsource.Credentials{}, xsource.Classify(domain.ErrCredentialStore, "credentials", err)
 }
 
 // SaveXCredentials stores the X cookies.
@@ -313,15 +348,25 @@ func Accounts(providerIDs []string) []string {
 	return accounts
 }
 
-// get reads an account, mapping "not found" onto ErrNoCredential.
+// get reads an account, mapping the store's own failures onto this package's.
+//
+// Only "no such item" becomes ErrNoCredential. A locked or missing store keeps
+// its own error, so a caller can tell "there is no session" from "the session
+// could not be read" -- they have different fixes, and only the first is a
+// reason to ask for new cookies.
 func (s *Store) get(ctx context.Context, account string) (string, error) {
 	if s.Keychain == nil {
-		return "", errors.New("credentials: no keychain configured")
+		return "", fmt.Errorf("%w: no keychain configured", ErrStoreUnavailable)
 	}
 	value, err := s.Keychain.Get(ctx, account)
 	if err != nil {
-		if errors.Is(err, keychain.ErrNotFound) {
+		switch {
+		case errors.Is(err, keychain.ErrNotFound):
 			return "", fmt.Errorf("%w (%s)", ErrNoCredential, account)
+		case errors.Is(err, keychain.ErrLocked):
+			return "", fmt.Errorf("%w: %v", ErrStoreLocked, err)
+		case errors.Is(err, keychain.ErrUnavailable):
+			return "", fmt.Errorf("%w: %v", ErrStoreUnavailable, err)
 		}
 		return "", err
 	}

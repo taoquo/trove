@@ -17,6 +17,14 @@ import (
 // way.
 const foldFunction = "trove_fold"
 
+// foldedAuthor folds a handle in Go, the way the schema's generated column does.
+//
+// The author condition compares against author_handle_folded, which is trove_fold of
+// the column, so the value that goes into the statement has to be folded the same
+// way. strings.ToLower is the same function the SQL registration calls, which is
+// what keeps the two sides agreeing.
+func foldedAuthor(handle string) string { return strings.ToLower(handle) }
+
 func init() {
 	// Registration applies to connections opened afterwards, and package init
 	// runs before Open can be called from another package.

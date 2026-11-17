@@ -143,6 +143,9 @@ func (s *Store) Get(ctx context.Context, account string) (string, error) {
 		if isNotFound(err) {
 			return "", ErrNotFound
 		}
+		if isLocked(err) {
+			return "", ErrLocked
+		}
 		return "", fmt.Errorf("keychain: get %s: %w", account, err)
 	}
 
@@ -180,6 +183,32 @@ func (s *Store) validate() error {
 		return fmt.Errorf("%w: %s", ErrUnavailable, s.binary())
 	}
 	return nil
+}
+
+// isLocked recognises a keychain that refused the read because it was locked.
+//
+// The tool reports this on stderr rather than through a stable exit code across
+// versions, so the phrases are matched. "User interaction is not allowed" is what
+// a locked login keychain says to a process with no window, which is exactly the
+// scheduled `trove sync`; the passphrase lines are a dismissed prompt.
+func isLocked(err error) bool {
+	var execErr *ExecError
+	if !errors.As(err, &execErr) {
+		return false
+	}
+	lower := strings.ToLower(execErr.Stderr)
+	for _, phrase := range []string{
+		"user interaction is not allowed",
+		"keychain is locked",
+		"keychain could not be unlocked",
+		"passphrase you entered is not correct",
+		"the user name or password you entered",
+	} {
+		if strings.Contains(lower, phrase) {
+			return true
+		}
+	}
+	return false
 }
 
 // isNotFound recognises the tool's "no such item" outcome.

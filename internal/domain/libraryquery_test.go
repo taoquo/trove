@@ -107,6 +107,7 @@ func TestFilterIsZero(t *testing.T) {
 		{OnlyUnclassified: true},
 		{OnlyWithPendingSuggestions: true},
 		{OnlyWithMedia: true},
+		{OnlyWithVideo: true},
 		{OnlyLongform: true},
 		{Archived: ArchivedOnly},
 		{TimeRange: Range7d},
@@ -136,6 +137,8 @@ func TestFilterActiveCountMatchesTheSpec(t *testing.T) {
 		{"media only", LibraryFilter{OnlyWithMedia: true}, 1},
 		{"longform only", LibraryFilter{OnlyLongform: true}, 1},
 		{"both", LibraryFilter{OnlyWithMedia: true, OnlyLongform: true}, 2},
+		{"video only", LibraryFilter{OnlyWithVideo: true}, 1},
+		{"media and video", LibraryFilter{OnlyWithMedia: true, OnlyWithVideo: true}, 2},
 		// The archive is a mode rather than a toggle, but it selects a different set, which
 		// is exactly what the badge warns about.
 		{"the archive", LibraryFilter{Archived: ArchivedOnly}, 1},
@@ -427,11 +430,6 @@ func TestErrorMessagesAreReadable(t *testing.T) {
 	listErr := &ListError{Reason: "Inbox cannot be renamed"}
 	if !strings.Contains(listErr.Error(), "Inbox cannot be renamed") {
 		t.Errorf("ListError.Error() = %q", listErr.Error())
-	}
-
-	hierarchyErr := &HierarchyError{Reason: "too deep"}
-	if !strings.Contains(hierarchyErr.Error(), "too deep") {
-		t.Errorf("HierarchyError.Error() = %q", hierarchyErr.Error())
 	}
 
 	// The sentinel must be checkable with errors.Is, which is how the UI tells

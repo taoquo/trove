@@ -21,6 +21,7 @@ import (
 	syncer "github.com/taoquo/trove/internal/usecase/syncer"
 	tagging "github.com/taoquo/trove/internal/usecase/tagging"
 	"github.com/taoquo/trove/internal/usecase/workspace"
+	"github.com/taoquo/trove/internal/xsource"
 )
 
 // State is everything the workspace view draws from.
@@ -36,10 +37,11 @@ type State struct {
 	Selection string
 	Query     string
 	Sort      domain.SortOrder
-	// OnlyWithMedia and OnlyLongform are the filter toggles. They are kept here because the
-	// view binds controls to them, and the filter they produce is derived on each load
-	// rather than stored.
+	// OnlyWithMedia, OnlyWithVideo and OnlyLongform are the filter toggles. They are kept
+	// here because the view binds controls to them, and the filter they produce is derived
+	// on each load rather than stored.
 	OnlyWithMedia bool
+	OnlyWithVideo bool
 	OnlyLongform  bool
 	// OnlyArchived shows the archive instead of the lists in play. It is a mode and not a
 	// switch that stacks with the others: a bookmark is in one place or the other, so
@@ -56,6 +58,10 @@ type State struct {
 	// "updating" note beside the count -- it never swaps in the skeleton, which would
 	// blink on every keystroke.
 	Refreshing bool
+	// Searching is true between a keystroke in the search field and the read it asks
+	// for. The field waits a moment before asking (see searchChanged), so without the
+	// note the window would look idle while the reader is still typing a query.
+	Searching bool
 	// LoadingMore is true while the next result page is being read, so the button that
 	// asked for it can say so and cannot be pressed twice.
 	LoadingMore bool
@@ -189,6 +195,20 @@ type State struct {
 	// there are older bookmarks still to fetch.
 	SyncResumePending bool
 
+	// AutoBackup mirrors the stored daily-backup choice, so the Settings switch draws
+	// without a read. It is on unless the reader turned it off.
+	AutoBackup bool
+	// BackupNote is the last automatic-backup result, drawn under the data-safety
+	// card. It is a sentence rather than a status object: the card only shows it,
+	// and a stored result would be stale the moment the folder changed.
+	BackupNote string
+	// FileLog mirrors the stored troubleshooting-log switch, so the Settings row draws
+	// without a read. It is off unless the reader turned it on.
+	FileLog bool
+	// LogNote is why the log could not be opened, drawn where the switch is. A failed
+	// switch keeps the reader's press and explains itself rather than springing back.
+	LogNote string
+
 	// The update preferences the Settings › General rows show. They are read when the page
 	// opens rather than in a frame, because the updater keeps them in a file of its own.
 	UpdateAutoCheck bool
@@ -198,12 +218,24 @@ type State struct {
 	// The LLM fields. They are strings because a provider id, a model name and an
 	// endpoint are free text: a closed list of models would go stale the week after
 	// it shipped.
-	LLMEnabled      bool
-	ProviderLabel   string
-	BaseURLInput    string
-	DeploymentInput string
-	ModelInput      string
-	MaxPerRunInput  float64
+	LLMEnabled    bool
+	ProviderLabel string
+	BaseURLInput  string
+	// BaseURLErrorKind is why the field's value cannot be stored, or "" when it can. The
+	// save path refuses a rejected endpoint rather than quietly discarding it, and the
+	// field's row says what is wrong.
+	BaseURLErrorKind string
+	// BaseURLPendingOrigin is the address an http endpoint would send the key to, held
+	// while the panel asks whether that is allowed. A plaintext endpoint is not stored
+	// until the reader answers.
+	BaseURLPendingOrigin string
+	// BaseURLApprovedOrigin is the plaintext address already allowed, so the same one is
+	// not asked about on every save. An endpoint read back from storage starts here: it
+	// was consented to when it was saved, by this build or an earlier one.
+	BaseURLApprovedOrigin string
+	DeploymentInput       string
+	ModelInput            string
+	MaxPerRunInput        float64
 	// VocabularyMode is the engine's id, and VocabularyModeLabel is its translated name -- what
 	// the select displays. Both are held because a language change has to re-derive the name
 	// without re-reading the database (and, on the capture path, without wiping a fixture).
@@ -240,6 +272,13 @@ type State struct {
 	// ToastKind is the message's tone: ok, warn or err. The status line carries the
 	// same three and colours the pill from them.
 	ToastKind string
+	// ToastActionLabel and ToastAction are the receipt's way back, when the action it
+	// reports is reversible. The closure is data like everything else here: it is stored
+	// by the handler that showed the toast and run by the button's click, never built by
+	// the view. The deadline still applies -- an undo that outlives the sentence it
+	// belongs to would be a button with no context.
+	ToastActionLabel string
+	ToastAction      func()
 
 	// PageChangedAt is when the results pane was last replaced by a different page:
 	// another scope, another tag or author, the other layout, the settings page, the tag
@@ -485,7 +524,6 @@ type State struct {
 	// confirmation is open for.
 	NewListName       string
 	ConfirmDeleteList string
-	TagParentPick     string
 	TagActionMsg      string
 
 	// The vocabulary review. ReviewSelected keys are the plan identities, so a
@@ -558,6 +596,11 @@ type Shell struct {
 	settingsFindField    ui.Handle
 	tagEditField         ui.Handle
 
+	// navRows is one keyboard handle per sidebar row, keyed by the row's own id, so Up and
+	// Down can hand the focus to the next row. A handle made in the build would be a
+	// different control every frame and could never be reached from the key that follows.
+	navRows map[string]*ui.Handle
+
 	// resultsScroll is where the grid's two-column scroll is. It stays on the Shell for the
 	// same reason the list's state does: it belongs to a build-pass element and has to
 	// survive the rebuilds a scroll causes.
@@ -587,6 +630,13 @@ type Shell struct {
 	// settings persists the preferences. It is optional so the shell can be built
 	// without storage, as the render tests do.
 	settings *settings.Service
+	// backups writes the daily copy of the library, and revealBackupDir shows where
+	// the copies live. Both are optional: a shell built without storage has neither.
+	backups         Backups
+	revealBackupDir func(dir string) error
+	// logging is the optional troubleshooting log, or nil where the shell was built
+	// without one.
+	logging LogSwitch
 	// suggestions reviews the auto-tagger's proposals.
 	suggestions *suggestions.Service
 	// syncer performs syncs. It is optional so the render tests need no network.
@@ -595,6 +645,12 @@ type Shell struct {
 	// writes a page at a time, and reloading on every page would re-read the library
 	// four times a second; this rate-limits the refresh (see syncReloadDue).
 	lastSyncReload time.Time
+	// syncLast is the newest progress event, kept so the wait countdown can tick between
+	// events: a rate-limit wait reports once when it begins and then nothing for minutes.
+	// The sync goroutine writes it and the ticker reads it, so it carries its own lock
+	// instead of going through State, which belongs to the window thread.
+	syncLastMu sync.Mutex
+	syncLast   xsource.Progress
 
 	// saveFile and openFiles answer the two file panels, and background runs work off
 	// the window's thread. They are seams rather than direct calls so a test can drive
@@ -611,6 +667,11 @@ type Shell struct {
 	reloadSeq     atomic.Uint64
 	reloadPending *reloadRequest
 	reloadRunning bool
+	// searchSeq numbers keystrokes, so only the newest debounced read runs. after is the
+	// timer seam: a test can collect the pending calls and fire them itself instead of
+	// waiting 150ms of wall clock.
+	searchSeq atomic.Uint64
+	after     func(time.Duration, func()) *time.Timer
 	// tagging runs the auto-tagger.
 	tagging *tagging.Service
 	// captureRun, when set, stands in for a live auto-tagging run in a screenshot.
@@ -676,83 +737,12 @@ type Shell struct {
 	bundle PendingAction[BundleRequest]
 }
 
-// NewShell builds the shell.
-func NewShell(service *workspace.Service, appearance Appearance) *Shell {
-	shell := &Shell{
-		service:    service,
-		translator: i18n.New(""),
-		updates:    defaultUpdates(),
-		state: &State{
-			Appearance: appearance,
-			// Open on the grid.
-			ViewMode:      domain.ViewGrid,
-			LightboxIndex: -1,
-			// The first page: 80 cards, then 80 per scroll.
-			RenderLimit: ResultsRenderLimit,
-			// -1, not 0: both anchors are compared with a scroll offset, and 0 is the top
-			// of the list -- a real place where the first automatic page must be allowed.
-			autoLoadY:   -1,
-			renderGrewY: -1,
-			// The tags tab is the one the window opens on: it is the first of the two
-			// facets and the one a new library fills first. The authors tab keeps its own
-			// search text and scroll position while it is away.
-			SidebarFacetTab: sidebarTabTags,
-			// The default width, applied here as well as on load because zero is not a width:
-			// the split's own 40-point minimum is what a zero leaves, so a preferences read that
-			// fails would open the app with a clipped sidebar rather than the default one.
-			// ApplyPreferences overwrites this when it has a stored value, which matters more
-			// than the default does.
-			LeftSidebarWidth: WidthSidebarDef,
-			// -1 is "nothing chosen", which is how ListState carries it. Its zero value is 0,
-			// so leaving it unset opened the window with the first bookmark looking chosen:
-			// the list drew its selected state on row 0 and the inspector would have followed
-			// it on the first click anywhere.
-			ListSelected: -1,
-			Selection:    selectionAll,
-			Sort:         domain.SortTimeline,
-		},
-		// The whitelist the ORDER BY is chosen from. It holds every order the query
-		// layer accepts, including one the cycle does not reach.
-		sortOptions: []domain.SortOrder{
-			domain.SortTimeline,
-			domain.SortSavedDesc,
-			domain.SortSavedAsc,
-			domain.SortCreatedDesc,
-			domain.SortLikesDesc,
-		},
-		// The cycle the sort button walks. The sequence has four entries and leaves
-		// `saved-desc` out: it is supported by the query layer and by a saved view's stored
-		// order, but the button never reaches it.
-		sortCycle: []domain.SortOrder{
-			domain.SortTimeline,
-			domain.SortSavedAsc,
-			domain.SortCreatedDesc,
-			domain.SortLikesDesc,
-		},
-	}
-	// Both batch pickers show a word before anything is chosen. Their bound values start
-	// empty, and an empty value would draw a bare chevron with no way to tell the tag picker
-	// from the list one.
-	shell.syncBatchLabels()
-	return shell
-}
-
-// sortKeys maps each order to its message key.
-//
-// The five orders are all reachable here.
-// sortLabelKeys maps an order to its label.
-//
-// Two orders share the "recently saved" copy: `timeline` and `saved-desc`. That is
-// deliberate, not an oversight: the switch falls through to the same copy.
-
-// State exposes the state for tests.
-func (s *Shell) State() *State { return s.state }
-
 // filter turns the scope and the active conditions into a query filter.
 func (s *Shell) filter() domain.LibraryFilter {
 	filter := domain.LibraryFilter{
 		Query:         s.state.Query,
 		OnlyWithMedia: s.state.OnlyWithMedia,
+		OnlyWithVideo: s.state.OnlyWithVideo,
 		OnlyLongform:  s.state.OnlyLongform,
 		// The review row is a filter too, so a query carrying it must reach storage.
 		OnlyWithPendingSuggestions: s.state.OnlyPendingSuggestions,
@@ -820,7 +810,16 @@ func (s *Shell) Reload(ctx context.Context) {
 //
 // The batch selection follows the same rule. A bulk action must not run on rows that are
 // no longer on screen, or it acts on bookmarks the user cannot see.
-func (s *Shell) keepSelection() {
+// keepSelection drops the parts of the selection the page in hand no longer holds.
+//
+// The open card is always pruned: its row has to be in the list to be drawn, and the
+// inspector reads the row back out of the page, so a stale id would leave an empty pane.
+//
+// The batch selection is pruned only when prune is true. A refresh of the same list can
+// come back shorter without the reader having unselected anything, and clearing it would
+// make a background read look like a click; a new list, and every write that removes
+// rows, passes true.
+func (s *Shell) keepSelection(prune bool) {
 	present := make(map[string]bool, len(s.state.Data.Bookmarks))
 	for _, row := range s.state.Data.Bookmarks {
 		present[row.TweetID] = true
@@ -831,7 +830,7 @@ func (s *Shell) keepSelection() {
 		s.state.DetailOpen = false
 	}
 
-	if len(s.state.SelectedIDs) > 0 {
+	if prune && len(s.state.SelectedIDs) > 0 {
 		for id := range s.state.SelectedIDs {
 			if !present[id] {
 				delete(s.state.SelectedIDs, id)

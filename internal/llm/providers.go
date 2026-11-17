@@ -122,6 +122,30 @@ func ResolveBaseURL(provider ProviderDefinition, configured string) string {
 	return provider.DefaultBaseURL
 }
 
+// providerByAPI returns the first provider whose API is api and which has a default
+// endpoint.
+func providerByAPI(api string) (ProviderDefinition, bool) {
+	for _, provider := range Providers {
+		if provider.API == api && provider.DefaultBaseURL != "" {
+			return provider, true
+		}
+	}
+	return ProviderDefinition{}, false
+}
+
+// baseURLFor returns the endpoint an adapter should call for its API.
+//
+// The default lives in Providers, which is what the settings page also shows; an address
+// written a second time beside the adapter is a copy that drifts silently, because both
+// values are plausible. A configured value still wins, and stays trimmed.
+func baseURLFor(api, configured string) string {
+	provider, ok := providerByAPI(api)
+	if !ok {
+		return strings.TrimSpace(configured)
+	}
+	return ResolveBaseURL(provider, configured)
+}
+
 // JoinURL appends a path to a base URL without doubling or dropping the slash.
 func JoinURL(base, path string) string {
 	return strings.TrimRight(base, "/") + "/" + strings.TrimLeft(path, "/")
@@ -244,13 +268,4 @@ func AdapterFor(api string) (Adapter, error) {
 		return nil, &LlmError{Kind: KindUnknown, Message: fmt.Sprintf("no adapter for API %q", api)}
 	}
 	return adapter, nil
-}
-
-// KnownAPIIDs lists the registered API ids, for diagnostics and tests.
-func KnownAPIIDs() []string {
-	ids := make([]string, 0, len(adapterRegistry))
-	for id := range adapterRegistry {
-		ids = append(ids, id)
-	}
-	return ids
 }

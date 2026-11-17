@@ -9,7 +9,43 @@ const (
 	MediaPhoto       MediaType = "photo"
 	MediaVideo       MediaType = "video"
 	MediaAnimatedGif MediaType = "animated_gif"
+
+	// MediaKindOther is what an attachment this build does not recognise reduces to.
+	// It is still media: a post carrying one must not disappear from every media
+	// filter just because a newer payload shape arrived.
+	MediaKindOther MediaType = "other"
 )
+
+// SummarizeMediaKind reduces a post's attachments to the one kind the library
+// filters on.
+//
+// A post can carry several attachments, so "the" kind has to be chosen rather than
+// collected: the most demanding one wins, video over animated_gif over photo. A post
+// whose video is its second attachment still belongs in a filter for video, and a
+// post that plays is not described by calling it a picture. Attachments of an unknown
+// kind count as MediaKindOther so they are never dropped from "has media".
+func SummarizeMediaKind(media []Media) MediaType {
+	kind := MediaType("")
+	for _, item := range media {
+		switch item.Type {
+		case MediaVideo:
+			return MediaVideo
+		case MediaAnimatedGif:
+			if kind == "" || kind == MediaPhoto || kind == MediaKindOther {
+				kind = MediaAnimatedGif
+			}
+		case MediaPhoto:
+			if kind == "" {
+				kind = MediaPhoto
+			}
+		default:
+			if kind == "" {
+				kind = MediaKindOther
+			}
+		}
+	}
+	return kind
+}
 
 // SourceKind records which X payload shape a bookmark came from.
 type SourceKind = string

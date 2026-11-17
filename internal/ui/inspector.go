@@ -247,8 +247,10 @@ func (s *Shell) detailActions(c *ui.Context, theme *ui.Theme, rail RailTokens, r
 		if copied {
 			popTarget = 1
 		}
+		// Focusable: an icon-only control with a name still needs a stop, or a keyboard
+		// reader can see the action and never press it.
 		copyLink := ui.Box(c).Width(DetailIconButton).Height(DetailIconButton).
-			Radius(RadiusSmall).Center().Label(s.t().T(label)).Tooltip(s.t().T(label))
+			Radius(RadiusSmall).Center().Focusable().Label(s.t().T(label)).Tooltip(s.t().T(label))
 		copyLink = copyLink.Background(hoverColor(c, copyLink, "copy-bg",
 			ui.Transparent, theme.SurfaceHover, copyLink.Hovered()))
 		pop := copyLink.AnimateTo("copy-pop", popTarget, MotionPop)
@@ -266,8 +268,10 @@ func (s *Shell) detailActions(c *ui.Context, theme *ui.Theme, rail RailTokens, r
 		})
 
 		// Open on X. Disabled when the record has no URL rather than opening a blank page.
+		// The card's own action button is not a Tab stop (a page of cards would be a page
+		// of stops); this is where the keyboard reaches the same action.
 		open := ui.Box(c).Width(DetailIconButton).Height(DetailIconButton).
-			Radius(RadiusSmall).Center().Label(s.t().T(i18n.OpenOnX)).
+			Radius(RadiusSmall).Center().Focusable().Label(s.t().T(i18n.OpenOnX)).
 			Tooltip(s.t().T(i18n.OpenOnX))
 		open = open.Background(hoverColor(c, open, "open-bg",
 			ui.Transparent, theme.SurfaceHover, open.Hovered()))

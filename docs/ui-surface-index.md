@@ -69,16 +69,15 @@
 | `autoTagPacingCard` | `autotagview.go:274` | 请求节奏卡：每请求书签数 / 并行请求数，行尾 `.set-field` 数字框（72×24，右对齐），限流提示作说明行 |
 | `autoTagModelCard` | `autotagview.go:306` | 模型连接卡：开关、服务商 / 模型 / 地址 / 部署名（仅 Azure）/ 每轮上限 / 词表模式、API key（字段 + 保存/清除）、连接测试（行尾动作 + 结果说明）。超过词表上限时卡下再加一句 |
 | `tagLibraryToolbar` | `taglibrary.go:180` | 工具面板三行：搜索 + 排序 + 关系图；筛选芯片（窄化时右侧带 `N / M 个标签`）；动作行（创建在左、整理词表/清理孤儿在右）。有选中时第三行换成 `tagLibraryBulkControls`。空库不画工具面板 |
-| `tagSortSelect` | `taglibrary.go:342` | 面板第一行的排序 `.proto.pick` |
-| `tagLibraryChip` | `taglibrary.go:377` | 五个筛选芯片；`.chip-button-active` 是 accent 16%/22%。`待确认` 那颗带一个计数 |
-| `tagLibraryBulkControls` | `taglibrary.go:419` | `TagSelectionCount() > 0` 时的整行：已选数、合并目标（`.proto.pick`）、合并、删除选中，右端「取消选择」 |
-| `tagTableFitsAllColumns` | `taglibrary.go:469` | 窄面板（窄到放不下名称列 120pt）时，表头和行都去掉「更新时间」列；两处都问同一个 `*ui.Context`，所以不会各说各话 |
-| `tagTableHead` | `taglibrary.go:485` | 表格列名 + 全选复选框。窄面板时去掉「更新时间」列（`tagTableFitsAllColumns`） |
-| `tagTableHeadCell` | `taglibrary.go:529` | 一个数字列名，右对齐 |
-| `tagTableHeadCellStart` | `taglibrary.go:538` | 一个文本列名（所属主题），左对齐 |
-| `tagTableRow` | `taglibrary.go:558` | 每个标签一行：勾选、名称（点击查看书签；重命名时原地变成输入框）、别名/子标签（别名编辑时原地变成输入框 + 保存/取消）、主题（点击原地变成选择器）、两个计数、更新时间、四个行内动作（书签/重命名/别名/删除） |
-| `tagTableCount` | `taglibrary.go:787` | 一个数字格 |
-| `tagAliasEditor` | `taglibrary.go:766` | `TagEditField == TagEditAliases`：别名行原地变成输入框 + 保存 + 取消 |
+| `tagSortSelect` | `taglibrary.go:336` | 面板第一行的排序 `.proto.pick` |
+| `tagLibraryChip` | `taglibrary.go:371` | 四个筛选芯片；`.chip-button-active` 是 accent 16%/22%。`待确认` 那颗带一个计数 |
+| `tagLibraryBulkControls` | `taglibrary.go:413` | `TagSelectionCount() > 0` 时的整行：已选数、合并目标（`.proto.pick`）、合并、删除选中，右端「取消选择」 |
+| `tagTableFitsAllColumns` | `taglibrary.go:463` | 窄面板（窄到放不下名称列 120pt）时，表头和行都去掉「更新时间」列；两处都问同一个 `*ui.Context`，所以不会各说各话 |
+| `tagTableHead` | `taglibrary.go:479` | 表格列名 + 全选复选框。窄面板时去掉「更新时间」列（`tagTableFitsAllColumns`） |
+| `tagTableHeadCell` | `taglibrary.go:520` | 一个数字列名，右对齐 |
+| `tagTableRow` | `taglibrary.go:539` | 每个标签一行：勾选、名称（点击查看书签；重命名时原地变成输入框）、别名（别名编辑时原地变成输入框 + 保存/取消）、两个计数、更新时间、四个行内动作（书签/重命名/别名/删除） |
+| `tagTableCount` | `taglibrary.go:691` | 一个数字格 |
+| `tagAliasEditor` | `taglibrary.go:670` | `TagEditField == TagEditAliases`：别名行原地变成输入框 + 保存 + 取消 |
 | `confirmDialog` | `dialogs.go:33` | 全部确认共用的一张卡片（删标签、批量删标签、合并、删列表、重置、清理孤儿、删书签、导入/恢复）。`DialogBase` 的面板即卡片：380 宽、`PaddingPanel`、圆角 12、纸色底；标题是显示衬线 16/600，正文 13 muted。**按钮顺序固定为「确认动作, 取消」**：确认动作在前，用危险墨 + 危险浅底（悬停填实）；取消在后并 `AutoFocus`，所以回车与服务生读到的默认答案都是拒绝。Esc 与点遮罩也是拒绝。返回 `(choice, open)`；点击经 `answerConfirmation` 记到下一帧再读，因为点击处理器在构建之后运行 |
 | `vocabularyReviewPanel` | `review.go:33` | `state.ReviewOpen`（`EntranceProgress` 驱动）。四种身体：请求中 / 请求失败（错误 + `ReviewRetry`）/ 部分失败（错误在计划列表之上，Apply 即重试剩余）/ 计划列表（`ReviewApplying` 时按钮忙碌、未勾选时禁用）|
 | `suggestionsPanel` | `panels.go:551` | `state.SuggestionsOpen`（`EntranceProgress` 驱动） |
@@ -134,6 +133,7 @@
 | `sidebarSearchField` | `sidebartabs.go:271` | `SidebarSearchOpen` 为真（或该页签的查询非空）时，页签行与列表之间的搜索框。`AutoFocus` 只在出现那一帧取焦 |
 | `sidebarTagsBody` | `sidebartabs.go:306` | 标签页签：新建行 / 标签行，列表自己滚动。**搜索框默认不画**；**不画导航行** |
 | `sidebarAuthorsBody` | `sidebartabs.go:385` | 作者页签：全部作者行，列表自己滚动。**不分页、不设上限**；搜索框同样默认不画 |
+| `sidebarRowKeys` | `sidebartabs.go:296` | **不是表面**，是侧栏列表的 Up/Down：把键盘交给上/下一行（行本身仍可 Tab 到达、Enter 按下）。第一个参数是 `*ui.Context`（要问当前焦点在哪一行），所以 `tools/surfaces.py` 要求登记 |
 | `authorRow` | `sidebartabs.go:427` | 作者页签里的每一行：30 高（两行）、头像、名字 12.5/500 在 11 号 handle 上、条件生效下的 11 号计数。**行本身任何状态都不画底色**：选中是列表那一个滑块（`navHighlight`，`navhighlight.go`），行只在悬停/选中时把名字提到 `--fg`。**顺序永远来自服务，选中不会把行提到顶部** |
 | `tagRow` | `tags.go:684` | 标签页签的每一行，也是标签库的行来源：26 高、`0 10`、6 圆角、6 间距、12.5/500 名称、11 号计数。**行本身不画底色**；选中同样由列表的滑块标记（多个标签同时生效时标第一个），行只把名称提到 `--fg`（悬停 200ms 过渡） |
 

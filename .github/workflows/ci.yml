@@ -35,6 +35,7 @@ jobs:
         run: |
           bash tools/check-text.sh
           bash tools/check-wiring.sh --source-only
+          bash tools/selfcheck.sh --source-only
 
       - name: Format
         run: |
@@ -53,6 +54,29 @@ jobs:
         run: |
           go test -count=1 -timeout 20m ./...
           go test -race -count=1 -timeout 20m ./...
+
+      # Ten seconds of mutation, beside the gate's thirty. The gate is where a long run can
+      # live; CI's job is to see that the corpus still finds something on a machine that did
+      # not write the code. Only a failing input reaches testdata, so this leaves the tree clean.
+      - name: Fuzz the page parser
+        run: go test -count=1 -timeout 2m ./internal/xsource -run FuzzParsePage -fuzz FuzzParsePage -fuzztime 10s
+
+      # Known vulnerabilities in the code this module actually calls. govulncheck reads the
+      # call graph rather than the module list, so an advisory in a vendored path nothing
+      # reaches is not a failure here.
+      - name: Vulnerabilities
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          "$(go env GOPATH)/bin/govulncheck" ./...
+
+      # Report-only for now: the total is printed so a drop shows up in the log, and the 60%
+      # floor becomes an enforced check once the number is comfortably above it. Enforcing it
+      # today would either be silently true or would fail on the first day for work nobody has
+      # done yet.
+      - name: Coverage
+        run: |
+          go test -count=1 -timeout 20m -coverprofile=coverage.out ./... > /dev/null
+          go tool cover -func=coverage.out | tail -1
 
       - name: Build
         run: CGO_ENABLED=0 go build -o /dev/null ./cmd/trove

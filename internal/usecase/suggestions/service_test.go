@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -319,5 +320,66 @@ func TestAcceptKeepsTheSuggestionPendingWhenTheTagCannotBeMade(t *testing.T) {
 	}
 	if status != domain.StatusPending {
 		t.Errorf("status = %q, want it left pending so the user can retry", status)
+	}
+}
+
+// countingBookmarks counts how the pending page reads its posts.
+type countingBookmarks struct {
+	ports.BookmarkRepository
+	gets     int
+	getManys int
+}
+
+func (c *countingBookmarks) Get(ctx context.Context, id string) (domain.Bookmark, bool, error) {
+	c.gets++
+	return c.BookmarkRepository.Get(ctx, id)
+}
+
+func (c *countingBookmarks) GetMany(ctx context.Context, ids []string) (map[string]domain.Bookmark, error) {
+	c.getManys++
+	return c.BookmarkRepository.GetMany(ctx, ids)
+}
+
+// TestThePendingPageReadsItsPostsOnce covers the shape of the panel's read.
+//
+// Pending used to fetch each suggested post with its own Get. The statements the
+// panel needs therefore grew with the backlog: a review queue of two thousand
+// suggestions was two thousand round trips before the first row was drawn. The read
+// is one statement per page now, and this counts them.
+func TestThePendingPageReadsItsPostsOnce(t *testing.T) {
+	_, db := newService(t)
+	ctx := context.Background()
+
+	const count = 30
+	for i := 0; i < count; i++ {
+		id := strconv.Itoa(i + 1)
+		seedBookmark(t, db, id)
+		seedSuggestion(t, db, "s"+id, id, "Go")
+	}
+
+	bookmarks := &countingBookmarks{BookmarkRepository: sqlite.NewBookmarkRepository(db)}
+	service := New(ports.Repositories{
+		Bookmarks:   bookmarks,
+		Tags:        sqlite.NewTagRepository(db),
+		Suggestions: sqlite.NewSuggestionRepository(db),
+	}, fixedClock{now: clockBase}, idgen.New("test"))
+
+	rows, err := service.Pending(ctx)
+	if err != nil {
+		t.Fatalf("Pending: %v", err)
+	}
+	if len(rows) != count {
+		t.Fatalf("got %d rows, want %d", len(rows), count)
+	}
+	if bookmarks.gets != 0 {
+		t.Errorf("the page still reads one post at a time: %d Get calls", bookmarks.gets)
+	}
+	if bookmarks.getManys > 3 {
+		t.Errorf("the page read its posts in %d statements, want at most 3", bookmarks.getManys)
+	}
+	for _, row := range rows {
+		if row.Bookmark == nil {
+			t.Fatalf("a row lost its post: %+v", row.Suggestion)
+		}
 	}
 }

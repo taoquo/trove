@@ -41,10 +41,9 @@ const (
 	TagTablePadX        = 12
 	// The fixed columns are what the name column has to work around. They used to take 52 of
 	// the name's points at the 900-point minimum window, which truncated every tag name to an
-	// ellipsis; these leave it about 100.
+	// ellipsis; these leave it about 100, and dropping the theme column gives it 120 more.
 	TagTableCheckCol   = 40
 	TagTableCountCol   = 80
-	TagTableThemeCol   = 120
 	TagTableUpdatedCol = 108
 	// Four row actions (bookmarks, rename, aliases, delete) at 22 points each with 2 between.
 	TagTableActionCol = 96
@@ -54,9 +53,6 @@ const (
 	TagTableNameFont     = 13
 	// TagTableMetaFont is the row's sub line: the aliases and the dates share it.
 	TagTableMetaFont = 11.5
-	// TagTableThemePick is the picker in the theme cell: tall enough to read as a field and
-	// short enough to keep the row at its 40-point height while it is open.
-	TagTableThemePick = 28
 )
 
 // The two pages of tag management.
@@ -79,7 +75,6 @@ const (
 const (
 	TagEditName    = "name"
 	TagEditAliases = "aliases"
-	TagEditTheme   = "theme"
 )
 
 // tagView is the page on screen. The zero value is the tags table: the screen exists to
@@ -230,7 +225,6 @@ func (s *Shell) tagLibraryToolbar(c *ui.Context, theme *ui.Theme, rail RailToken
 					{filter: domain.TagFilterOrphan, key: i18n.TagFilterOrphan},
 					{filter: domain.TagFilterLongTail, key: i18n.TagFilterLongTail},
 					{filter: domain.TagFilterPending, key: i18n.TagFilterPending, count: pendingTags},
-					{filter: domain.TagFilterUnparented, key: i18n.TagFilterUnparented},
 				} {
 					option := option
 					s.tagLibraryChip(c, theme, rail, s.t().T(option.key), option.count,
@@ -461,18 +455,20 @@ func (s *Shell) tagLibraryBulkControls(c *ui.Context, theme *ui.Theme, rail Rail
 // tagTableFitsAllColumns reports whether the pane has room for the timestamp as well as a
 // usable name.
 //
-// At the 900-point minimum window the content pane is about 550 points and the fixed columns
-// alone took 508, so the name column was 43 wide and every tag read as an ellipsis while the
-// last row action was clipped. The timestamp is the one column a reader can spare; the name is
-// the tag and the counts are the library. A viewport breakpoint, not a state: the row and the
-// head both ask the context they are drawn in, so they cannot disagree.
+// The fixed columns are 428 and the name needs 120. At the 900-point minimum window with the
+// sidebar at its widest the pane is 548, so every column fits; the theme column this table no
+// longer draws was the 120 that used to push the timestamp out here, when the fixed columns
+// took 508 and the name was 43 wide. The check stays for a pane that cannot hold both: the
+// timestamp is the column a reader can spare, while the name is the tag and the counts are the
+// library. It is a viewport breakpoint, not a state: the row and the head both ask the context
+// they are drawn in, so they cannot disagree.
 func (s *Shell) tagTableFitsAllColumns(c *ui.Context) bool {
 	// c.Size() is the window's content, not this pane (mygo's Context.Size). The pane is the
 	// window minus the sidebar and the page's horizontal padding, and the table shell adds its
 	// own inset inside that.
 	window, _ := c.Size()
 	width := window - s.sidebarPaneWidth() - 2*ResultsPadX - 2*TagTableShellPad
-	fixed := TagTableCheckCol + TagTableThemeCol + 2*TagTableCountCol +
+	fixed := TagTableCheckCol + 2*TagTableCountCol +
 		TagTableUpdatedCol + TagTableActionCol + 2*TagTablePadX
 	return width >= float32(fixed+TagTableMinNameWidth)
 }
@@ -513,9 +509,6 @@ func (s *Shell) tagTableHead(c *ui.Context, theme *ui.Theme, rail RailTokens, it
 			FontSize(TagTableHeadFont).FontWeight(600).
 			LetterSpacing(trackingEm(TagTableHeadTrack, TagTableHeadFont)).
 			TextColor(rail.TextTertiary).Grow(1)
-		// The theme is text, so its name starts where its values start. Right-aligning it with the
-		// numbers left it over the wrong end of the column, which the screenshot showed.
-		s.tagTableHeadCellStart(c, rail, i18n.TagTableParent, TagTableThemeCol)
 		s.tagTableHeadCell(c, rail, i18n.TagTableBookmarks, TagTableCountCol)
 		s.tagTableHeadCell(c, rail, i18n.TagTablePending, TagTableCountCol)
 		if s.tagTableFitsAllColumns(c) {
@@ -534,32 +527,21 @@ func (s *Shell) tagTableHeadCell(c *ui.Context, rail RailTokens, key i18n.Key, w
 	})
 }
 
-// tagTableHeadCellStart is tagTableHeadCell for a column whose cells start at its left edge.
-func (s *Shell) tagTableHeadCellStart(c *ui.Context, rail RailTokens, key i18n.Key, width float32) {
-	ui.Row(c).Width(width).Children(func() {
-		ui.Text(c, strings.ToUpper(s.t().T(key))).FontSize(TagTableHeadFont).FontWeight(600).
-			LetterSpacing(trackingEm(TagTableHeadTrack, TagTableHeadFont)).
-			TextColor(rail.TextTertiary)
-	})
-}
-
 // tagTableRow is one tag.
 //
 // Every part is a target of its own: the checkbox selects it for merging, its name opens its
 // bookmarks, the pencil turns the name into an input, the tag icon edits the aliases where
-// they are read, the theme cell picks a theme, and the trash asks before deleting. The row
-// itself takes no click -- a row that both selects and navigates leaves the reader guessing
-// which one a click did.
+// they are read, and the trash asks before deleting. The row itself takes no click -- a row
+// that both selects and navigates leaves the reader guessing which one a click did.
 //
 // Editing happens in the cell that shows the value, not in a panel under the row: the name
 // becomes an input and the alias editor appears in the alias slot. That is the shape Linear
 // and Notion use: one open field, saved where it is read, so there is never a question about
-// which of three Saves writes what.
+// which Save writes what.
 func (s *Shell) tagTableRow(c *ui.Context, theme *ui.Theme, rail RailTokens, item domain.TagLibraryItem, last bool) {
 	focused := s.state.TagFocus == item.TagID
 	editingName := focused && s.state.TagEditField == TagEditName
 	editingAliases := focused && s.state.TagEditField == TagEditAliases
-	editingTheme := focused && s.state.TagEditField == TagEditTheme
 	checked := s.state.TagSelectedIDs[item.TagID]
 
 	// The last row does not draw a line against the panel's own edge.
@@ -599,8 +581,8 @@ func (s *Shell) tagTableRow(c *ui.Context, theme *ui.Theme, rail RailTokens, ite
 		})
 
 		// The name cell: the hash, the name, and the aliases under it. The name identifies the
-		// row; a count and a parent alone do not. While either draft is open, that line becomes
-		// the field: the name at the name's place, the aliases at the aliases' place.
+		// row; a count alone does not. While either draft is open, that line becomes the field:
+		// the name at the name's place, the aliases at the aliases' place.
 		ui.Column(c).Grow(1).GapY(1).Children(func() {
 			ui.Row(c).GapX(NavRowMainGap).AlignItems(ui.Center).Children(func() {
 				ui.Box(c).Width(NavRowIcon).Height(NavRowIcon).
@@ -632,88 +614,12 @@ func (s *Shell) tagTableRow(c *ui.Context, theme *ui.Theme, rail RailTokens, ite
 				s.tagAliasEditor(c, theme, rail)
 				return
 			}
-			// The second line: the aliases, and how many tags hang off this one. The child
-			// count has no column of its own, but a theme is only recognisable by it, and the
-			// table draws one row shape.
-			meta := make([]string, 0, 2)
+			// The second line is the aliases, when the tag has any. The alias editor opens in
+			// the same place, so the line is both the value and the field.
 			if len(item.Aliases) > 0 {
-				meta = append(meta, strings.Join(item.Aliases, ", "))
-			}
-			if item.ChildCount > 0 {
-				meta = append(meta, fmt.Sprintf("%d %s",
-					item.ChildCount, s.t().T(i18n.TagChildCountSuffix)))
-			}
-			if len(meta) > 0 {
-				ui.Text(c, strings.Join(meta, " · ")).FontSize(TagTableMetaFont).
+				ui.Text(c, strings.Join(item.Aliases, ", ")).FontSize(TagTableMetaFont).
 					TextColor(rail.TextTertiary).MaxLines(1)
 			}
-		})
-
-		// The theme column: a value at rest, a picker while it is being changed. A select on
-		// every row would put a control in a table of dozens; the value reads as text until the
-		// reader asks for the picker, which is how a database property cell behaves.
-		ui.Row(c).Width(TagTableThemeCol).Children(func() {
-			if editingTheme {
-				options := []string{s.t().T(i18n.TagParentNone)}
-				for _, candidate := range domain.GetRootTagCandidates(s.state.TagItems) {
-					if candidate.TagID != item.TagID {
-						options = append(options, candidate.Name)
-					}
-				}
-				if !containsString(options, s.state.TagParentPick) {
-					s.state.TagParentPick = options[0]
-				}
-				// SelectBase rather than Select: the platform's select carries a 140-point
-				// minimum (mygo's coreSelect), which pushed this row's counts off their column
-				// names. The trigger is drawn to the column's own width instead.
-				picker := ui.SelectBase(c, &s.state.TagParentPick)
-				picker.Trigger.Width(TagTableThemeCol).MinHeight(TagTableThemePick).
-					Padding(0, 6).Radius(RadiusMedium).Border(1, rail.SubtleLine).
-					Background(theme.Surface).Bind(&s.tagEditField).GapX(4).Justify(ui.SpaceBetween).
-					AlignItems(ui.Center).
-					OnChange(func() { s.commitTagEdit(func(ctx context.Context) { s.SetTagTheme(ctx) }) }).
-					OnShortcut(0, ui.KeyEscape, func() { s.closeTagEdit() }).
-					Children(func() {
-						ui.Text(c, s.state.TagParentPick).FontSize(FontSmall).
-							TextColor(theme.Text).MaxLines(1).Grow(1)
-						ui.Box(c).Width(10).Height(10).Draw(func(p *ui.Painter, r ui.Rect) {
-							drawIcon(p, "caretDown", r.X, r.Y, min32(r.W, r.H), rail.TextTertiary)
-						})
-					})
-				picker.Popup(func(panel ui.Element) {
-					panel.Padding(4).Radius(RadiusMedium).Border(1, rail.SubtleLine).
-						Background(theme.Surface)
-					for _, option := range options {
-						item := picker.Item(option).Padding(4, 8).Radius(6)
-						switch {
-						case item.Highlighted():
-							item = item.Background(theme.Accent).TextColor(theme.AccentText)
-						case option == s.state.TagParentPick:
-							item = item.Background(theme.SurfaceHover)
-						}
-						item.Children(func() {
-							ui.Text(c, option).FontSize(FontSmall)
-						})
-					}
-				})
-				return
-			}
-			parent := item.ParentName
-			if parent == "" {
-				parent = s.t().T(i18n.TagParentNone)
-			}
-			// The cell's name says which tag it themes, not only which value it holds: without
-			// the tag's name, every unthemed row would read out the same "No theme".
-			cell := ui.Box(c).Radius(RadiusMedium).Padding(0, 2).
-				Tooltip(s.t().T(i18n.TagParentLabel)).
-				Label(s.t().Tf(i18n.TagThemeFor, item.Name)).Focusable().
-				OnClick(func() { s.beginTagEdit(item.TagID, TagEditTheme) })
-			if cell.Hovered() {
-				cell = cell.Background(theme.SurfaceHover)
-			}
-			cell.Children(func() {
-				ui.Text(c, parent).FontSize(FontSmall).TextColor(theme.TextMuted).MaxLines(1)
-			})
 		})
 
 		s.tagTableCount(c, theme, rail, item.BookmarkCount)
@@ -812,10 +718,6 @@ func (s *Shell) beginTagEdit(tagID, field string) {
 	s.state.TagEditField = field
 	s.state.TagNameEdit = focused.Name
 	s.state.TagAliasInput = strings.Join(focused.Aliases, ", ")
-	s.state.TagParentPick = focused.ParentName
-	if s.state.TagParentPick == "" {
-		s.state.TagParentPick = s.t().T(i18n.TagParentNone)
-	}
 	// Once, here: a Focus() inside the view took the cursor back on every frame, so Tab could
 	// not leave an open editor.
 	s.tagEditField.Focus()
@@ -842,7 +744,6 @@ func (s *Shell) closeTagEdit() {
 	s.state.TagEditField = ""
 	s.state.TagNameEdit = ""
 	s.state.TagAliasInput = ""
-	s.state.TagParentPick = ""
 	if s.window != nil {
 		s.window.Invalidate()
 	}

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -180,6 +181,14 @@ func (s *Shell) ApplyPreferences(ctx context.Context) error {
 		s.state.Appearance = preferences.Appearance
 	}
 	s.state.Locale = preferences.Locale
+	// The daily copy's switch is drawn from this, and the launch-time backup reads it,
+	// so it has to be loaded before the first frame like the sync fields.
+	s.state.AutoBackup = preferences.AutoBackupEnabled()
+	// The log is opened here rather than at the composition root, so every path that
+	// reloads the preferences -- a launch, a restored settings backup, a reset -- leaves
+	// it in the state the stored choice says.
+	s.state.FileLog = preferences.Diagnostics.FileLog
+	s.applyLogPreference(s.state.FileLog)
 	// The stored preference is all the translator needs: an empty one resolves to English.
 	s.translator = i18n.New(preferences.Locale)
 
@@ -345,6 +354,9 @@ func (s *Shell) applyAutoTagSettings(settings engine.Settings) {
 	s.state.LLMEnabled = settings.LLM.Enabled
 	s.state.ProviderLabel = s.providerLabel(settings.LLM.ProviderID)
 	s.state.BaseURLInput = settings.LLM.BaseURL
+	s.state.BaseURLErrorKind = ""
+	s.state.BaseURLPendingOrigin = ""
+	s.state.BaseURLApprovedOrigin = storedPlaintextOrigin(settings.LLM.BaseURL)
 	s.state.DeploymentInput = settings.LLM.Deployment
 	s.state.ModelInput = settings.LLM.Model
 	s.state.MaxPerRunInput = float64(settings.LLM.MaxPerRun)
@@ -421,7 +433,29 @@ func (s *Shell) saveAutoTagSettings(ctx context.Context) {
 		}
 	}
 	settings.LLM.ProviderID = nextProviderID
-	settings.LLM.BaseURL = strings.TrimSpace(s.state.BaseURLInput)
+	// The endpoint is the one field that is not stored as typed. https and a local
+	// server's http pass; anything else in the clear has to be allowed first, and a
+	// value that is not a URL at all is refused outright. A refused endpoint keeps the
+	// stored one and the field's row explains why -- everything else the reader changed
+	// is still saved, so a mistyped address does not silently freeze the whole panel.
+	s.state.BaseURLErrorKind = ""
+	s.state.BaseURLPendingOrigin = ""
+	endpoint := strings.TrimSpace(s.state.BaseURLInput)
+	// Empty is a valid value -- it means the provider's default -- so only a typed value
+	// goes through ValidateBaseURL, whose BaseURLEmpty rejection would otherwise turn
+	// "clear the endpoint" into a refusal.
+	endpointAccepted := true
+	if endpoint != "" {
+		if problem := s.baseURLProblem(endpoint); problem != "" {
+			endpointAccepted = false
+			if problem != llm.BaseURLProtocol {
+				s.state.BaseURLErrorKind = problem
+			}
+		}
+	}
+	if endpointAccepted {
+		settings.LLM.BaseURL = endpoint
+	}
 	settings.LLM.Deployment = strings.TrimSpace(s.state.DeploymentInput)
 	settings.LLM.Model = strings.TrimSpace(s.state.ModelInput)
 	settings.LLM.MaxPerRun = int(s.state.MaxPerRunInput)
@@ -449,6 +483,64 @@ func (s *Shell) saveAutoTagSettings(ctx context.Context) {
 		s.state.ConnectionTested = false
 		s.refreshAPIKeyState(ctx)
 	}
+}
+
+// baseURLProblem reports why an endpoint cannot be stored as typed, and "" when it can.
+//
+// https passes, and so does http on a loopback address -- a local model server legitimately
+// speaks it. http anywhere else would send the key unencrypted, which is a question rather
+// than a refusal: it is recorded as the pending origin and answered by the row, unless the
+// same origin was already allowed. A value that is not a URL at all is the one rejection
+// with no way forward but editing the field.
+func (s *Shell) baseURLProblem(endpoint string) string {
+	var rejected *llm.BaseURLError
+	if !errors.As(llm.ValidateBaseURL(endpoint), &rejected) {
+		return ""
+	}
+	if rejected.Kind != llm.BaseURLProtocol {
+		return rejected.Kind
+	}
+	origin, err := llm.PermissionOrigin(endpoint)
+	if err != nil {
+		return llm.BaseURLInvalid
+	}
+	if origin == s.state.BaseURLApprovedOrigin {
+		return ""
+	}
+	s.state.BaseURLPendingOrigin = origin
+	return llm.BaseURLProtocol
+}
+
+// allowBaseURLOrigin accepts the plaintext endpoint the panel is asking about and saves.
+//
+// The answer is remembered for the origin, not the whole URL: a path change on the same
+// host does not repeat the question, and a different host does.
+func (s *Shell) allowBaseURLOrigin() {
+	if s.state.BaseURLPendingOrigin == "" {
+		return
+	}
+	s.state.BaseURLApprovedOrigin = s.state.BaseURLPendingOrigin
+	s.state.BaseURLPendingOrigin = ""
+	s.state.BaseURLErrorKind = ""
+	s.saveAutoTagSettings(context.Background())
+}
+
+// storedPlaintextOrigin is the origin of an endpoint already in storage that needed the
+// plaintext permission, or "".
+//
+// An endpoint that is stored was consented to when it was saved, including by a build that
+// predates the question. Re-asking on the next save would train the reader to answer yes
+// without reading, which is the opposite of what the question is for.
+func storedPlaintextOrigin(endpoint string) string {
+	var rejected *llm.BaseURLError
+	if !errors.As(llm.ValidateBaseURL(endpoint), &rejected) || rejected.Kind != llm.BaseURLProtocol {
+		return ""
+	}
+	origin, err := llm.PermissionOrigin(endpoint)
+	if err != nil {
+		return ""
+	}
+	return origin
 }
 
 // settingsPanel draws the settings.

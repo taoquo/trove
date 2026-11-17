@@ -122,7 +122,12 @@ func (s *Shell) ApplySavedView(ctx context.Context, view domain.SavedView) {
 	s.state.GraphMode = false
 	s.state.Query = view.Query
 	s.state.OnlyWithMedia = view.OnlyWithMedia
+	s.state.OnlyWithVideo = view.OnlyWithVideo
 	s.state.OnlyLongform = view.OnlyLongform
+	// The view's own archive mode, both ways: a view saved in the archive returns to it,
+	// and any other view returns to the library. Applying is a replacement, not a merge
+	// with whatever the reader was looking at.
+	s.state.OnlyArchived = view.OnlyArchived
 	s.state.Sort = view.SortOrder
 	s.state.ViewMode = view.ViewMode
 	// One value per facet, which is the model this build uses deliberately: "click one row,

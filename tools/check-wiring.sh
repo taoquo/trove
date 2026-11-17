@@ -283,6 +283,26 @@ if [ -n "$early" ]; then
   fail=1
 fi
 
+# A migration applies schema changes to a library that may be the only copy of a reader's
+# work. Migrate takes a VACUUM INTO copy first; deleting that block leaves every test green,
+# because the schema still arrives at the right version. This is the assertion that notices.
+snapshot=$(python3 tools/migratesnapshot.py | tr '\n' ' ')
+if [ -n "$snapshot" ]; then
+  echo "FAIL: a migration path applies changes without a pre-upgrade copy:$snapshot"
+  echo "      restore the snapshotBeforeMigration call ahead of the migrate loop"
+  fail=1
+fi
+
+# The window and `trove sync` both start a sync, and the CLI's copy once never set
+# StartCursor: a first sync capped at the limit began again from the top every night. The
+# rule is one constructor, and every RunOptions must pass through it.
+cursor=$(python3 tools/runcursor.py | tr '\n' ' ')
+if [ -n "$cursor" ]; then
+  echo "FAIL: a sync command builds RunOptions without ResumeOptions:$cursor"
+  echo "      both entry points resume through syncer.Service.ResumeOptions"
+  fail=1
+fi
+
 # RailTokens fields that are assigned and never read, with the reason each stays. unread.py
 # covers State, View and RailTokens; these three are deliberate:
 #

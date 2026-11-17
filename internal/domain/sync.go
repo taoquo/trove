@@ -48,6 +48,15 @@ const (
 	ErrQueryIDStale          SyncErrorKind = "query_id_stale"
 	ErrNetwork               SyncErrorKind = "network"
 	ErrResponseSchemaChanged SyncErrorKind = "response_schema_changed"
+	// ErrSyncInProgress is a run that was refused because another process holds
+	// the library. It is not a fault: nothing was attempted, and the remedy is to
+	// let the other run finish. It needs its own kind so the status line does not
+	// say "sync failed" for a second window or an overlapping scheduled command.
+	ErrSyncInProgress SyncErrorKind = "sync_in_progress"
+	// ErrCredentialStore means the X session could not be read from the system
+	// store. It is not an expired session: the cookies may be perfectly good, and
+	// the fix is to unlock the store, not to sign in again.
+	ErrCredentialStore SyncErrorKind = "credential_store"
 )
 
 // legacySyncErrorKinds and currentSyncErrorKinds are the two sets, kept separate
@@ -59,7 +68,8 @@ var (
 	}
 	currentSyncErrorKinds = []SyncErrorKind{
 		ErrUnauthorized, ErrCSRFInvalid, ErrQueryIDStale, ErrRateLimited,
-		ErrNetwork, ErrResponseSchemaChanged, ErrInterrupted, ErrUnknown,
+		ErrNetwork, ErrResponseSchemaChanged, ErrSyncInProgress,
+		ErrCredentialStore, ErrInterrupted, ErrUnknown,
 	}
 )
 
@@ -73,7 +83,7 @@ var AllSyncErrorKinds = []SyncErrorKind{
 	ErrXSchemaChanged, ErrInterrupted, ErrUnknown,
 	// The finer-grained additions.
 	ErrUnauthorized, ErrCSRFInvalid, ErrQueryIDStale,
-	ErrNetwork, ErrResponseSchemaChanged,
+	ErrNetwork, ErrResponseSchemaChanged, ErrSyncInProgress, ErrCredentialStore,
 }
 
 // ValidSyncErrorKind reports whether k is a known kind, from either vocabulary.
@@ -165,6 +175,6 @@ const (
 
 // CompletesFullSync reports whether this termination reason may mark a first
 // full sync as finished.
-func CompletesFullSync(reason TerminationReason, failedCount int) bool {
-	return reason == TermEndOfPages && failedCount == 0
+func CompletesFullSync(reason TerminationReason, failedCount, unrecognized int) bool {
+	return reason == TermEndOfPages && failedCount == 0 && unrecognized == 0
 }

@@ -33,33 +33,39 @@ var (
 	// ErrBrowserPermission means the system refused this app access to the
 	// profile directory. The fix is a privacy setting, and no retry will help.
 	ErrBrowserPermission = errors.New("credentials: the system denied access to the browser profiles")
-	// ErrBrowserNoCookies means a profile was readable but had no X session.
-	ErrBrowserNoCookies = errors.New("credentials: no signed-in X session in any browser")
+	// ErrBrowserNoCookies means a profile was readable but no single profile held a
+	// complete X session. It wraps ErrIncompleteCredentials: the two cookies are one
+	// credential, and a set assembled from two profiles cannot authenticate.
+	ErrBrowserNoCookies = fmt.Errorf("%w: no signed-in X session in any browser", ErrIncompleteCredentials)
 	// ErrBrowserUnavailable is everything else: the library failed outright.
 	ErrBrowserUnavailable = errors.New("credentials: the browser could not be read")
 )
 
+// loadBrowserCookies is the library call, held in a variable so the pairing rule
+// can be tested without a signed-in profile on the machine running the tests.
+var loadBrowserCookies = func(ctx context.Context, options sweetcookie.Options) (sweetcookie.Result, error) {
+	return sweetcookie.Get(ctx, options)
+}
+
 // BrowserCookies reads auth_token and ct0 from a browser the user is signed in to.
+//
+// The pair is taken from one profile. Merging by name looks equivalent and is not:
+// with Chrome signed in to one account and Safari to another, the merged result
+// held Chrome's auth_token beside Safari's ct0, and X rejected it with a CSRF
+// mismatch the user could not explain. A half-filled profile is not a candidate.
 func BrowserCookies(ctx context.Context) (xsource.Credentials, error) {
-	result, err := sweetcookie.Get(ctx, sweetcookie.Options{
+	result, err := loadBrowserCookies(ctx, sweetcookie.Options{
 		URL:   "https://x.com/",
 		Names: []string{"auth_token", "ct0"},
-		Mode:  sweetcookie.ModeMerge,
+		// Merge so every profile is seen; the choice between them is made below,
+		// per profile, rather than by the reader's name-level merge.
+		Mode: sweetcookie.ModeMerge,
 	})
 	if err != nil {
 		return xsource.Credentials{}, fmt.Errorf("%w: %v", ErrBrowserUnavailable, err)
 	}
 
-	var found xsource.Credentials
-	for _, cookie := range result.Cookies {
-		switch cookie.Name {
-		case "auth_token":
-			found.AuthToken = cookie.Value
-		case "ct0":
-			found.CSRFToken = cookie.Value
-		}
-	}
-	if found.AuthToken != "" && found.CSRFToken != "" {
+	if found, ok := pairFromProfiles(result.Cookies); ok {
 		return found, nil
 	}
 
@@ -73,6 +79,59 @@ func BrowserCookies(ctx context.Context) (xsource.Credentials, error) {
 		return xsource.Credentials{}, fmt.Errorf("%w: %s", ErrBrowserPermission, denied)
 	}
 	return xsource.Credentials{}, fmt.Errorf("%w (%s)", ErrBrowserNoCookies, firstWarning(result.Warnings))
+}
+
+// profileKey identifies one browser profile's cookie set.
+//
+// The store path is part of it because a browser can have profiles the reader names
+// identically, and the container id because Firefox keeps separate jars per
+// container inside one profile.
+type profileKey struct {
+	browser   sweetcookie.Browser
+	profile   string
+	storePath string
+	container int
+}
+
+// pairFromProfiles returns the first complete {auth_token, ct0} in reader order.
+//
+// Reader order is browser priority: the default browser's profiles come first, so
+// the first complete profile is the one the person is most likely signed in to.
+// An empty value does not count as a half of the pair -- a cleared cookie is not a
+// cookie.
+func pairFromProfiles(cookies []sweetcookie.Cookie) (xsource.Credentials, bool) {
+	order := make([]profileKey, 0, len(cookies))
+	pairs := make(map[profileKey]xsource.Credentials, len(cookies))
+
+	for _, cookie := range cookies {
+		key := profileKey{
+			browser:   cookie.Source.Browser,
+			profile:   cookie.Source.Profile,
+			storePath: cookie.Source.StorePath,
+			container: cookie.Container.ID,
+		}
+		if _, seen := pairs[key]; !seen {
+			order = append(order, key)
+		}
+		if strings.TrimSpace(cookie.Value) == "" {
+			continue
+		}
+		pair := pairs[key]
+		switch cookie.Name {
+		case "auth_token":
+			pair.AuthToken = cookie.Value
+		case "ct0":
+			pair.CSRFToken = cookie.Value
+		}
+		pairs[key] = pair
+	}
+
+	for _, key := range order {
+		if pair := pairs[key]; pair.AuthToken != "" && pair.CSRFToken != "" {
+			return pair, true
+		}
+	}
+	return xsource.Credentials{}, false
 }
 
 // permissionDeniedWarning reports the first warning that means the system refused to let this app

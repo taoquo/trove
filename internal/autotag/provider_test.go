@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/taoquo/trove/internal/domain"
@@ -254,6 +255,59 @@ func TestProviderClientSucceeds(t *testing.T) {
 	}
 	if adapter.requests[0].JSONSchema == nil {
 		t.Error("the schema must be sent so the provider can enforce it")
+	}
+}
+
+// TestProviderClientAsksForABatchSizedCeiling pins item 11: the response ceiling is
+// derived from the batch. DeriveMaxOutputTokens existed with no production caller,
+// so every request carried the provider's default and a full batch could be cut off
+// mid-JSON.
+func TestProviderClientAsksForABatchSizedCeiling(t *testing.T) {
+	adapter := &fakeAdapter{results: []llm.ChatResult{jsonResult(`{"results":[]}`)}}
+	client := &ProviderClient{Adapter: adapter}
+
+	if _, err := client.SuggestTags(context.Background(), TagRequest{
+		Batch: posts(DefaultBatchSize, "ada"), Model: "test-model",
+	}); err != nil {
+		t.Fatalf("SuggestTags: %v", err)
+	}
+
+	if len(adapter.requests) != 1 {
+		t.Fatalf("made %d requests, want 1", len(adapter.requests))
+	}
+	ceiling := adapter.requests[0].MaxOutputTokens
+	if ceiling == nil {
+		t.Fatal("the request carried no output ceiling")
+	}
+	if want := llm.DeriveMaxOutputTokens(DefaultBatchSize); *ceiling != want {
+		t.Errorf("MaxOutputTokens = %d, want %d", *ceiling, want)
+	}
+	if *ceiling != 1600 {
+		t.Errorf("a batch of %d asks for %d tokens, want 1600", DefaultBatchSize, *ceiling)
+	}
+}
+
+// TestProviderClientAccumulatesUsage is the other half of item 11: the numbers the
+// provider reports reach the run summary.
+func TestProviderClientAccumulatesUsage(t *testing.T) {
+	first := jsonResult(`{"results":[]}`)
+	first.Usage = llm.TokenUsage{InputTokens: 100, OutputTokens: 10}
+	// A reply that does not parse still cost money: it is counted before parsing.
+	second := llm.ChatResult{Text: "not json", Usage: llm.TokenUsage{InputTokens: 50, OutputTokens: 5}}
+
+	adapter := &fakeAdapter{results: []llm.ChatResult{first, second}}
+	client := &ProviderClient{Adapter: adapter}
+
+	request := TagRequest{Batch: []domain.Bookmark{{TweetID: "1", Text: "x"}}}
+	if _, err := client.SuggestTags(context.Background(), request); err != nil {
+		t.Fatalf("first SuggestTags: %v", err)
+	}
+	if _, err := client.SuggestTags(context.Background(), request); err == nil {
+		t.Fatal("the unparseable reply should have failed")
+	}
+
+	if got, want := client.Usage(), (llm.TokenUsage{InputTokens: 150, OutputTokens: 15}); got != want {
+		t.Errorf("usage = %+v, want %+v", got, want)
 	}
 }
 
@@ -568,12 +622,20 @@ func TestConnectionSendsNothingWithoutAKey(t *testing.T) {
 // called unauthenticated: a proxy that does require a key answered 401, and the panel
 // told the user their valid Keychain key was invalid.
 func TestTheCustomProviderSendsTheStoredKey(t *testing.T) {
-	var gotAuth, gotPath string
+	var mu sync.Mutex
+	var auths, paths []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuth = r.Header.Get("Authorization")
-		gotPath = r.URL.Path
+		mu.Lock()
+		auths = append(auths, r.Header.Get("Authorization"))
+		paths = append(paths, r.URL.Path)
+		mu.Unlock()
+
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"object":"list","data":[]}`))
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`{"object":"list","data":[]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"ok\":true}"},"finish_reason":"stop"}]}`))
 	}))
 	defer server.Close()
 
@@ -591,22 +653,37 @@ func TestTheCustomProviderSendsTheStoredKey(t *testing.T) {
 	if !result.OK {
 		t.Fatalf("a keyed custom endpoint must pass: %+v", result)
 	}
-	if gotAuth != "Bearer sk-test" {
-		t.Errorf("Authorization = %q, want the stored key", gotAuth)
+	// Two calls now: the listing and the one real completion. Both must carry the
+	// stored key -- the completion is the one a run actually needs.
+	if len(paths) != 2 {
+		t.Fatalf("made %d requests, want the listing and one completion: %v", len(paths), paths)
 	}
-	if gotPath != "/v1/models" {
-		t.Errorf("path = %q, want /v1/models", gotPath)
+	if paths[0] != "/v1/models" || paths[1] != "/v1/chat/completions" {
+		t.Errorf("paths = %v, want the listing then a completion", paths)
+	}
+	for i, auth := range auths {
+		if auth != "Bearer sk-test" {
+			t.Errorf("request %d Authorization = %q, want the stored key", i, auth)
+		}
 	}
 }
 
 // TestTheCustomProviderMayRunWithoutAKey keeps the other half of the same rule: an
 // endpoint that accepts no authentication is still a valid configuration.
 func TestTheCustomProviderMayRunWithoutAKey(t *testing.T) {
-	gotAuth := "not-called"
+	var mu sync.Mutex
+	var auths []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuth = r.Header.Get("Authorization")
+		mu.Lock()
+		auths = append(auths, r.Header.Get("Authorization"))
+		mu.Unlock()
+
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"object":"list","data":[]}`))
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`{"object":"list","data":[]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"ok\":true}"},"finish_reason":"stop"}]}`))
 	}))
 	defer server.Close()
 
@@ -622,8 +699,51 @@ func TestTheCustomProviderMayRunWithoutAKey(t *testing.T) {
 	if !result.OK {
 		t.Fatalf("a keyless custom endpoint must pass: %+v", result)
 	}
-	if gotAuth != "" {
-		t.Errorf("Authorization = %q, want none", gotAuth)
+	if len(auths) != 2 {
+		t.Errorf("made %d requests, want the listing and one completion", len(auths))
+	}
+	for _, auth := range auths {
+		if auth != "" {
+			t.Errorf("Authorization = %q, want none", auth)
+		}
+	}
+}
+
+// TestConnectionMakesARealRequest is item 12's assertion.
+//
+// A key that can list models is not a key that can complete: the /models endpoint
+// answers 200 for a misspelled model name, and the panel used to report "connected"
+// for a configuration every run would fail on. The failure must show the provider's
+// own sentence, because that is what names the typo.
+func TestConnectionMakesARealRequest(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`{"object":"list","data":[{"id":"gpt-4o"}]}`))
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte("{\"error\":{\"message\":\"The model 'gpt-4o-typo' does not exist\",\"type\":\"invalid_request_error\"}}"))
+	}))
+	defer server.Close()
+
+	settings := DefaultSettings()
+	settings.LLM.ProviderID = "custom"
+	settings.LLM.BaseURL = server.URL + "/v1"
+	settings.LLM.Model = "gpt-4o-typo"
+
+	result := TestProviderConnection(settings, func(context.Context, string) (string, error) {
+		return "sk-test", nil
+	})
+
+	if result.OK {
+		t.Fatal("a model the provider does not have must not report a working connection")
+	}
+	if result.ErrorKind != string(llm.KindBadRequest) {
+		t.Errorf("errorKind = %q, want %q", result.ErrorKind, llm.KindBadRequest)
+	}
+	if !strings.Contains(result.Message, "gpt-4o-typo") {
+		t.Errorf("message = %q, want the provider's own sentence naming the model", result.Message)
 	}
 }
 
@@ -744,5 +864,49 @@ func TestThePromptTheSchemaAndTheParserAgreeOnOneShape(t *testing.T) {
 		[]domain.Bookmark{{TweetID: "1"}})
 	if err != nil || len(parsed) != 1 || parsed[0].Tags[0].Confidence != 0.8 {
 		t.Errorf("the parser did not accept the shape the prompt asks for: %+v, %v", parsed, err)
+	}
+}
+
+// TestAFailureDoesNotCarryTheKey closes the loop between the transport and the run.
+//
+// The adapter sends the key in a header; the provider quotes the header back in a 401. The
+// error that leaves this package is what the pipeline writes into its summary, so the
+// secret must already be gone here.
+func TestAFailureDoesNotCarryTheKey(t *testing.T) {
+	const key = "sk-testredaction-0123456789"
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":{"message":"the key was rejected; header was ` +
+			r.Header.Get("Authorization") + `"}}`))
+	}))
+	defer server.Close()
+
+	settings := DefaultSettings()
+	settings.LLM.Enabled = true
+	settings.LLM.ProviderID = "custom"
+	settings.LLM.BaseURL = server.URL + "/v1"
+	settings.LLM.Model = "gpt-4o"
+
+	client, err := BuildProviderClient(settings, func(context.Context, string) (string, error) {
+		return key, nil
+	})
+	if err != nil {
+		t.Fatalf("BuildProviderClient: %v", err)
+	}
+
+	_, err = client.SuggestTags(context.Background(), TagRequest{
+		Model: "gpt-4o",
+		Batch: []domain.Bookmark{{TweetID: "1", Text: "a post"}},
+	})
+	if err == nil {
+		t.Fatal("a 401 must fail the batch")
+	}
+	if strings.Contains(err.Error(), key) {
+		t.Errorf("the failure carries the credential: %q", err.Error())
+	}
+	if !strings.Contains(err.Error(), "[redacted]") {
+		t.Errorf("the failure does not mark the removal: %q", err.Error())
 	}
 }

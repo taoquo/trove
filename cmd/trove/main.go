@@ -36,10 +36,12 @@ import (
 	"github.com/taoquo/trove/internal/idgen"
 	"github.com/taoquo/trove/internal/importexport"
 	"github.com/taoquo/trove/internal/llm"
+	"github.com/taoquo/trove/internal/logging"
 	"github.com/taoquo/trove/internal/media"
 	"github.com/taoquo/trove/internal/ports"
 	"github.com/taoquo/trove/internal/storage/sqlite"
 	appui "github.com/taoquo/trove/internal/ui"
+	"github.com/taoquo/trove/internal/usecase/backup"
 	"github.com/taoquo/trove/internal/usecase/settings"
 	"github.com/taoquo/trove/internal/usecase/suggestions"
 	syncer "github.com/taoquo/trove/internal/usecase/syncer"
@@ -146,6 +148,20 @@ func start() error {
 	ctx := context.Background()
 	credentialStore := credentials.NewWithKeychain()
 
+	// The optional troubleshooting log, opened before the first thing that can fail so a
+	// report from a reader who turned it on includes the launch and not just what happened
+	// after the window appeared. The stored choice is read once here; ApplyPreferences
+	// states it again for every path that reloads the preferences.
+	settingsService := settings.New(repos, clock)
+	logs := logging.New(filepath.Join(dataDir, logging.DirName))
+	defer logs.Close()
+	if preferences, err := settingsService.Load(ctx); err != nil {
+		log.Printf("could not load the preferences for the log: %v", err)
+	} else if err := logs.Apply(preferences.Diagnostics.FileLog); err != nil {
+		log.Printf("could not open the log: %v", err)
+	}
+	logs.Event("launch")
+
 	// Startup self-heal. A sync that was in flight when the app last
 	// stopped cannot still be running: the process that owned it is gone, and
 	// leaving the row would tell the user a sync is progressing when nothing is.
@@ -160,7 +176,7 @@ func start() error {
 	xClient := xsource.NewClient(
 		xsource.NewQueryCatalog(""),
 		func(ctx context.Context) (xsource.Credentials, error) {
-			return credentialStore.XCredentials(ctx)
+			return credentialStore.XCredentialsForSync(ctx)
 		},
 	)
 	// Capture every page's raw JSON; whether it is *stored* is the sync
@@ -178,6 +194,7 @@ func start() error {
 		log.Printf("sync self-heal: %v", err)
 	} else if healed > 0 {
 		log.Printf("closed %d sync run(s) left in flight by a previous session", healed)
+		logs.Event("sync self-heal", logging.Count{Name: "closed", Value: healed})
 	}
 
 	// The auto-tagger's half of the same heal: a persisted run state is always the
@@ -212,8 +229,6 @@ func start() error {
 	// Credentials live only in the Keychain, never in the database.
 
 	suggestionService := suggestions.New(repos, clock, ids)
-
-	settingsService := settings.New(repos, clock)
 
 	bundleService := importexport.New(repos, clock, appVersion())
 	// The reset's confirmation promises that local settings are cleared, and the stored
@@ -258,6 +273,13 @@ func start() error {
 	// web-only rule live in openurl.go, where `trove auth` uses the same ones.
 	shell.UseExternalOpener(openWebURL)
 	shell.UseSettings(settingsService)
+	// The daily copy of the library, written beside it and named by the day. It runs
+	// after the preferences are loaded, because the reader's switch decides whether it
+	// runs at all.
+	shell.UseBackups(backup.New(db, filepath.Join(dataDir, backup.DirName), clock), openFolder)
+	// The troubleshooting log, already opened from the stored choice above. The Settings
+	// switch opens and closes the same controller while the app runs.
+	shell.UseLogging(logs)
 	shell.UseSuggestions(suggestionService)
 	shell.UseSyncer(syncService)
 	shell.UseTagging(tagService)
@@ -301,6 +323,10 @@ func start() error {
 	if err := shell.ApplyPreferences(ctx); err != nil {
 		log.Printf("could not load preferences, using defaults: %v", err)
 	}
+	// The copy runs off the window's thread, so the first frame is not held up by a
+	// vacuum over the whole library, and a failure is reported in Settings rather than
+	// stopping the app.
+	shell.StartAutomaticBackup(ctx)
 
 	// A screenshot drawn in memory, before any window exists.
 	//

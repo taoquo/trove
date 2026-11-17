@@ -220,15 +220,24 @@ func (r *TagRepository) DeleteMany(ctx context.Context, ids []string) (int, erro
 
 // Summaries returns each tag with its bookmark and pending-suggestion counts.
 func (r *TagRepository) Summaries(ctx context.Context) ([]domain.TagSummary, error) {
-	// Pending suggestions are matched by canonical key, because a suggestion holds
-	// a name rather than a tag id: the tag may not exist yet.
+	// Both counts are aggregates joined in, not a subquery per tag: the pending
+	// count used to fold the tag name and the suggestion name for every tag on
+	// every reload, which is thousands of Go calls for one sidebar. The
+	// suggestion side is folded once, in the same GROUP BY, and its column has an
+	// index. Pending suggestions are matched by name because a suggestion holds a
+	// name rather than a tag id: the tag may not exist yet.
 	query := `
 		SELECT ` + tagColumns + `,
-		  (SELECT COUNT(*) FROM bookmark_tags bt WHERE bt.tag_id = tags.id),
-		  (SELECT COUNT(*) FROM tag_suggestions ts
-		     WHERE ts.status = 'pending'
-		       AND trove_fold(trim(ts.tag_name)) = trove_fold(trim(tags.name)))
+		  COALESCE(counts.total, 0),
+		  COALESCE(pending.total, 0)
 		FROM tags
+		LEFT JOIN (
+		    SELECT tag_id, COUNT(*) AS total FROM bookmark_tags GROUP BY tag_id
+		) AS counts ON counts.tag_id = tags.id
+		LEFT JOIN (
+		    SELECT name_folded, COUNT(*) AS total
+		    FROM tag_suggestions WHERE status = 'pending' GROUP BY name_folded
+		) AS pending ON pending.name_folded = trove_fold(trim(tags.name))
 		ORDER BY name ASC`
 
 	rows, err := r.db.QueryContext(ctx, query)

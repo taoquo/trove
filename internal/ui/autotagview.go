@@ -307,9 +307,12 @@ func (s *Shell) autoTagModelCard(c *ui.Context, theme *ui.Theme, rail RailTokens
 	save := func() { s.saveAutoTagSettings(context.Background()) }
 
 	// The endpoint warning is the row's explanation while the field holds a host: the key is
-	// sent there.
+	// sent there. A value the save path refused replaces it, because that is the sentence the
+	// reader has to answer -- the warning would explain a stored endpoint they no longer have.
 	baseSub, baseInk := "", theme.TextMuted
-	if strings.TrimSpace(s.state.BaseURLInput) != "" {
+	if s.state.BaseURLErrorKind != "" {
+		baseSub, baseInk = s.t().T(i18n.SettingsBaseURLError), theme.Danger
+	} else if strings.TrimSpace(s.state.BaseURLInput) != "" {
 		baseSub, baseInk = s.t().T(i18n.SettingsBaseURLWarning), theme.Warning
 	}
 
@@ -366,6 +369,29 @@ func (s *Shell) autoTagModelCard(c *ui.Context, theme *ui.Theme, rail RailTokens
 					s.t().T(i18n.SettingsBaseURL), s.t().T(i18n.SettingsBaseURL), SettingsFieldWide, save)
 			},
 		},
+	}
+	// A plaintext endpoint is a question, not a setting: the address and the consequence
+	// sit on one line, and the answer is the only way the value reaches storage. It is
+	// drawn under the endpoint row it is about, in the same row grammar as everything else.
+	if origin := s.state.BaseURLPendingOrigin; origin != "" {
+		items = append(items, settingsItem{
+			keys:     []i18n.Key{i18n.SettingsBaseURLPermission, i18n.SettingsBaseURLPermissionHint},
+			name:     s.t().Tf(i18n.SettingsBaseURLPermission, origin),
+			sub:      s.t().T(i18n.SettingsBaseURLPermissionHint),
+			subColor: theme.Warning,
+			body: func() {
+				ui.Row(c).FillWidth().GapX(SettingsActionGap).AlignItems(ui.Center).Children(func() {
+					settingsAction(c, theme, rail, s.t().T(i18n.ActionAllow), false, false, func() {
+						s.allowBaseURLOrigin()
+					})
+					settingsAction(c, theme, rail, s.t().T(i18n.ActionCancel), false, false, func() {
+						// The field keeps what was typed; the question goes away, and the
+						// next attempt asks again.
+						s.state.BaseURLPendingOrigin = ""
+					})
+				})
+			},
+		})
 	}
 	// Only Azure reads a deployment name: it is part of the URL rather than the model field.
 	if llm.ProviderByID(s.providerIDFor(s.state.ProviderLabel)).NeedsDeployment {

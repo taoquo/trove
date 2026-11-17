@@ -4,6 +4,52 @@
 update it signs, so the heading below must exist before a tag is pushed. Keep the
 heading plain (`## 0.3.2`) or Keep a Changelog's (`## [0.3.2] - 2026-11-14`).
 
+## 0.3.7
+
+### Added
+
+- trove keeps the library's last seven days of copies on its own: one snapshot a day,
+  taken in the background after launch, in the backups folder beside the database. Data
+  safety turns it off and opens the folder when you want to look.
+- A troubleshooting log for when something goes wrong. It is off until you ask for it in
+  Data safety, writes events and counts only — never a post, a key or a cookie — and keeps
+  the newest three files of one megabyte each.
+- The filter panel can narrow the library to posts with video, on its own or alongside the
+  existing "has media"; the archive, media and longform conditions all show as chips, and
+  saved views remember them.
+- Search reaches tag and list names, so typing a tag finds what you filed under it.
+- Archiving is complete: archive and unarchive from the bulk bar, ⌘⇧E for the open card,
+  undo in the toast, a count beside the archive, and a sentence of its own when it is empty.
+- The keyboard goes where it looks like it should: Escape closes the filter panel, arrow
+  keys move through the sidebar's tags and authors, and the result list is a single Tab
+  stop walked with the arrow keys.
+- A sync that is waiting on X's rate limit says how long is left.
+
+### Changed
+
+- Tag themes are gone from the screens: the tag manager's "Theme" column and picker, its
+  "without a theme" count and filter, and the sidebar's indented children. No tag in a real
+  library had ever been given one, and search, filtering and auto-tagging never read it. The
+  stored parent links and their backup/import round trip stay, so the data is still there.
+- A sync that cannot read part of a page no longer records itself as a complete first sync,
+  and a page that fails keeps its place: the next run, from the window or `trove sync`,
+  continues from there instead of starting over.
+- An incremental sync stops soon after it reaches bookmarks it already knows, even when
+  recent ones have been deleted.
+- A locked or missing system credential store is reported as that, rather than as being
+  signed out — and browser sign-in now takes both cookies from one browser profile.
+- Auto-tagging remembers a batch that failed and does not spend on it again until the
+  prompt or the model changes; three failures in a row stop the run with the reason; the
+  output budget follows the batch size; and each run reports the tokens it used.
+- Testing a model connection sends one tiny request, so a mistyped model name fails there
+  and not halfway through a run. A plain-http endpoint other than this machine needs an
+  explicit yes before a key is sent to it, and provider errors are stripped of keys before
+  they are stored or shown.
+- Restoring a backup is all or nothing, and it brings back saved raw responses and the
+  record of deleted bookmarks too.
+- Large libraries got faster: sorting, author filtering and the sidebar use indexes, imports
+  commit in batches, exports stream, and the media cache has a memory ceiling.
+
 ## 0.3.6
 
 ### Added

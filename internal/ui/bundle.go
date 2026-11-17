@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/egoist/mygo"
@@ -72,20 +73,11 @@ func (s *Shell) ExportBundle(ctx context.Context) error {
 		}
 
 		s.publish(func() { s.state.LastBundleReport = s.t().T(i18n.BundleExporting) })
-		raw, exportErr := s.importexport.Export(ctx, importexport.DefaultExportOptions())
-		var writeErr error
-		if exportErr == nil {
-			// The file holds the user's whole library, so it is written private.
-			writeErr = os.WriteFile(path, raw, 0o600)
-		}
+		exportErr := s.writeBundleFile(ctx, path)
 
 		s.publish(func() {
 			if exportErr != nil {
 				s.finishBundleWork(exportErr)
-				return
-			}
-			if writeErr != nil {
-				s.finishBundleWork(writeErr)
 				return
 			}
 			s.state.BundleBusy = false
@@ -95,6 +87,29 @@ func (s *Shell) ExportBundle(ctx context.Context) error {
 		})
 	})
 	return nil
+}
+
+// writeBundleFile streams the export into a file the user chose.
+//
+// The bundle goes straight from the archive writer to the file, so a large library
+// is never held twice in memory. It is written beside the target and renamed into
+// place, so a failure part way through leaves the previous backup untouched and the
+// file is created private: it holds the user's whole library.
+func (s *Shell) writeBundleFile(ctx context.Context, path string) error {
+	temporary, err := os.CreateTemp(filepath.Dir(path), ".trovebundle-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(temporary.Name())
+
+	if err := s.importexport.ExportTo(ctx, temporary, importexport.DefaultExportOptions()); err != nil {
+		temporary.Close()
+		return err
+	}
+	if err := temporary.Close(); err != nil {
+		return err
+	}
+	return os.Rename(temporary.Name(), path)
 }
 
 // finishBundleWork ends a file command that produced no file.
@@ -369,7 +384,8 @@ func (s *Shell) applyBundle(ctx context.Context) error {
 			}
 
 			s.state.LastBundleReport = s.t().Tf(i18n.BundleReport,
-				report.BookmarksInserted, report.BookmarksUpdated, report.TagsInserted)
+				report.BookmarksInserted, report.BookmarksUpdated, report.TagsInserted,
+				report.RawPayloadsWritten)
 			s.state.LastBundleOK = true
 
 			// A restore or an import can change everything the workspace shows.

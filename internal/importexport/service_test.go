@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -175,6 +176,45 @@ func TestExportContainsEveryTable(t *testing.T) {
 	for _, bookmark := range bookmarks {
 		if len(bookmark.RawPayload) > 0 {
 			t.Error("a raw payload must not be exported by default")
+		}
+	}
+}
+
+// TestTwoExportsOfOneLibraryAreTheSameBytes covers the backup's own stability.
+//
+// Bookmark-to-list membership arrives from the repository as a map, and ranging over it
+// wrote bookmark-lists.json in a different order on every export. The manifest carries a
+// digest of the parts, so the file changed too: two backups of the same untouched library
+// were different downloads, and a checksum of one proved nothing about the other.
+func TestTwoExportsOfOneLibraryAreTheSameBytes(t *testing.T) {
+	service, _, repos := newService(t)
+	seedLibrary(t, repos)
+
+	read := func() map[string][]byte {
+		raw, err := service.Export(context.Background(), DefaultExportOptions())
+		if err != nil {
+			t.Fatalf("Export: %v", err)
+		}
+		parsed, err := bundle.Read(newReader(raw), int64(len(raw)), bundle.DefaultLimits())
+		if err != nil {
+			t.Fatalf("Read: %v", err)
+		}
+		return parsed.Files
+	}
+
+	first, second := read(), read()
+	if len(first) != len(second) {
+		t.Fatalf("two exports wrote %d and %d files", len(first), len(second))
+	}
+	for name, want := range first {
+		got, present := second[name]
+		if !present {
+			t.Errorf("%s is missing from the second export", name)
+			continue
+		}
+		if !bytes.Equal(want, got) {
+			t.Errorf("%s differs between two exports of one library:\n got %s\nwant %s",
+				name, got, want)
 		}
 	}
 }
@@ -1200,5 +1240,134 @@ func TestARelationToAMissingBookmarkIsSkipped(t *testing.T) {
 	}
 	if len(relations) != 1 || relations[0].BookmarkID != "1" {
 		t.Errorf("relations = %+v, want only bookmark 1", relations)
+	}
+}
+
+// countingTags counts how the import writes relations.
+type countingTags struct {
+	ports.TagRepository
+	attaches    int
+	attachMany  int
+	attachedRow int
+}
+
+func (c *countingTags) Attach(ctx context.Context, relation domain.BookmarkTag) error {
+	c.attaches++
+	return c.TagRepository.Attach(ctx, relation)
+}
+
+func (c *countingTags) AttachMany(ctx context.Context, relations []domain.BookmarkTag) error {
+	c.attachMany++
+	c.attachedRow += len(relations)
+	return c.TagRepository.AttachMany(ctx, relations)
+}
+
+// countingBookmarks counts how the import writes memberships.
+type countingBookmarks struct {
+	ports.BookmarkRepository
+	assigns    int
+	assignedTo int
+}
+
+func (c *countingBookmarks) AssignToList(ctx context.Context, tweetIDs []string, listID string, now time.Time) error {
+	c.assigns++
+	c.assignedTo += len(tweetIDs)
+	return c.BookmarkRepository.AssignToList(ctx, tweetIDs, listID, now)
+}
+
+// TestAnImportWritesItsRelationsInBatches covers the shape of the write.
+//
+// A relation and a membership were each written with their own call, and each call
+// commits: a library of twenty-five thousand relations meant twenty-five thousand
+// commits, which is the slowest part of opening a backup. The rows go in a thousand
+// at a time now, so the number of commits depends on the size of the file divided by
+// a thousand and not on the row count.
+func TestAnImportWritesItsRelationsInBatches(t *testing.T) {
+	ctx := context.Background()
+	const count = 2500
+
+	source, _, sourceRepos := newService(t)
+	tagIDs := []string{"t1", "t2", "t3"}
+	for _, id := range tagIDs {
+		tag := domain.Tag{
+			ID: id, Name: "Tag " + id, CanonicalKey: domain.CanonicalTagKey("Tag " + id),
+			CreatedAt: domain.FormatTimestamp(clockBase), UpdatedAt: domain.FormatTimestamp(clockBase),
+		}
+		if err := sourceRepos.Tags.Create(ctx, tag); err != nil {
+			t.Fatalf("Create tag: %v", err)
+		}
+	}
+
+	relations := make([]domain.BookmarkTag, 0, count)
+	for start := 0; start < count; start += 500 {
+		rows := make([]domain.Bookmark, 0, 500)
+		for i := start; i < start+500 && i < count; i++ {
+			id := strconv.Itoa(i + 1)
+			rows = append(rows, domain.Bookmark{
+				TweetID: id, TweetURL: "https://x.com/ada/status/" + id,
+				AuthorName: "Ada", AuthorHandle: "ada", Text: "post " + id,
+				SavedAt: clockBase.Add(-time.Duration(i) * time.Minute), LastSeenAt: clockBase,
+				UpdatedAt: clockBase,
+			})
+			relations = append(relations, domain.BookmarkTag{
+				BookmarkID: id, TagID: tagIDs[i%len(tagIDs)],
+				CreatedAt: clockBase, Source: domain.TagSourceManual,
+			})
+		}
+		if _, err := sourceRepos.Bookmarks.UpsertMany(ctx, rows); err != nil {
+			t.Fatalf("UpsertMany: %v", err)
+		}
+	}
+	if err := sourceRepos.Tags.AttachMany(ctx, relations); err != nil {
+		t.Fatalf("AttachMany: %v", err)
+	}
+	if _, err := sourceRepos.Bookmarks.AssignMissingToInbox(ctx, clockBase); err != nil {
+		t.Fatalf("AssignMissingToInbox: %v", err)
+	}
+
+	file, err := source.Export(ctx, DefaultExportOptions())
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+
+	target, _, targetRepos := newService(t)
+	tags := &countingTags{TagRepository: targetRepos.Tags}
+	bookmarks := &countingBookmarks{BookmarkRepository: targetRepos.Bookmarks}
+	targetRepos.Tags = tags
+	targetRepos.Bookmarks = bookmarks
+	target = New(targetRepos, fixedClock{now: clockBase}, "0.3.0")
+
+	report, err := target.Import(ctx, file)
+	if err != nil {
+		t.Fatalf("Import: %v", err)
+	}
+	if report.RelationsAdded != count {
+		t.Errorf("imported %d relations, want %d", report.RelationsAdded, count)
+	}
+	if tags.attaches != 0 {
+		t.Errorf("the import still attaches one relation at a time: %d calls", tags.attaches)
+	}
+	if want := count / importBatch; tags.attachMany > want+1 {
+		t.Errorf("relations went in %d calls for %d rows, want at most %d",
+			tags.attachMany, count, want+1)
+	}
+	if tags.attachedRow != count {
+		t.Errorf("%d relations were written, want %d", tags.attachedRow, count)
+	}
+	if want := count / importBatch; bookmarks.assigns > want+1 {
+		t.Errorf("memberships went in %d calls for %d rows, want at most %d",
+			bookmarks.assigns, count, want+1)
+	}
+	if bookmarks.assignedTo != count {
+		t.Errorf("%d memberships were written, want %d", bookmarks.assignedTo, count)
+	}
+
+	// The batched write is the same write: every relation is there.
+	after, err := targetRepos.Tags.AllRelations(ctx)
+	if err != nil {
+		t.Fatalf("AllRelations: %v", err)
+	}
+	if len(after) != count {
+		t.Errorf("the target library holds %d relations, want %d", len(after), count)
 	}
 }

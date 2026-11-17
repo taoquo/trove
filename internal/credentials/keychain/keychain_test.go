@@ -109,12 +109,34 @@ func TestGetReportsNotFound(t *testing.T) {
 	}
 }
 
+// TestGetReportsALockedKeychain pins the distinction the sync's sentence hangs on.
+//
+// The tool states a lock on stderr and does not give it a stable exit code, so the
+// phrases are what is matched. A locked store is not an empty one: the cookies are
+// in there, and only an unlock will do.
+func TestGetReportsALockedKeychain(t *testing.T) {
+	for _, stderr := range []string{
+		"security: SecKeychainSearchCopyNext: The user interaction is not allowed.",
+		"security: The keychain is locked.",
+		"security: The keychain could not be unlocked.",
+		"security: The passphrase you entered is not correct.",
+	} {
+		t.Run(stderr, func(t *testing.T) {
+			runner := &fakeRunner{err: &ExecError{Op: "exec", ExitCode: 1, Stderr: stderr}}
+			_, err := testStore(runner).Get(context.Background(), "acct")
+			if !errors.Is(err, ErrLocked) {
+				t.Fatalf("err = %v, want ErrLocked", err)
+			}
+		})
+	}
+}
+
 func TestGetSurfacesOtherFailures(t *testing.T) {
-	runner := &fakeRunner{err: &ExecError{Op: "exec", ExitCode: 1, Stderr: "keychain is locked"}}
+	runner := &fakeRunner{err: &ExecError{Op: "exec", ExitCode: 1, Stderr: "security: invalid service name"}}
 
 	_, err := testStore(runner).Get(context.Background(), "acct")
-	if err == nil || errors.Is(err, ErrNotFound) {
-		t.Fatalf("err = %v, want a real failure", err)
+	if err == nil || errors.Is(err, ErrNotFound) || errors.Is(err, ErrLocked) {
+		t.Fatalf("err = %v, want a real failure that is neither missing nor locked", err)
 	}
 }
 

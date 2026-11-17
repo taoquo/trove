@@ -225,6 +225,13 @@ func TestShouldContinue(t *testing.T) {
 		t.Error("a cancelled run must never be continued")
 	}
 
+	// A run the provider killed must not be chained either: the next run would send
+	// the same requests into the same refusal.
+	refused := RunSummary{Outcome: OutcomeErrorBudget, UnprocessedCount: 5}
+	if ShouldContinue(refused, 0, true) {
+		t.Error("a run stopped by repeated provider failures must not continue")
+	}
+
 	// Nothing left to do.
 	done := RunSummary{Outcome: OutcomeOK, UnprocessedCount: 0}
 	if ShouldContinue(done, 0, true) {
@@ -233,8 +240,8 @@ func TestShouldContinue(t *testing.T) {
 }
 
 func TestOutcomeInventory(t *testing.T) {
-	if len(AllRunOutcomes) != 12 {
-		t.Fatalf("AllRunOutcomes has %d entries, want 12", len(AllRunOutcomes))
+	if len(AllRunOutcomes) != 13 {
+		t.Fatalf("AllRunOutcomes has %d entries, want 13", len(AllRunOutcomes))
 	}
 	seen := map[RunOutcome]bool{}
 	for _, outcome := range AllRunOutcomes {
@@ -247,7 +254,7 @@ func TestOutcomeInventory(t *testing.T) {
 		OutcomeOK, OutcomeDisabled, OutcomeLLMDisabled, OutcomeMissingAPIKey,
 		OutcomeNoCandidates, OutcomeEmptyVocabulary, OutcomeAllBlocked,
 		OutcomeBudgetExhausted, OutcomeTimedOut, OutcomeCancelled,
-		OutcomeInterrupted, OutcomeFailed,
+		OutcomeInterrupted, OutcomeFailed, OutcomeErrorBudget,
 	} {
 		if !ValidRunOutcome(expected) {
 			t.Errorf("outcome %q is missing", expected)

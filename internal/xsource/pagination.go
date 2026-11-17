@@ -47,7 +47,16 @@ type Progress struct {
 	// WaitingUntil is set while backing off, so the UI can show a countdown
 	// instead of a frozen bar.
 	WaitingUntil time.Time
+	// WaitReason says which wait this is, when the wait is worth showing. The ordinary
+	// pace between pages leaves it empty: a quarter of a second per page is not news,
+	// and a line that flipped to "waiting" every page would be worse than none.
+	WaitReason string
 }
+
+// WaitRateLimit is the reason for a wait the server asked for: a 429 whose Retry-After
+// names the end of X's window. It is the one wait long enough that a still line reads as
+// a hang.
+const WaitRateLimit = "rate-limit"
 
 // RetryPolicy bounds how hard a single page is retried.
 type RetryPolicy struct {
@@ -57,10 +66,14 @@ type RetryPolicy struct {
 	BaseDelay time.Duration
 	// MaxDelay caps the exponential growth.
 	MaxDelay time.Duration
-	// MaxRetryAfter caps how long a server-requested wait may be honoured. A
-	// larger value is reported rather than slept through, so an absurd header
-	// cannot park the app.
+	// MaxRetryAfter caps how long a server-requested wait may be honoured for an
+	// ordinary Retry-After. A larger value is reported rather than slept through,
+	// so an absurd header cannot park the app.
 	MaxRetryAfter time.Duration
+	// MaxRateLimitWait is the larger budget for a rate-limit window stated by
+	// x-rate-limit-reset. X's window is minutes, not seconds; refusing to wait it
+	// out means the run dies and the next one starts over. Zero uses 15 minutes.
+	MaxRateLimitWait time.Duration
 	// JitterFraction spreads retries (0 disables it, for deterministic tests).
 	JitterFraction float64
 }
@@ -68,11 +81,12 @@ type RetryPolicy struct {
 // DefaultRetryPolicy is the policy a real sync uses.
 func DefaultRetryPolicy() RetryPolicy {
 	return RetryPolicy{
-		MaxAttempts:    5,
-		BaseDelay:      2 * time.Second,
-		MaxDelay:       30 * time.Second,
-		MaxRetryAfter:  30 * time.Second,
-		JitterFraction: 0.2,
+		MaxAttempts:      5,
+		BaseDelay:        2 * time.Second,
+		MaxDelay:         30 * time.Second,
+		MaxRetryAfter:    30 * time.Second,
+		MaxRateLimitWait: 15 * time.Minute,
+		JitterFraction:   0.2,
 	}
 }
 
@@ -138,8 +152,12 @@ type Result struct {
 	PageError error
 	// RawPayloads is each tweet's untouched JSON, when raw capture is enabled.
 	RawPayloads map[string]json.RawMessage
-	// NextCursor is where a later run resumes when Termination is TermHitLimit.
-	// Empty means there is nothing to continue from.
+	// Unrecognized counts tweet entries across the walk that could not be
+	// parsed. A run with any of these is not a clean full sync.
+	Unrecognized int
+	// NextCursor is where a later run resumes. It is kept for a limit stop, a
+	// failed page and a cancellation -- all three leave part of the timeline
+	// unread. It is empty only when the walk reached the end.
 	NextCursor string
 }
 
@@ -209,6 +227,7 @@ type collector struct {
 	failedCount      int
 	cursor           string
 	nextCursor       string
+	unrecognized     int
 	rawPayloads      map[string]json.RawMessage
 }
 
@@ -260,6 +279,7 @@ func (c *collector) run(ctx context.Context, fetch PageFetcher) (Result, error) 
 		c.bookmarks = append(c.bookmarks, pageBookmarks...)
 		c.pagesCompleted++
 		c.nextCursor = page.NextCursor
+		c.unrecognized += page.Unrecognized
 		for tweetID, raw := range page.RawPayloads {
 			if tweetID != "" && len(raw) > 0 {
 				c.rawPayloads[tweetID] = raw
@@ -319,6 +339,11 @@ func (c *collector) run(ctx context.Context, fetch PageFetcher) (Result, error) 
 			// A cursor from earlier in the same walk is a different thing: the loop is
 			// cycling and would never end. Detecting it and reporting a failure is
 			// stricter than checking only the immediately previous cursor.
+			//
+			// Nothing is saved to resume from: asking again from the repeated cursor
+			// walks the same cycle. This is the one failure a later run must not
+			// continue from.
+			c.nextCursor = ""
 			return c.result(domain.TermFailed), fmt.Errorf("%w: cursor %q came back around", ErrPaginationLoop, page.NextCursor)
 
 		case c.earlyStopPages > 0 && c.consecutiveKnown >= c.earlyStopPages:
@@ -360,6 +385,13 @@ func (c *collector) sleepFor(ctx context.Context, delay time.Duration) error {
 // exponential backoff.
 func (c *collector) fetchWithRetry(ctx context.Context, fetch PageFetcher) (ports.Page, error) {
 	var lastErr error
+	// The budget is cumulative: a server that keeps asking for another window
+	// must not keep the app parked forever.
+	rateLimitBudget := c.retry.MaxRateLimitWait
+	if rateLimitBudget <= 0 {
+		rateLimitBudget = 15 * time.Minute
+	}
+	var waitedOnRateLimit time.Duration
 
 	for attempt := 1; attempt <= c.retry.MaxAttempts; attempt++ {
 		page, err := fetch(ctx, c.cursor)
@@ -383,16 +415,25 @@ func (c *collector) fetchWithRetry(ctx context.Context, fetch PageFetcher) (port
 
 		delay := c.backoff(attempt)
 
-		// A server-requested wait wins, but only up to the cap. Beyond it we
+		// A server-requested wait wins. A short Retry-After is honoured under the
+		// ordinary cap; a longer one is honoured only while it fits the
+		// rate-limit budget, which is what a real 429 window needs. Beyond both we
 		// stop and report, rather than parking the app on a bogus header.
+		reason := ""
 		if requested := RetryAfter(err); requested > 0 {
-			if requested > c.retry.MaxRetryAfter {
-				return ports.Page{}, err
+			reason = WaitRateLimit
+			if requested <= c.retry.MaxRetryAfter {
+				delay = requested
+			} else {
+				if waitedOnRateLimit+requested > rateLimitBudget {
+					return ports.Page{}, err
+				}
+				delay = requested
+				waitedOnRateLimit += requested
 			}
-			delay = requested
 		}
 
-		c.waitFor(ctx, delay)
+		c.waitFor(ctx, delay, reason)
 
 		if err := ctx.Err(); err != nil {
 			return ports.Page{}, ErrCancelled
@@ -419,10 +460,11 @@ func (c *collector) backoff(attempt int) time.Duration {
 }
 
 // waitFor sleeps, reporting the wait so the UI can count down.
-func (c *collector) waitFor(ctx context.Context, delay time.Duration) {
+func (c *collector) waitFor(ctx context.Context, delay time.Duration, reason string) {
 	if c.onProgress != nil {
 		progress := c.progress()
 		progress.WaitingUntil = c.clock().Add(delay)
+		progress.WaitReason = reason
 		c.onProgress(progress)
 	}
 
@@ -481,8 +523,13 @@ func (c *collector) result(termination TerminationReason) Result {
 	if len(c.rawPayloads) > 0 {
 		raw = c.rawPayloads
 	}
+	// A walk that stopped short of the end keeps its continuation point. Only
+	// "reached the end" and "stopped early on purpose" leave nothing to resume:
+	// a failed page used to throw the cursor away, so a 9,000-bookmark walk that
+	// died at page 450 restarted from the top and failed at the same page again.
 	next := ""
-	if termination == domain.TermHitLimit {
+	switch termination {
+	case domain.TermHitLimit, domain.TermFailed, domain.TermCancelled:
 		next = c.nextCursor
 	}
 	return Result{
@@ -491,6 +538,7 @@ func (c *collector) result(termination TerminationReason) Result {
 		FailedCount:    c.failedCount,
 		PagesCompleted: c.pagesCompleted,
 		RawPayloads:    raw,
+		Unrecognized:   c.unrecognized,
 		NextCursor:     next,
 	}
 }

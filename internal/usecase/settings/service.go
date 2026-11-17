@@ -111,13 +111,32 @@ type SyncPreferences struct {
 	StopBufferPages int `json:"stopBufferPages"`
 }
 
+// BackupPreferences holds the automatic-backup choice.
+type BackupPreferences struct {
+	// AutoBackups is absent in preferences written before automatic backups
+	// existed, and absent means on: the point of the feature is that a reader who
+	// never opens this page still has a copy. Turning it off stores false, which is
+	// the only shape that can tell "chose off" from "never chose".
+	AutoBackups *bool `json:"autoBackups,omitempty"`
+}
+
+// DiagnosticsPreferences are the troubleshooting aids. Both are off until the reader
+// asks for them: a copy of the reader's activity on disk is not something to turn on
+// unasked.
+type DiagnosticsPreferences struct {
+	// FileLog writes events and counts to a rotating log beside the library.
+	FileLog bool `json:"fileLog,omitempty"`
+}
+
 // Preferences is the whole user-facing configuration.
 type Preferences struct {
 	Appearance Appearance `json:"appearance"`
 	// Locale is empty to follow the system.
-	Locale string            `json:"locale"`
-	Sync   SyncPreferences   `json:"sync"`
-	Layout LayoutPreferences `json:"layout"`
+	Locale      string                 `json:"locale"`
+	Sync        SyncPreferences        `json:"sync"`
+	Backup      BackupPreferences      `json:"backup"`
+	Layout      LayoutPreferences      `json:"layout"`
+	Diagnostics DiagnosticsPreferences `json:"diagnostics"`
 	// ViewMode is how the results are laid out. It is stored because a saved view keeps it
 	// and a restart should not rearrange the library.
 	ViewMode ViewMode `json:"viewMode,omitempty"`
@@ -206,6 +225,11 @@ func DefaultPreferences() Preferences {
 		// widths are only filled in from the database on a later load.
 		Layout: DefaultLayout(),
 	}
+}
+
+// AutoBackupEnabled reports whether the daily copy runs.
+func (p Preferences) AutoBackupEnabled() bool {
+	return p.Backup.AutoBackups == nil || *p.Backup.AutoBackups
 }
 
 // Validate reports an unknown value rather than silently defaulting it.

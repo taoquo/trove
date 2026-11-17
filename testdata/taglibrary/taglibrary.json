@@ -225,9 +225,7 @@
         "childCount": 0,
         "bookmarkCount": 5,
         "pendingSuggestionCount": 0,
-        "updatedAt": "2026-06-01T00:00:00.000Z",
-        "parentId": "t1",
-        "parentName": "languages"
+        "updatedAt": "2026-06-01T00:00:00.000Z"
       },
       {
         "tagId": "t3",
@@ -236,9 +234,7 @@
         "childCount": 0,
         "bookmarkCount": 3,
         "pendingSuggestionCount": 0,
-        "updatedAt": "2026-04-01T00:00:00.000Z",
-        "parentId": "t1",
-        "parentName": "languages"
+        "updatedAt": "2026-04-01T00:00:00.000Z"
       },
       {
         "tagId": "t4",
@@ -328,9 +324,7 @@
         "childCount": 0,
         "bookmarkCount": 0,
         "pendingSuggestionCount": 0,
-        "updatedAt": "2026-03-10T00:00:00.000Z",
-        "parentId": "t11",
-        "parentName": "one bookmark theme"
+        "updatedAt": "2026-03-10T00:00:00.000Z"
       }
     ],
     "orphanCount": 5,
@@ -339,163 +333,7 @@
       "t6",
       "t12",
       "t13"
-    ],
-    "unparentedCount": 8,
-    "rootCandidateIds": [
-      "t5",
-      "t4",
-      "t12",
-      "t8",
-      "t1",
-      "t11",
-      "t6",
-      "t9",
-      "t10",
-      "t7"
-    ],
-    "parentCandidates": {
-      "t1": [],
-      "t2": [
-        "t5",
-        "t4",
-        "t12",
-        "t8",
-        "t1",
-        "t11",
-        "t6",
-        "t9",
-        "t10",
-        "t7"
-      ],
-      "t3": [
-        "t5",
-        "t4",
-        "t12",
-        "t8",
-        "t1",
-        "t11",
-        "t6",
-        "t9",
-        "t10",
-        "t7"
-      ],
-      "t4": [
-        "t5",
-        "t12",
-        "t8",
-        "t1",
-        "t11",
-        "t6",
-        "t9",
-        "t10",
-        "t7"
-      ],
-      "t5": [
-        "t4",
-        "t12",
-        "t8",
-        "t1",
-        "t11",
-        "t6",
-        "t9",
-        "t10",
-        "t7"
-      ],
-      "t6": [
-        "t5",
-        "t4",
-        "t12",
-        "t8",
-        "t1",
-        "t11",
-        "t9",
-        "t10",
-        "t7"
-      ],
-      "t7": [
-        "t5",
-        "t4",
-        "t12",
-        "t8",
-        "t1",
-        "t11",
-        "t6",
-        "t9",
-        "t10"
-      ],
-      "t8": [
-        "t5",
-        "t4",
-        "t12",
-        "t1",
-        "t11",
-        "t6",
-        "t9",
-        "t10",
-        "t7"
-      ],
-      "t9": [
-        "t5",
-        "t4",
-        "t12",
-        "t8",
-        "t1",
-        "t11",
-        "t6",
-        "t10",
-        "t7"
-      ],
-      "t10": [
-        "t5",
-        "t4",
-        "t12",
-        "t8",
-        "t1",
-        "t11",
-        "t6",
-        "t9",
-        "t7"
-      ],
-      "t11": [],
-      "t12": [
-        "t5",
-        "t4",
-        "t8",
-        "t1",
-        "t11",
-        "t6",
-        "t9",
-        "t10",
-        "t7"
-      ],
-      "t13": [
-        "t5",
-        "t4",
-        "t12",
-        "t8",
-        "t1",
-        "t11",
-        "t6",
-        "t9",
-        "t10",
-        "t7"
-      ]
-    },
-    "hasParentCandidates": {
-      "t1": false,
-      "t2": true,
-      "t3": true,
-      "t4": true,
-      "t5": true,
-      "t6": true,
-      "t7": true,
-      "t8": true,
-      "t9": true,
-      "t10": true,
-      "t11": false,
-      "t12": true,
-      "t13": true
-    }
+    ]
   },
   "views": [
     {
@@ -555,8 +393,6 @@
       "sortOrder": "count-desc",
       "searchQuery": "languages",
       "expected": [
-        "t2",
-        "t3",
         "t1"
       ]
     },
@@ -631,9 +467,7 @@
       "sortOrder": "count-asc",
       "searchQuery": "languages",
       "expected": [
-        "t1",
-        "t3",
-        "t2"
+        "t1"
       ]
     },
     {
@@ -707,9 +541,7 @@
       "sortOrder": "name-asc",
       "searchQuery": "languages",
       "expected": [
-        "t2",
-        "t1",
-        "t3"
+        "t1"
       ]
     },
     {
@@ -783,9 +615,7 @@
       "sortOrder": "recent",
       "searchQuery": "languages",
       "expected": [
-        "t2",
-        "t1",
-        "t3"
+        "t1"
       ]
     },
     {
@@ -1465,258 +1295,6 @@
       "sortOrder": "recent",
       "searchQuery": "Tag 1",
       "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-desc",
-      "searchQuery": "",
-      "expected": [
-        "t4",
-        "t5",
-        "t8",
-        "t9",
-        "t10",
-        "t12",
-        "t6",
-        "t7"
-      ]
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-desc",
-      "searchQuery": "go",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-desc",
-      "searchQuery": "golang",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-desc",
-      "searchQuery": "AI Agents",
-      "expected": [
-        "t4"
-      ]
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-desc",
-      "searchQuery": "ai agent",
-      "expected": [
-        "t4"
-      ]
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-desc",
-      "searchQuery": "languages",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-desc",
-      "searchQuery": "zzzz",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-desc",
-      "searchQuery": "Tag 1",
-      "expected": [
-        "t10"
-      ]
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-asc",
-      "searchQuery": "",
-      "expected": [
-        "t12",
-        "t6",
-        "t7",
-        "t8",
-        "t9",
-        "t10",
-        "t5",
-        "t4"
-      ]
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-asc",
-      "searchQuery": "go",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-asc",
-      "searchQuery": "golang",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-asc",
-      "searchQuery": "AI Agents",
-      "expected": [
-        "t4"
-      ]
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-asc",
-      "searchQuery": "ai agent",
-      "expected": [
-        "t4"
-      ]
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-asc",
-      "searchQuery": "languages",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-asc",
-      "searchQuery": "zzzz",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "count-asc",
-      "searchQuery": "Tag 1",
-      "expected": [
-        "t10"
-      ]
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "name-asc",
-      "searchQuery": "",
-      "expected": [
-        "t5",
-        "t4",
-        "t12",
-        "t8",
-        "t6",
-        "t9",
-        "t10",
-        "t7"
-      ]
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "name-asc",
-      "searchQuery": "go",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "name-asc",
-      "searchQuery": "golang",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "name-asc",
-      "searchQuery": "AI Agents",
-      "expected": [
-        "t4"
-      ]
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "name-asc",
-      "searchQuery": "ai agent",
-      "expected": [
-        "t4"
-      ]
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "name-asc",
-      "searchQuery": "languages",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "name-asc",
-      "searchQuery": "zzzz",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "name-asc",
-      "searchQuery": "Tag 1",
-      "expected": [
-        "t10"
-      ]
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "recent",
-      "searchQuery": "",
-      "expected": [
-        "t4",
-        "t12",
-        "t10",
-        "t9",
-        "t8",
-        "t7",
-        "t6",
-        "t5"
-      ]
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "recent",
-      "searchQuery": "go",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "recent",
-      "searchQuery": "golang",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "recent",
-      "searchQuery": "AI Agents",
-      "expected": [
-        "t4"
-      ]
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "recent",
-      "searchQuery": "ai agent",
-      "expected": [
-        "t4"
-      ]
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "recent",
-      "searchQuery": "languages",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "recent",
-      "searchQuery": "zzzz",
-      "expected": []
-    },
-    {
-      "filter": "unparented",
-      "sortOrder": "recent",
-      "searchQuery": "Tag 1",
-      "expected": [
-        "t10"
-      ]
     }
   ],
   "sidebar": [

@@ -44,9 +44,13 @@ func NewDiskCache(dir string, budget int64) *DiskCache {
 	if budget <= 0 {
 		budget = DefaultDiskBudget
 	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil
 	}
+	// An earlier build created this directory world-readable. Narrow it rather than
+	// leave a library's pictures open to every account on the machine; the files
+	// inside are rewritten private as they are replaced.
+	_ = os.Chmod(dir, 0o700)
 	return &DiskCache{dir: dir, budget: budget}
 }
 
@@ -74,31 +78,53 @@ func (c *DiskCache) Get(url string) ([]byte, bool) {
 }
 
 // Put stores a body and evicts until the cache is inside its budget.
+//
+// The file is written private: it holds a picture from the user's library, and the
+// rest of the library's data is already readable only by its owner.
 func (c *DiskCache) Put(url string, body []byte) {
 	if c == nil || int64(len(body)) > c.budget {
 		return
 	}
 
 	path := c.filePath(url)
-	if err := os.WriteFile(path, body, 0o644); err != nil {
-		return
-	}
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.evictLocked(int64(len(body)))
+
+	if !c.measured {
+		c.used = c.measureLocked()
+		c.measured = true
+	}
+
+	// An overwrite replaces a file the total already includes. Charging the new body
+	// without crediting the old one made the count drift upward: after a hundred
+	// refreshes of one picture the cache believed it held a hundred copies and evicted
+	// files it had never counted.
+	replaced := int64(0)
+	if info, err := os.Stat(path); err == nil && !info.IsDir() {
+		replaced = info.Size()
+	}
+
+	if err := os.WriteFile(path, body, 0o600); err != nil {
+		return
+	}
+	c.used += int64(len(body)) - replaced
+	if c.used < 0 {
+		c.used = 0
+	}
+	c.evictLocked()
 }
 
 // evictLocked removes the least recently used files until the total fits.
 //
 // The total is measured from the directory the first time rather than tracked in memory,
-// so a cache left by a previous run is accounted for.
-func (c *DiskCache) evictLocked(added int64) {
+// so a cache left by a previous run is accounted for. After that, Put keeps it exact by
+// crediting the file it replaces.
+func (c *DiskCache) evictLocked() {
 	if !c.measured {
 		c.used = c.measureLocked()
 		c.measured = true
 	}
-	c.used += added
 
 	if c.used <= c.budget {
 		return

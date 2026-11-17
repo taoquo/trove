@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -173,6 +174,209 @@ func TestTheUnreadColumnLeavesAnOlderLibrary(t *testing.T) {
 	if scalarInt(t, db, "SELECT COUNT(*) FROM bookmarks WHERE tweet_id = 'opened'") != 1 {
 		t.Error("the upgrade lost a bookmark")
 	}
+
+	// The upgrade copied the library first, and the copy opens on its own: it is
+	// what a reader falls back to if a later migration has to be undone by hand.
+	snapshot := fmt.Sprintf("%s.before-v%d", path, TargetSchemaVersion())
+	if _, err := os.Stat(snapshot); err != nil {
+		t.Fatalf("the upgrade left no snapshot: %v", err)
+	}
+	snapshotDB, err := sql.Open("sqlite", "file:"+snapshot+"?_pragma=foreign_keys(1)")
+	if err != nil {
+		t.Fatalf("open the snapshot: %v", err)
+	}
+	t.Cleanup(func() { snapshotDB.Close() })
+	if got := scalarIntOn(t, snapshotDB, "SELECT COUNT(*) FROM bookmarks"); got != 1 {
+		t.Errorf("the snapshot holds %d bookmark(s), want 1", got)
+	}
+	var integrity string
+	if err := snapshotDB.QueryRow("PRAGMA integrity_check").Scan(&integrity); err != nil {
+		t.Fatalf("integrity_check on the snapshot: %v", err)
+	}
+	if integrity != "ok" {
+		t.Errorf("the snapshot reports %q", integrity)
+	}
+	// It is the old shape: read_at is still there, which is the point of keeping it.
+	if got := scalarIntOn(t, snapshotDB,
+		"SELECT COUNT(*) FROM pragma_table_info('bookmarks') WHERE name = 'read_at'"); got != 1 {
+		t.Error("the snapshot is not the pre-upgrade shape")
+	}
+}
+
+// TestTheMediaKindIsBackfilledFromThePayload upgrades a library written before the
+// column existed.
+//
+// The payload column is the source of truth, so the upgrade has to read it back: a
+// new install gets the kind from the upsert, but every post a reader already has
+// arrived before there was a column to write it to.
+func TestTheMediaKindIsBackfilledFromThePayload(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "v12.db")
+
+	handle, err := sql.Open("sqlite", "file:"+path+"?_pragma=foreign_keys(1)")
+	if err != nil {
+		t.Fatalf("open raw: %v", err)
+	}
+	db := &DB{DB: handle, path: path}
+	if err := db.ensureMigrationTable(); err != nil {
+		t.Fatalf("create the migration table: %v", err)
+	}
+	for _, m := range migrations {
+		if m.version > 12 {
+			break
+		}
+		if err := db.applyMigration(m); err != nil {
+			t.Fatalf("apply migration %d: %v", m.version, err)
+		}
+	}
+	if err := db.EnsureInbox(clockBase); err != nil {
+		t.Fatalf("EnsureInbox: %v", err)
+	}
+
+	insert := func(id, mediaJSON string) {
+		t.Helper()
+		ts := domain.FormatTimestamp(clockBase)
+		if _, err := db.Exec(
+			`INSERT INTO bookmarks (tweet_id, tweet_url, saved_at, updated_at, media_json)
+			 VALUES (?, ?, ?, ?, ?)`,
+			id, "https://x.com/i/status/"+id, ts, ts, mediaJSON); err != nil {
+			t.Fatalf("insert %s: %v", id, err)
+		}
+	}
+	insert("plain", `[]`)
+	insert("pictures", `[{"type":"photo","url":"p","altText":""}]`)
+	insert("clip", `[{"type":"photo","url":"p","altText":""},`+
+		`{"type":"video","url":"v","posterUrl":"p","altText":""}]`)
+	insert("gif", `[{"type":"animated_gif","url":"g","altText":""}]`)
+	// A shape this build does not recognise is still media.
+	insert("mystery", `[{"type":"spaces","url":"s","altText":""}]`)
+
+	if err := db.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	db, err = Open(path)
+	if err != nil {
+		t.Fatalf("Open at v12: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	want := map[string]string{
+		"plain":    "",
+		"pictures": domain.MediaPhoto,
+		"clip":     domain.MediaVideo,
+		"gif":      domain.MediaAnimatedGif,
+		"mystery":  domain.MediaKindOther,
+	}
+	for id, kind := range want {
+		var got string
+		if err := db.QueryRow(`SELECT media_kind FROM bookmarks WHERE tweet_id = ?`, id).Scan(&got); err != nil {
+			t.Fatalf("read the kind of %s: %v", id, err)
+		}
+		if got != kind {
+			t.Errorf("media_kind of %s = %q, want %q", id, got, kind)
+		}
+	}
+}
+
+// TestAFailedBatchRowFitsAnOlderLedger is v8's table rebuild.
+//
+// The outcome column carries a CHECK constraint, and SQLite cannot widen one, so the
+// ledger is rebuilt with the new shape and its rows copied across. Everything a
+// library already holds has to come out the other side unchanged, including the
+// foreign key, the index and rows written by the previous build.
+func TestAFailedBatchRowFitsAnOlderLedger(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "trove.db")
+
+	handle, err := sql.Open("sqlite", "file:"+path+"?_pragma=foreign_keys(1)")
+	if err != nil {
+		t.Fatalf("open raw: %v", err)
+	}
+	db := &DB{DB: handle, path: path}
+	if err := db.ensureMigrationTable(); err != nil {
+		t.Fatalf("create the migration table: %v", err)
+	}
+	for _, m := range migrations {
+		if m.version > 7 {
+			break
+		}
+		if err := db.applyMigration(m); err != nil {
+			t.Fatalf("apply migration %d: %v", m.version, err)
+		}
+	}
+	if err := db.EnsureInbox(clockBase); err != nil {
+		t.Fatalf("EnsureInbox: %v", err)
+	}
+	insertBookmark(t, db, "kept")
+	insertBookmark(t, db, "refused")
+	ts := domain.FormatTimestamp(clockBase)
+	if _, err := db.Exec(
+		`INSERT INTO llm_analysis (bookmark_id, analyzed_at, prompt_version, model, content_hash, outcome, tag_count)
+		 VALUES ('kept', ?, ?, 'gpt-4o', 'hash', 'tagged', 2)`,
+		ts, domain.LlmPromptVersion); err != nil {
+		t.Fatalf("seed a v7 verdict: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	db, err = Open(path)
+	if err != nil {
+		t.Fatalf("Open at v7: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	// The row written before the rebuild is intact, and the new column has its
+	// documented default for rows that predate it.
+	var (
+		outcome   string
+		errorKind string
+		tagCount  int
+	)
+	if err := db.QueryRow(
+		`SELECT outcome, error_kind, tag_count FROM llm_analysis WHERE bookmark_id = 'kept'`).
+		Scan(&outcome, &errorKind, &tagCount); err != nil {
+		t.Fatalf("read the kept row: %v", err)
+	}
+	if outcome != domain.OutcomeTagged || errorKind != "" || tagCount != 2 {
+		t.Errorf("kept row = (%q, %q, %d), want (tagged, \"\", 2)", outcome, errorKind, tagCount)
+	}
+
+	// The widened constraint accepts a failed batch, and still refuses a value the
+	// build does not know.
+	if _, err := db.Exec(
+		`INSERT INTO llm_analysis (bookmark_id, analyzed_at, prompt_version, model, content_hash, outcome, error_kind)
+		 VALUES ('refused', ?, ?, 'gpt-4o', 'hash', 'error', 'content-filter')`,
+		ts, domain.LlmPromptVersion); err != nil {
+		t.Fatalf("the new shape refused an error row: %v", err)
+	}
+	if _, err := db.Exec(
+		`INSERT INTO llm_analysis (bookmark_id, analyzed_at, prompt_version, model, content_hash, outcome)
+		 VALUES ('kept', ?, ?, 'gpt-4o', 'hash', 'invented')`,
+		ts, domain.LlmPromptVersion); err == nil {
+		t.Error("an unknown outcome was accepted")
+	}
+
+	if got := scalarInt(t, db, "SELECT COUNT(*) FROM sqlite_master WHERE name = 'llm_analysis_model_idx'"); got != 1 {
+		t.Error("the rebuild dropped the model index")
+	}
+
+	// The foreign key survived the rename: removing a bookmark still takes its
+	// ledger row with it.
+	if _, err := db.Exec(`DELETE FROM bookmarks WHERE tweet_id = 'refused'`); err != nil {
+		t.Fatalf("delete the bookmark: %v", err)
+	}
+	if got := scalarInt(t, db, "SELECT COUNT(*) FROM llm_analysis WHERE bookmark_id = 'refused'"); got != 0 {
+		t.Error("the rebuilt table lost its cascade delete")
+	}
+}
+
+func scalarIntOn(t *testing.T, db *sql.DB, query string) int {
+	t.Helper()
+	var n int
+	if err := db.QueryRow(query).Scan(&n); err != nil {
+		t.Fatalf("query %q: %v", query, err)
+	}
+	return n
 }
 
 func TestForeignKeysAreEnforced(t *testing.T) {

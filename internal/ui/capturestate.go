@@ -156,6 +156,13 @@ func (s *Shell) ApplyCaptureState(state string) bool {
 			s.state.ActiveAuthors = []string{s.state.Data.Authors[0].AuthorHandle}
 		}
 		s.Reload(context.Background())
+	case "archive":
+		// The archive is a mode rather than a switch with a second copy: it replaces the
+		// list. No toolbar button or filter row reaches it from outside a click, so this is
+		// the only way to photograph the state, its count in the filter row, and the
+		// sentence it shows when nothing is filed there.
+		s.state.OnlyArchived = true
+		s.Reload(context.Background())
 	case "settings":
 		// Through OpenSettings, not by setting the flag.
 		//
@@ -288,19 +295,15 @@ func (s *Shell) ApplyCaptureState(state string) bool {
 		if visible := s.VisibleTagItems(); len(visible) > 0 {
 			s.beginTagEdit(visible[0].TagID, TagEditName)
 		}
-	case "tags-aliases", "tags-theme":
-		// The other two in-place fields, for the same reason: the alias editor's Save and cancel
-		// and the theme cell's picker are behind a click on the row.
+	case "tags-aliases":
+		// The other in-place field, for the same reason: the alias editor's Save and cancel
+		// are behind a click on the row.
 		s.state.TagMode = true
 		if s.service != nil {
 			s.ReloadTagLibrary(context.Background())
 		}
 		if visible := s.VisibleTagItems(); len(visible) > 0 {
-			field := TagEditAliases
-			if state == "tags-theme" {
-				field = TagEditTheme
-			}
-			s.beginTagEdit(visible[0].TagID, field)
+			s.beginTagEdit(visible[0].TagID, TagEditAliases)
 		}
 	case "sidebar-search":
 		// The field the magnifier opens. A query is set so the picture also shows the list

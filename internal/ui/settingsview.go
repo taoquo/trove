@@ -197,6 +197,9 @@ var settingsSectionKeys = map[string][]i18n.Key{
 		i18n.SettingsLegacyBackupRow, i18n.BundleExportLegacy, i18n.SettingsLegacyBackupHint,
 		i18n.SettingsRestoreRow, i18n.RestoreBackup, i18n.SettingsRestoreHint,
 		i18n.SettingsLocalRow, i18n.ResetLocalData, i18n.SettingsLocalHint,
+		i18n.SettingsAutoBackupRow, i18n.SettingsAutoBackupHint,
+		i18n.SettingsOpenBackupDir, i18n.SettingsBackupDirHint,
+		i18n.SettingsFileLogRow, i18n.SettingsFileLogHint,
 		i18n.SettingsBlockedTags, i18n.SettingsClearBlockedTags,
 	},
 	SettingsSectionListsViews: {
@@ -438,8 +441,36 @@ func (s *Shell) settingsDataSafetySection(c *ui.Context, theme *ui.Theme, rail R
 	// one is in flight. Without that the row sat unchanged for seconds after a click
 	// and read as a dead button.
 	busy := s.state.BundleBusy
-	items := []settingsItem{
-		{
+	var items []settingsItem
+	if s.backups != nil {
+		// The daily copy comes first: it is the one backup nobody has to remember, and
+		// the rows under it are for the copy a reader takes for a reason.
+		items = append(items,
+			settingsItem{
+				keys: []i18n.Key{i18n.SettingsAutoBackupRow, i18n.SettingsAutoBackupHint},
+				name: s.t().T(i18n.SettingsAutoBackupRow),
+				sub:  s.t().T(i18n.SettingsAutoBackupHint),
+				control: func() {
+					settingsSwitch(c, theme, rail,
+						s.t().T(i18n.SettingsOff), s.t().T(i18n.SettingsOn),
+						s.t().T(i18n.SettingsAutoBackupRow),
+						&s.state.AutoBackup,
+						func() { s.saveBackupPreference(context.Background()) })
+				},
+			},
+			settingsItem{
+				keys: []i18n.Key{i18n.SettingsOpenBackupDir, i18n.SettingsBackupDirHint},
+				name: s.t().T(i18n.SettingsOpenBackupDir),
+				sub:  s.t().T(i18n.SettingsBackupDirHint),
+				control: func() {
+					settingsAction(c, theme, rail, s.t().T(i18n.SettingsOpenBackupDir), false, false,
+						func() { s.OpenBackupDirectory() })
+				},
+			},
+		)
+	}
+	items = append(items,
+		settingsItem{
 			keys: []i18n.Key{i18n.SettingsBackupRow, i18n.ExportData, i18n.SettingsBackupHint},
 			name: s.t().T(i18n.SettingsBackupRow),
 			sub:  s.t().T(i18n.SettingsBackupHint),
@@ -448,7 +479,7 @@ func (s *Shell) settingsDataSafetySection(c *ui.Context, theme *ui.Theme, rail R
 					func() { s.ExportBundle(context.Background()) })
 			},
 		},
-		{
+		settingsItem{
 			keys: []i18n.Key{i18n.SettingsLegacyBackupRow, i18n.BundleExportLegacy, i18n.SettingsLegacyBackupHint},
 			name: s.t().T(i18n.SettingsLegacyBackupRow),
 			sub:  s.t().T(i18n.SettingsLegacyBackupHint),
@@ -457,7 +488,7 @@ func (s *Shell) settingsDataSafetySection(c *ui.Context, theme *ui.Theme, rail R
 					func() { s.ExportLegacyBackup(context.Background()) })
 			},
 		},
-		{
+		settingsItem{
 			keys: []i18n.Key{i18n.SettingsRestoreRow, i18n.RestoreBackup, i18n.MenuImport, i18n.SettingsRestoreHint},
 			name: s.t().T(i18n.SettingsRestoreRow),
 			sub:  s.t().T(i18n.SettingsRestoreHint),
@@ -469,7 +500,7 @@ func (s *Shell) settingsDataSafetySection(c *ui.Context, theme *ui.Theme, rail R
 				})
 			},
 		},
-		{
+		settingsItem{
 			keys: []i18n.Key{i18n.SettingsLocalRow, i18n.ResetLocalData, i18n.SettingsLocalHint},
 			name: s.t().T(i18n.SettingsLocalRow),
 			sub:  s.t().T(i18n.SettingsLocalHint),
@@ -478,6 +509,23 @@ func (s *Shell) settingsDataSafetySection(c *ui.Context, theme *ui.Theme, rail R
 					func() { s.AskResetLocalData() })
 			},
 		},
+	)
+	if s.logging != nil {
+		// The troubleshooting log sits with the file controls rather than under General:
+		// it is a file beside the library, and its switch is the reader's answer to
+		// "what gets written down about me".
+		items = append(items, settingsItem{
+			keys: []i18n.Key{i18n.SettingsFileLogRow, i18n.SettingsFileLogHint},
+			name: s.t().T(i18n.SettingsFileLogRow),
+			sub:  s.t().T(i18n.SettingsFileLogHint),
+			control: func() {
+				settingsSwitch(c, theme, rail,
+					s.t().T(i18n.SettingsOff), s.t().T(i18n.SettingsOn),
+					s.t().T(i18n.SettingsFileLogRow),
+					&s.state.FileLog,
+					func() { s.setFileLog(context.Background()) })
+			},
+		})
 	}
 	if s.state.BlockedTagKeyCount > 0 {
 		label := fmt.Sprintf("%s (%d)", s.t().T(i18n.SettingsClearBlockedTags),
@@ -507,6 +555,19 @@ func (s *Shell) settingsDataSafetySection(c *ui.Context, theme *ui.Theme, rail R
 		})
 	}
 	drawn += s.settingsCard(c, theme, rail, items...)
+
+	// The automatic backup runs before the window exists, so its result would otherwise
+	// have nowhere to be seen. It is a quiet note: the copy is a background job, not an
+	// action the reader just took.
+	if s.state.BackupNote != "" && !s.settingsFiltering() {
+		settingsNote(c, theme, rail, s.state.BackupNote)
+	}
+
+	// A switch that could not open its file says so here; the switch itself keeps the
+	// press, because a control that springs back has to be pressed twice to learn why.
+	if s.state.LogNote != "" && !s.settingsFiltering() {
+		settingsNote(c, theme, rail, s.state.LogNote)
+	}
 
 	if s.state.LastBundleReport != "" && !s.settingsFiltering() {
 		// A finished action says so in the success colour; a progress note ("Exporting…")
