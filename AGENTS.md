@@ -43,7 +43,7 @@ docs/                当前架构与设计文档
 
 ## 2. 命令
 
-`.toolchain/` 是固定的 Go 1.27.2 工具链：它禁止隐式切换（`GOTOOLCHAIN=local`）、强制
+`.toolchain/` 是固定的 Go 1.27.4 工具链：它禁止隐式切换（`GOTOOLCHAIN=local`）、强制
 `CGO_ENABLED=0`，并把模块下载走镜像。构建缓存不在仓库里（`GOCACHE` 在
 `~/Library/Caches/trove/go-build`，编译临时目录用系统 `$TMPDIR`）：Go 的缓存只按 5 天老化、
 没有大小上限，放进仓库会让密集开发把工作区撑到十几 G；`go clean -cache` 可随时回收。`env.sh` 通过 `BASH_SOURCE` 定位自己，**必须从 bash

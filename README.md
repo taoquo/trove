@@ -115,7 +115,7 @@ reason on stderr, so the scheduler's log has an explanation rather than an absen
 ## Requirements
 
 - macOS 12 or later (Apple silicon or Intel), or Windows 10/11 x64.
-- The pinned Go toolchain under `.toolchain/` (Go 1.27.2). It is mandatory: it fixes the version,
+- The pinned Go toolchain under `.toolchain/` (Go 1.27.4). It is mandatory: it fixes the version,
   forbids implicit toolchain switching and routes module downloads through a reachable mirror.
 - Python 3 with Pillow for the screenshot-based checks.
 

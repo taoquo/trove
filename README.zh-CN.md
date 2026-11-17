@@ -104,7 +104,7 @@ stderr，所以计划任务的日志里有解释，而不是一片空白。
 ## 环境要求
 
 - macOS 12 或更高（Apple silicon 或 Intel），或 Windows 10/11 x64。
-- `.toolchain/` 下固定的 Go 工具链（Go 1.27.2）。这是强制要求：它固定版本、禁止隐式切换
+- `.toolchain/` 下固定的 Go 工具链（Go 1.27.4）。这是强制要求：它固定版本、禁止隐式切换
   toolchain，并把模块下载指向可用的镜像。
 - Python 3 与 Pillow（截图类检查需要）。
 

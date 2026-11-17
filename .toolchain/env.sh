@@ -14,9 +14,10 @@
 # Usage:  source .toolchain/env.sh
 #
 # Pinned versions:
-#   Go  1.27.2  darwin/arm64
-#     sha256 76812b213b1b2302c978d28fa52fa92d541704b9e7d9d5db8002c50e4018c4c5
-#     source https://dl.google.com/go/go1.27.2.darwin-arm64.tar.gz
+#   Go  1.27.4  darwin/arm64
+#     module golang.org/toolchain@v0.0.1-go1.27.4.darwin-arm64
+#     h1:87DnSk/ftpTKvVhs/5KkUqpRmq8SWxkmKzbTca6PBTk=
+#     from the goproxy.cn mirror this network can reach, verified by the checksum database
 #   MyGo  pinned as a Go tool in the root go.mod (never @latest)
 
 TROVE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

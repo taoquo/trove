@@ -53,7 +53,22 @@ func newShell(t *testing.T) (*Shell, *sqlite.DB) {
 	}
 
 	service := workspace.New(repos, fixedClock{now: clockBase}, idgen.New("test"))
-	return NewShell(service, AppearanceLight), db
+	shell := NewShell(service, AppearanceLight)
+	noSearchTimers(shell)
+	return shell, db
+}
+
+// noSearchTimers takes the search debounce's real timer out of a test shell.
+//
+// searchChanged schedules its read with time.AfterFunc, and a shell without a window
+// publishes the result inline, so a timer that fires mid-render writes s.state.Searching
+// on its own goroutine while View reads it. In the app that write goes through
+// Window.Update onto the main thread; a test has no window, so the timer never fires and
+// a test that is about the debounce drives the timers itself (searchdebounce_test.go).
+func noSearchTimers(shell *Shell) {
+	shell.after = func(time.Duration, func()) *time.Timer {
+		return time.AfterFunc(time.Hour, func() {})
+	}
 }
 
 // shellWithTagging is newShell plus a tagging service.
@@ -81,6 +96,7 @@ func shellWithTagging(t *testing.T) (*Shell, *sqlite.DB, *tagging.Service) {
 	}
 	service := workspace.New(repos, fixedClock{now: clockBase}, idgen.New("test"))
 	shell := NewShell(service, AppearanceLight)
+	noSearchTimers(shell)
 	// The tagging service is installed so the delete path can block a tag's name: without
 	// it a deleted tag comes back the next time a post mentions it, which the tagging rules
 	// require.

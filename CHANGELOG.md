@@ -4,6 +4,14 @@
 update it signs, so the heading below must exist before a tag is pushed. Keep the
 heading plain (`## 0.3.2`) or Keep a Changelog's (`## [0.3.2] - 2026-11-14`).
 
+## 0.3.8
+
+### Security
+
+- Builds use Go 1.27.4. Go's vulnerability scan found two standard-library issues in
+  1.27.2 that this app's code paths reach — an HTTP server crash and the acceptance of
+  compromised intermediate certificates — and 1.27.3 and 1.27.4 fix them.
+
 ## 0.3.7
 
 ### Added
